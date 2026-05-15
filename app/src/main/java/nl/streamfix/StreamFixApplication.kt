@@ -6,7 +6,7 @@ import io.sentry.android.core.SentryAndroid
 import io.sentry.SentryLevel
 
 @HiltAndroidApp
-class StreamfixApplication : Application() {
+class StreamFixApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()

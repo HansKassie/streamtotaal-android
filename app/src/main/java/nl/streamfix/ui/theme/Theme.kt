@@ -12,11 +12,11 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColors = darkColorScheme(
-    primary = StreamfixPurple,
+    primary = StreamFixPurple,
     onPrimary = OnSurfaceDark,
-    primaryContainer = StreamfixPurpleDark,
+    primaryContainer = StreamFixPurpleDark,
     onPrimaryContainer = OnSurfaceDark,
-    secondary = StreamfixPurpleLight,
+    secondary = StreamFixPurpleLight,
     background = BackgroundDark,
     onBackground = OnSurfaceDark,
     surface = SurfaceDark,
@@ -27,10 +27,10 @@ private val DarkColors = darkColorScheme(
 )
 
 private val LightColors = lightColorScheme(
-    primary = StreamfixPurple,
+    primary = StreamFixPurple,
     onPrimary = SurfaceLight,
-    primaryContainer = StreamfixPurpleLight,
-    secondary = StreamfixPurpleDark,
+    primaryContainer = StreamFixPurpleLight,
+    secondary = StreamFixPurpleDark,
     background = BackgroundLight,
     onBackground = OnSurfaceLight,
     surface = SurfaceLight,
@@ -39,7 +39,7 @@ private val LightColors = lightColorScheme(
 )
 
 @Composable
-fun StreamfixTheme(
+fun StreamFixTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
@@ -59,7 +59,7 @@ fun StreamfixTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = StreamfixTypography,
+        typography = StreamFixTypography,
         content = content
     )
 }

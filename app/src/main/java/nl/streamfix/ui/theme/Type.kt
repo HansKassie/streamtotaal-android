@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.sp
 // Voorlopig systeemfont (SansSerif). Een merkfont kan later in Fase 5 (polish).
 private val AppFont = FontFamily.SansSerif
 
-val StreamfixTypography = Typography(
+val StreamFixTypography = Typography(
     displaySmall = TextStyle(
         fontFamily = AppFont,
         fontWeight = FontWeight.Bold,

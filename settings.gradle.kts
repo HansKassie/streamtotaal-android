@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Streamfix"
+rootProject.name = "StreamFix"
 include(":app")

@@ -1,6 +1,6 @@
-# Streamfix Android - Fase 0 setup
+# StreamFix Android - Fase 0 setup
 
-Dit project is de Android IPTV-app uit de Streamfix-briefing. De code-structuur is
+Dit project is de Android IPTV-app uit de StreamFix-briefing. De code-structuur is
 gescaffold. Hieronder de stappen die jij eenmalig handmatig moet doen (deze vereisen
 Android Studio, een fysiek toestel of accounts en kunnen niet vanuit code).
 
@@ -44,7 +44,7 @@ dezelfde app installeren.
 
 1. Maak een gratis account op sentry.io en een nieuw Android-project.
 2. Kopieer de DSN.
-3. Vul de DSN in `app/src/main/java/nl/streamfix/StreamfixApplication.kt`
+3. Vul de DSN in `app/src/main/java/nl/streamfix/StreamFixApplication.kt`
    bij de constante `SENTRY_DSN`.
 4. Build en draai de app, druk op "Testcrash naar Sentry".
 5. Controleer dat de crash binnenkomt in het Sentry-dashboard.
@@ -60,7 +60,7 @@ dezelfde app installeren.
 
 - [ ] Repository staat online (prive GitHub of GitLab) - zie sectie 5
 - [ ] Release-APK is gesigneerd en installeerbaar op Android 7.0+
-- [ ] App opent met splash screen en toont het Streamfix-logo
+- [ ] App opent met splash screen en toont het StreamFix-logo
 - [ ] ~~Een testcrash verschijnt in het Sentry-dashboard~~ **GEPARKEERD**
 
 > Sentry-criterium is bewust uitgesteld. Reden: tijdens ontwikkeling (Fase 1-5)
@@ -87,8 +87,8 @@ Maak de repo op GitHub/GitLab als **prive** aan.
 - Alle libraries uit de briefing zijn als dependency opgenomen (Compose, Media3,
   Hilt, Room, Retrofit/OkHttp/kotlinx.serialization, Coil, Sentry,
   EncryptedSharedPreferences, WorkManager).
-- Hilt is geactiveerd (`StreamfixApplication` met `@HiltAndroidApp`).
-- Splash screen via `androidx.core:core-splashscreen` met Streamfix-logo.
+- Hilt is geactiveerd (`StreamFixApplication` met `@HiltAndroidApp`).
+- Splash screen via `androidx.core:core-splashscreen` met StreamFix-logo.
 - Material 3 donker thema met merkkleuren (`ui/theme/`).
 - Adaptive launcher-icon.
 - Package-skelet conform de briefing (ui, domain, data/remote, data/local,

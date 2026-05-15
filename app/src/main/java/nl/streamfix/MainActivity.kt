@@ -25,7 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dagger.hilt.android.AndroidEntryPoint
-import nl.streamfix.ui.theme.StreamfixTheme
+import nl.streamfix.ui.theme.StreamFixTheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            StreamfixTheme {
+            StreamFixTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     WelcomeScreen(modifier = Modifier.padding(innerPadding))
                 }
@@ -55,12 +55,12 @@ private fun WelcomeScreen(modifier: Modifier = Modifier) {
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_streamfix_logo),
-            contentDescription = "Streamfix logo",
+            contentDescription = "StreamFix logo",
             modifier = Modifier.size(140.dp)
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Streamfix",
+            text = "StreamFix",
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -75,7 +75,7 @@ private fun WelcomeScreen(modifier: Modifier = Modifier) {
         // Alleen in debug; nooit in release waar een gebruiker de app kan laten crashen.
         if (BuildConfig.DEBUG) {
             Spacer(Modifier.height(32.dp))
-            Button(onClick = { throw RuntimeException("Streamfix Sentry-testcrash") }) {
+            Button(onClick = { throw RuntimeException("StreamFix Sentry-testcrash") }) {
                 Text("Testcrash naar Sentry")
             }
         }
@@ -85,7 +85,7 @@ private fun WelcomeScreen(modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 private fun WelcomeScreenPreview() {
-    StreamfixTheme {
+    StreamFixTheme {
         WelcomeScreen()
     }
 }
