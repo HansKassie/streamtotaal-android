@@ -4,88 +4,42 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import nl.streamfix.ui.RootState
+import nl.streamfix.ui.RootViewModel
+import nl.streamfix.ui.navigation.StreamFixNavHost
 import nl.streamfix.ui.theme.StreamFixTheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    private val rootViewModel: RootViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        splashScreen.setKeepOnScreenCondition {
+            rootViewModel.state.value == RootState.Loading
+        }
         enableEdgeToEdge()
         setContent {
             StreamFixTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    WelcomeScreen(modifier = Modifier.padding(innerPadding))
+                val state by rootViewModel.state.collectAsStateWithLifecycle()
+                Scaffold(modifier = Modifier.fillMaxSize()) { _ ->
+                    when (state) {
+                        RootState.Loading -> Unit // splash blijft staan
+                        RootState.LoggedIn -> StreamFixNavHost(startLoggedIn = true)
+                        RootState.LoggedOut -> StreamFixNavHost(startLoggedIn = false)
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun WelcomeScreen(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_streamfix_logo),
-            contentDescription = "StreamFix logo",
-            modifier = Modifier.size(140.dp)
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = "StreamFix",
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Fase 0: projectsetup voltooid",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        // Verificatie acceptatiecriterium Fase 0: testcrash in Sentry.
-        // Alleen in debug; nooit in release waar een gebruiker de app kan laten crashen.
-        if (BuildConfig.DEBUG) {
-            Spacer(Modifier.height(32.dp))
-            Button(onClick = { throw RuntimeException("StreamFix Sentry-testcrash") }) {
-                Text("Testcrash naar Sentry")
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun WelcomeScreenPreview() {
-    StreamFixTheme {
-        WelcomeScreen()
     }
 }
