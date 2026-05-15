@@ -27,25 +27,27 @@ data class CredentialState(
     val activeId: String? = null,
 )
 
-fun StoredAccount.toDomain(): Account? = when (type) {
-    "xtream" -> Account.Xtream(
-        id = id,
-        displayName = displayName,
-        serverUrl = serverUrl ?: return null,
-        username = username ?: return null,
-        password = password ?: return null,
-    )
+fun StoredAccount.toDomain(): Account? {
+    return when (type) {
+        "xtream" -> Account.Xtream(
+            id = id,
+            displayName = displayName,
+            serverUrl = serverUrl ?: return null,
+            username = username ?: return null,
+            password = password ?: return null,
+        )
 
-    "m3u" -> {
-        val source = when {
-            m3uUrl != null -> M3uSource.Url(m3uUrl)
-            m3uFileUri != null -> M3uSource.LocalFile(m3uFileUri)
-            else -> return null
+        "m3u" -> {
+            val source = when {
+                m3uUrl != null -> M3uSource.Url(m3uUrl)
+                m3uFileUri != null -> M3uSource.LocalFile(m3uFileUri)
+                else -> return null
+            }
+            Account.M3u(id = id, displayName = displayName, source = source)
         }
-        Account.M3u(id = id, displayName = displayName, source = source)
-    }
 
-    else -> null
+        else -> null
+    }
 }
 
 fun Account.toStored(): StoredAccount = when (this) {
