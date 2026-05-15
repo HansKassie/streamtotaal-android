@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext (HTTP) is bewust toegestaan: veel Xtream Codes / M3U IPTV-providers
+  draaien alleen op http://. De server-URL wordt door de eindgebruiker ingevoerd,
+  dus een vaste domein-whitelist is niet mogelijk. Dit is een functionele
+  noodzaak voor deze app, geen oversight.
+
+  De APK-download en het version-manifest MOETEN wel HTTPS zijn (Android weigert
+  APK's via http). Zodra het download-domein bekend is, hier een domain-config
+  toevoegen die cleartext daar expliciet verbiedt.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -8,10 +8,11 @@ Android Studio, een fysiek toestel of accounts en kunnen niet vanuit code).
 
 1. Installeer de laatste stabiele Android Studio.
 2. Open de map `Streamfix-Android` (Open, niet importeren).
-3. Eerste Gradle-sync laat Android Studio automatisch:
-   - de Gradle wrapper (`gradlew`, `gradle-wrapper.jar`) genereren;
-   - `local.properties` aanmaken met je Android SDK-pad;
-   - alle libraries downloaden.
+3. De Gradle wrapper (`gradlew`, `gradlew.bat`, `gradle-wrapper.jar`) is al
+   gecommit en vastgepind op Gradle 8.11.1, dus `./gradlew` werkt direct
+   vanuit de repo (ook in CI). Eerste sync in Android Studio:
+   - maakt `local.properties` aan met je Android SDK-pad;
+   - downloadt alle libraries.
 4. Installeer via de SDK Manager: Android SDK Platform 35 en build-tools.
 
 ## 2. Release-keystore aanmaken
@@ -76,7 +77,7 @@ Maak de repo op GitHub/GitLab als **prive** aan.
 ## Wat is al geregeld in code
 
 - Modern Gradle-project (Kotlin DSL, version catalog), package `nl.streamfix`,
-  applicationId `nl.streamfix.app`, minSdk 24, targetSdk 34.
+  applicationId `nl.streamfix.app`, minSdk 24, targetSdk 35.
 - Alle libraries uit de briefing zijn als dependency opgenomen (Compose, Media3,
   Hilt, Room, Retrofit/OkHttp/kotlinx.serialization, Coil, Sentry,
   EncryptedSharedPreferences, WorkManager).

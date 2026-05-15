@@ -71,10 +71,13 @@ private fun WelcomeScreen(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(32.dp))
-        // Verificatie acceptatiecriterium Fase 0: testcrash in Sentry
-        Button(onClick = { throw RuntimeException("Streamfix Sentry-testcrash") }) {
-            Text("Testcrash naar Sentry")
+        // Verificatie acceptatiecriterium Fase 0: testcrash in Sentry.
+        // Alleen in debug; nooit in release waar een gebruiker de app kan laten crashen.
+        if (BuildConfig.DEBUG) {
+            Spacer(Modifier.height(32.dp))
+            Button(onClick = { throw RuntimeException("Streamfix Sentry-testcrash") }) {
+                Text("Testcrash naar Sentry")
+            }
         }
     }
 }

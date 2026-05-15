@@ -1,0 +1,14 @@
+# Normaliseer line endings reproduceerbaar over Windows/Linux/CI
+* text=auto eol=lf
+
+# Windows batch moet CRLF houden
+*.bat text eol=crlf
+
+# gradlew is een POSIX-shellscript: altijd LF, anders breekt hij op Linux/CI
+gradlew text eol=lf
+
+# Binaire bestanden nooit converteren
+*.jar binary
+*.png binary
+*.jks binary
+*.keystore binary
