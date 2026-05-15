@@ -61,7 +61,13 @@ dezelfde app installeren.
 - [ ] Repository staat online (prive GitHub of GitLab) - zie sectie 5
 - [ ] Release-APK is gesigneerd en installeerbaar op Android 7.0+
 - [ ] App opent met splash screen en toont het Streamfix-logo
-- [ ] Een testcrash verschijnt in het Sentry-dashboard
+- [ ] ~~Een testcrash verschijnt in het Sentry-dashboard~~ **GEPARKEERD**
+
+> Sentry-criterium is bewust uitgesteld. Reden: tijdens ontwikkeling (Fase 1-5)
+> volstaat Logcat. Sentry is pas nodig vlak voor de beta-uitrol, want dan
+> draaien onbekende klanttoestellen de app zonder dat je erbij zit.
+> Actie: DSN invullen en dit criterium aftekenen aan het begin van Fase 6.
+> De code-hook staat klaar (Sentry uit zolang `SENTRY_DSN` leeg is).
 
 ## 5. Repository online zetten
 
