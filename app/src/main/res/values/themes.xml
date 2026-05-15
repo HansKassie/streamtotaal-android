@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Basistheme. Compose neemt de styling over via StreamfixTheme. -->
+    <style name="Theme.Streamfix" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/streamfix_background</item>
+        <item name="android:statusBarColor">@color/streamfix_background</item>
+        <item name="android:navigationBarColor">@color/streamfix_background</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+    </style>
+
+    <!-- Splash screen via androidx.core:core-splashscreen -->
+    <style name="Theme.Streamfix.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/streamfix_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_streamfix_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.Streamfix</item>
+    </style>
+
+</resources>

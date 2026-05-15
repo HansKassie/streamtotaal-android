@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Glyph blijft binnen de adaptive-icon safe zone (midden ~66dp) -->
+    <group android:scaleX="0.62" android:scaleY="0.62" android:pivotX="54" android:pivotY="54">
+        <path
+            android:fillColor="#7C5CFC"
+            android:pathData="M54,46 m-30,0 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M46,30 L46,62 L74,46 Z" />
+    </group>
+</vector>

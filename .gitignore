@@ -1,0 +1,27 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Build output
+**/build/
+app/release/
+app/debug/
+
+# Keystore en signing secrets (NOOIT committen)
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# Sentry
+sentry.properties
+
+# Logs
+*.log
