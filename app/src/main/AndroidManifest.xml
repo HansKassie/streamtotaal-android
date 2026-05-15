@@ -26,6 +26,15 @@
         android:theme="@style/Theme.Streamfix"
         tools:targetApi="35">
 
+        <!--
+          Sentry auto-init uit: anders draait SentryInitProvider bij opstart
+          en crasht zonder DSN. StreamfixApplication doet de gecontroleerde
+          init en slaat Sentry over zolang de DSN leeg is.
+        -->
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
