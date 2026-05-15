@@ -20,6 +20,9 @@ app/debug/
 keystore.properties
 signing.properties
 
+# Machine-specifieke Gradle JDK (java.home pad), nooit committen
+/gradle/config.properties
+
 # Sentry
 sentry.properties
 
