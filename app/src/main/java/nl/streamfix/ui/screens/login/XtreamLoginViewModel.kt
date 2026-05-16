@@ -13,17 +13,21 @@ import nl.streamfix.domain.usecase.LoginWithXtreamUseCase
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.ui.uiMessage
 
+const val URL_SCHEME = "http://"
+
 data class XtreamLoginState(
     val name: String = "",
-    val serverUrl: String = "",
+    val serverUrl: String = URL_SCHEME,
     val username: String = "",
     val password: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val loggedIn: Boolean = false,
 ) {
+    val host: String get() = serverUrl.removePrefix(URL_SCHEME)
+
     val canSubmit: Boolean
-        get() = serverUrl.isNotBlank() && username.isNotBlank() &&
+        get() = host.isNotBlank() && username.isNotBlank() &&
             password.isNotBlank() && !isLoading
 }
 
@@ -38,8 +42,24 @@ class XtreamLoginViewModel @Inject constructor(
     fun onNameChange(value: String) =
         _state.update { it.copy(name = value, errorMessage = null) }
 
-    fun onServerUrlChange(value: String) =
-        _state.update { it.copy(serverUrl = value, errorMessage = null) }
+    // Houd "http://" altijd vast vooraan; de klant bewerkt alleen de host.
+    fun onServerUrlChange(value: String) {
+        val schemeRegex = Regex("(?i)^https?://")
+        var host = value.trimStart()
+        while (true) {
+            val stripped = host.replaceFirst(schemeRegex, "")
+            if (stripped == host) break
+            host = stripped
+        }
+        // Backspace in het vaste prefix levert een afkapping van "http://"
+        // op (bv. "http:/"): dan host leeg houden zodat het prefix blijft.
+        if (value.length < URL_SCHEME.length &&
+            URL_SCHEME.startsWith(value, ignoreCase = true)
+        ) {
+            host = ""
+        }
+        _state.update { it.copy(serverUrl = URL_SCHEME + host, errorMessage = null) }
+    }
 
     fun onUsernameChange(value: String) =
         _state.update { it.copy(username = value, errorMessage = null) }
