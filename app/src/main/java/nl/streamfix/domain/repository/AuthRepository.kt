@@ -9,6 +9,7 @@ interface AuthRepository {
 
     /** Valideert via player_api.php en slaat bij succes het account versleuteld op. */
     suspend fun loginWithXtream(
+        name: String,
         serverUrl: String,
         username: String,
         password: String,
@@ -18,6 +19,12 @@ interface AuthRepository {
     fun observeActiveAccount(): Flow<Account?>
 
     suspend fun getActiveAccount(): Account?
+
+    /** Alle opgeslagen providers (voor wisselen). */
+    suspend fun getAccounts(): List<Account>
+
+    /** Wisselt naar een reeds opgeslagen provider. */
+    suspend fun switchActiveAccount(id: String)
 
     /** Optionele account-info uit player_api.php, of null als ophalen faalt. */
     suspend fun getAccountInfo(): AccountInfo?

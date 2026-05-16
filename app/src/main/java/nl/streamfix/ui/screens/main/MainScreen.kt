@@ -1,12 +1,16 @@
 package nl.streamfix.ui.screens.main
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
@@ -18,6 +22,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -47,6 +53,7 @@ private enum class Tab(val label: String, val icon: ImageVector) {
 @Composable
 fun MainScreen(
     onLoggedOut: () -> Unit,
+    onAddProvider: () -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -83,6 +90,8 @@ fun MainScreen(
             when (tabs[selected]) {
                 Tab.Settings -> SettingsContent(
                     state = state,
+                    onSwitchProvider = viewModel::onSwitchProvider,
+                    onAddProvider = onAddProvider,
                     onLogout = viewModel::onLogout,
                 )
                 else -> PlaceholderContent(tabs[selected].label)
@@ -110,10 +119,16 @@ private fun PlaceholderContent(name: String) {
 @Composable
 private fun SettingsContent(
     state: MainState,
+    onSwitchProvider: (String) -> Unit,
+    onAddProvider: () -> Unit,
     onLogout: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Account", style = MaterialTheme.typography.titleMedium)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+    ) {
+        Text("Actieve provider", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         Text(
             text = state.account?.displayName ?: "Onbekend",
@@ -131,7 +146,35 @@ private fun SettingsContent(
             }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(28.dp))
+        Text("Providers", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(4.dp))
+        state.accounts.forEach { acc ->
+            val isActive = acc.id == state.account?.id
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isActive) { onSwitchProvider(acc.id) }
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(
+                    selected = isActive,
+                    onClick = { if (!isActive) onSwitchProvider(acc.id) },
+                )
+                Text(
+                    text = acc.displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = onAddProvider, modifier = Modifier.fillMaxWidth()) {
+            Text("Provider toevoegen")
+        }
+
+        Spacer(Modifier.height(28.dp))
         Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
             Text("Uitloggen")
         }

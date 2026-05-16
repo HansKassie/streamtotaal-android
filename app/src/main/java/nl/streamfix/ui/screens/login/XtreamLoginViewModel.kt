@@ -14,6 +14,7 @@ import nl.streamfix.domain.util.AppResult
 import nl.streamfix.ui.uiMessage
 
 data class XtreamLoginState(
+    val name: String = "",
     val serverUrl: String = "",
     val username: String = "",
     val password: String = "",
@@ -34,6 +35,9 @@ class XtreamLoginViewModel @Inject constructor(
     private val _state = MutableStateFlow(XtreamLoginState())
     val state: StateFlow<XtreamLoginState> = _state.asStateFlow()
 
+    fun onNameChange(value: String) =
+        _state.update { it.copy(name = value, errorMessage = null) }
+
     fun onServerUrlChange(value: String) =
         _state.update { it.copy(serverUrl = value, errorMessage = null) }
 
@@ -50,6 +54,7 @@ class XtreamLoginViewModel @Inject constructor(
         viewModelScope.launch {
             when (
                 val result = loginWithXtream(
+                    current.name,
                     current.serverUrl,
                     current.username,
                     current.password,

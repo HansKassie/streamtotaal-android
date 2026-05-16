@@ -50,6 +50,18 @@ class SecureCredentialStore @Inject constructor(
         writeState(CredentialState(accounts = updated, activeId = stored.id))
     }
 
+    /** Alle opgeslagen providers (voor de providerkeuze). */
+    fun allAccounts(): List<Account> =
+        readState().accounts.mapNotNull { it.toDomain() }
+
+    /** Maakt een reeds opgeslagen provider actief. */
+    fun setActive(id: String) {
+        val state = readState()
+        if (state.accounts.any { it.id == id }) {
+            writeState(state.copy(activeId = id))
+        }
+    }
+
     /** Wist alles (briefing: logout wist alle gegevens). */
     fun clear() {
         prefs.edit().clear().apply()

@@ -12,12 +12,15 @@ import kotlinx.coroutines.launch
 import nl.streamfix.domain.model.Account
 import nl.streamfix.domain.model.AccountInfo
 import nl.streamfix.domain.usecase.GetAccountInfoUseCase
+import nl.streamfix.domain.usecase.GetAccountsUseCase
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
 import nl.streamfix.domain.usecase.LogoutUseCase
+import nl.streamfix.domain.usecase.SwitchAccountUseCase
 
 data class MainState(
     val account: Account? = null,
     val accountInfo: AccountInfo? = null,
+    val accounts: List<Account> = emptyList(),
     val loggedOut: Boolean = false,
 )
 
@@ -25,6 +28,8 @@ data class MainState(
 class MainViewModel @Inject constructor(
     private val getActiveAccount: GetActiveAccountUseCase,
     private val getAccountInfo: GetAccountInfoUseCase,
+    private val getAccounts: GetAccountsUseCase,
+    private val switchAccount: SwitchAccountUseCase,
     private val logout: LogoutUseCase,
 ) : ViewModel() {
 
@@ -32,13 +37,27 @@ class MainViewModel @Inject constructor(
     val state: StateFlow<MainState> = _state.asStateFlow()
 
     init {
+        reload()
+    }
+
+    private fun reload() {
         viewModelScope.launch {
             val account = getActiveAccount.once()
-            _state.update { it.copy(account = account) }
+            val accounts = getAccounts()
+            _state.update {
+                it.copy(account = account, accounts = accounts, accountInfo = null)
+            }
             if (account is Account.Xtream) {
                 val info = runCatching { getAccountInfo() }.getOrNull()
                 _state.update { it.copy(accountInfo = info) }
             }
+        }
+    }
+
+    fun onSwitchProvider(id: String) {
+        viewModelScope.launch {
+            switchAccount(id)
+            reload()
         }
     }
 

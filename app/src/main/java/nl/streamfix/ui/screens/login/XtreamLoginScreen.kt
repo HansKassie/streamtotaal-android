@@ -66,6 +66,16 @@ fun XtreamLoginScreen(
             verticalArrangement = Arrangement.Top,
         ) {
             OutlinedTextField(
+                value = state.name,
+                onValueChange = viewModel::onNameChange,
+                label = { Text("Naam") },
+                placeholder = { Text("Bijv. Promax") },
+                singleLine = true,
+                enabled = !state.isLoading,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(16.dp))
+            OutlinedTextField(
                 value = state.serverUrl,
                 onValueChange = viewModel::onServerUrlChange,
                 label = { Text("Server-URL") },

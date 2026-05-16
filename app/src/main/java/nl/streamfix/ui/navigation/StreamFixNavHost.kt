@@ -25,8 +25,11 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
             XtreamLoginScreen(
                 onBack = { navController.popBackStack() },
                 onLoggedIn = {
+                    // Werkt zowel vanaf het welkomscherm als vanuit
+                    // "Provider toevoegen": hele backstack leeg, MAIN als enige.
                     navController.navigate(Routes.MAIN) {
-                        popUpTo(Routes.WELCOME) { inclusive = true }
+                        popUpTo(navController.graph.id) { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
             )
@@ -36,9 +39,11 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
             MainScreen(
                 onLoggedOut = {
                     navController.navigate(Routes.WELCOME) {
-                        popUpTo(Routes.MAIN) { inclusive = true }
+                        popUpTo(navController.graph.id) { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
+                onAddProvider = { navController.navigate(Routes.LOGIN_XTREAM) },
             )
         }
     }

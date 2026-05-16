@@ -11,11 +11,29 @@ class LoginWithXtreamUseCase @Inject constructor(
     private val repository: AuthRepository,
 ) {
     suspend operator fun invoke(
+        name: String,
         serverUrl: String,
         username: String,
         password: String,
     ): AppResult<Account.Xtream> =
-        repository.loginWithXtream(serverUrl.trim(), username.trim(), password)
+        repository.loginWithXtream(
+            name.trim(),
+            serverUrl.trim(),
+            username.trim(),
+            password,
+        )
+}
+
+class GetAccountsUseCase @Inject constructor(
+    private val repository: AuthRepository,
+) {
+    suspend operator fun invoke(): List<Account> = repository.getAccounts()
+}
+
+class SwitchAccountUseCase @Inject constructor(
+    private val repository: AuthRepository,
+) {
+    suspend operator fun invoke(id: String) = repository.switchActiveAccount(id)
 }
 
 class GetActiveAccountUseCase @Inject constructor(

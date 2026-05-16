@@ -18,6 +18,7 @@ class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
 
     override suspend fun loginWithXtream(
+        name: String,
         serverUrl: String,
         username: String,
         password: String,
@@ -27,9 +28,12 @@ class AuthRepositoryImpl @Inject constructor(
             is AppResult.Failure -> result
             is AppResult.Success -> {
                 val data = result.data
+                val label = name.ifBlank {
+                    "$username @ ${data.normalizedServerUrl.hostLabel()}"
+                }
                 val account = Account.Xtream(
                     id = UUID.randomUUID().toString(),
-                    displayName = "$username @ ${data.normalizedServerUrl.hostLabel()}",
+                    displayName = label,
                     serverUrl = data.normalizedServerUrl,
                     username = username,
                     password = password,
@@ -43,6 +47,10 @@ class AuthRepositoryImpl @Inject constructor(
     override fun observeActiveAccount(): Flow<Account?> = store.activeAccount
 
     override suspend fun getActiveAccount(): Account? = store.currentActiveAccount()
+
+    override suspend fun getAccounts(): List<Account> = store.allAccounts()
+
+    override suspend fun switchActiveAccount(id: String) = store.setActive(id)
 
     override suspend fun getAccountInfo(): AccountInfo? {
         val account = store.currentActiveAccount() as? Account.Xtream ?: return null
