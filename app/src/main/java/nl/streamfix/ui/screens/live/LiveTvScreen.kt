@@ -43,7 +43,7 @@ import nl.streamfix.domain.model.LiveChannel
 
 @Composable
 fun LiveTvScreen(
-    onOpenChannel: (streamUrl: String, title: String) -> Unit,
+    onOpenChannel: (categoryId: String, channelId: String) -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -139,9 +139,10 @@ fun LiveTvScreen(
                         channel = channel,
                         isFavorite = state.favoriteIds.contains(channel.id),
                         onClick = {
-                            viewModel.streamUrlFor(channel.id)?.let { url ->
-                                onOpenChannel(url, channel.name)
-                            }
+                            onOpenChannel(
+                                state.selectedCategoryId ?: FAVORITES_ID,
+                                channel.id,
+                            )
                         },
                         onToggleFavorite = { viewModel.toggleFavorite(channel) },
                     )

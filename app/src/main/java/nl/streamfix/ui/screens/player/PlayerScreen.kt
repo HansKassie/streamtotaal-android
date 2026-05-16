@@ -1,40 +1,205 @@
 package nl.streamfix.ui.screens.player
 
+import android.app.Activity
+import android.media.AudioManager
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import kotlin.math.abs
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
-fun PlayerScreen(streamUrl: String) {
+fun PlayerScreen(
+    onBack: () -> Unit,
+    viewModel: PlayerViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val activity = context as? Activity
+    val scope = rememberCoroutineScope()
 
-    val player = remember {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(streamUrl))
-            prepare()
-            playWhenReady = true
+    val player = remember { ExoPlayer.Builder(context).build() }
+
+    // Markeer dat we in de speler zitten zodat MainActivity PiP kan starten.
+    DisposableEffect(Unit) {
+        PlayerActive.inPlayer = true
+        onDispose {
+            PlayerActive.inPlayer = false
+            player.release()
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose { player.release() }
+    // Auto-retry met exponentiele backoff (briefing: herstel binnen ~10s).
+    DisposableEffect(player) {
+        var attempt = 0
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) attempt = 0
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                val backoffMs = (1000L shl attempt.coerceAtMost(3)).coerceAtMost(8000L)
+                attempt++
+                scope.launch {
+                    delay(backoffMs)
+                    player.prepare()
+                    player.playWhenReady = true
+                }
+            }
+        }
+        player.addListener(listener)
+        onDispose { player.removeListener(listener) }
     }
 
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { ctx ->
-            PlayerView(ctx).apply {
-                this.player = player
-                setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
-                setBackgroundColor(android.graphics.Color.BLACK)
+    // Wissel de bron als het kanaal verandert (vorige/volgende).
+    LaunchedEffect(state.streamUrl) {
+        val url = state.streamUrl ?: return@LaunchedEffect
+        player.setMediaItem(MediaItem.fromUri(url))
+        player.prepare()
+        player.playWhenReady = true
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        AndroidView(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    var leftSide = true
+                    detectVerticalDragGestures(
+                        onDragStart = { offset ->
+                            leftSide = offset.x < size.width / 2f
+                        },
+                    ) { _, dragAmount ->
+                        // Omhoog (negatief) = meer.
+                        val step = -dragAmount / size.height
+                        if (leftSide) adjustBrightness(activity, step)
+                        else adjustVolume(context, step)
+                    }
+                }
+                .pointerInput(Unit) {
+                    var totalDx = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { totalDx = 0f },
+                        onDragEnd = {
+                            val threshold = size.width / 4f
+                            if (totalDx <= -threshold) viewModel.next()
+                            else if (totalDx >= threshold) viewModel.previous()
+                        },
+                    ) { _, dragAmount -> totalDx += dragAmount }
+                },
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    this.player = player
+                    setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
+                    setBackgroundColor(android.graphics.Color.BLACK)
+                }
+            },
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Terug",
+                    tint = Color.White,
+                )
             }
-        },
-    )
+            Text(
+                text = state.title,
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            IconButton(onClick = viewModel::previous, enabled = state.hasPrevious) {
+                Icon(
+                    Icons.Filled.SkipPrevious,
+                    contentDescription = "Vorig kanaal",
+                    tint = Color.White,
+                )
+            }
+            IconButton(onClick = viewModel::next, enabled = state.hasNext) {
+                Icon(
+                    Icons.Filled.SkipNext,
+                    contentDescription = "Volgend kanaal",
+                    tint = Color.White,
+                )
+            }
+        }
+    }
+}
+
+private fun adjustBrightness(activity: Activity?, step: Float) {
+    activity ?: return
+    val lp = activity.window.attributes
+    val current = if (lp.screenBrightness in 0f..1f) lp.screenBrightness else 0.5f
+    lp.screenBrightness = (current + step).coerceIn(0.05f, 1f)
+    activity.window.attributes = lp
+}
+
+private fun adjustVolume(context: android.content.Context, step: Float) {
+    val am = context.getSystemService(android.content.Context.AUDIO_SERVICE)
+        as AudioManager
+    val max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+    val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+    val target = (cur + (step * max).toInt())
+    if (abs(step) > 0.01f) {
+        am.setStreamVolume(
+            AudioManager.STREAM_MUSIC,
+            target.coerceIn(0, max),
+            0,
+        )
+    }
+}
+
+/** Gedeelde vlag zodat MainActivity weet wanneer PiP zinvol is. */
+object PlayerActive {
+    @Volatile
+    var inPlayer: Boolean = false
 }

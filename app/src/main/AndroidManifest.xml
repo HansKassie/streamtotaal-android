@@ -6,10 +6,12 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!--
-      Least privilege: onderstaande permissions worden pas gedeclareerd in de
-      fase waarin ze echt gebruikt worden (briefing sectie 6.3):
-        Fase 2: FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK,
-                POST_NOTIFICATIONS  (media-service voor PiP en notificatie-speler)
+      Least privilege: onderstaande permissions worden pas gedeclareerd zodra
+      ze echt gebruikt worden (briefing sectie 6.3). Picture-in-Picture zelf
+      vereist GEEN permission. De foreground-service-permissions komen pas met
+      een echte media-notificatieservice (latere uitbreiding):
+        FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK,
+        POST_NOTIFICATIONS  (notificatie-speler / achtergrondaudio)
         Fase 5: REQUEST_INSTALL_PACKAGES  (in-app updateflow)
     -->
 
@@ -38,7 +40,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.StreamFix.Splash">
             <intent-filter>

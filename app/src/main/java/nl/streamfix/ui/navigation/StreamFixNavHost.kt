@@ -53,8 +53,8 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
                     }
                 },
                 onAddProvider = { navController.navigate(Routes.LOGIN_XTREAM) },
-                onOpenChannel = { url, title ->
-                    navController.navigate(Routes.player(url, title))
+                onOpenChannel = { categoryId, channelId ->
+                    navController.navigate(Routes.player(categoryId, channelId))
                 },
             )
         }
@@ -62,16 +62,15 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
         composable(
             route = Routes.PLAYER_ROUTE,
             arguments = listOf(
-                navArgument(Routes.PLAYER_ARG_URL) {
+                navArgument(Routes.PLAYER_ARG_CATEGORY) {
                     type = NavType.StringType; defaultValue = ""
                 },
-                navArgument(Routes.PLAYER_ARG_TITLE) {
+                navArgument(Routes.PLAYER_ARG_CHANNEL) {
                     type = NavType.StringType; defaultValue = ""
                 },
             ),
-        ) { entry ->
-            val url = entry.arguments?.getString(Routes.PLAYER_ARG_URL).orEmpty()
-            PlayerScreen(streamUrl = url)
+        ) {
+            PlayerScreen(onBack = { navController.popBackStack() })
         }
     }
 }

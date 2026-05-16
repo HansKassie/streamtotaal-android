@@ -59,7 +59,7 @@ private enum class Tab(val label: String, val icon: ImageVector) {
 fun MainScreen(
     onLoggedOut: () -> Unit,
     onAddProvider: () -> Unit,
-    onOpenChannel: (streamUrl: String, title: String) -> Unit,
+    onOpenChannel: (categoryId: String, channelId: String) -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
