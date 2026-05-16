@@ -1,8 +1,8 @@
 {
-  "versionCode": 4,
-  "versionName": "1.0.3",
+  "versionCode": 5,
+  "versionName": "1.0.4",
   "apkUrl": "https://github.com/HansKassie/streamtotaal-android/releases/latest/download/streamtotaal.apk",
-  "releaseNotes": "Instellingen compacter gemaakt en het navigatielabel opgeschoond.",
+  "releaseNotes": "Providers strakker weergegeven en de instellingen-tab heet nu Meer.",
   "minSupportedVersionCode": 1,
   "forceUpdate": false
 }

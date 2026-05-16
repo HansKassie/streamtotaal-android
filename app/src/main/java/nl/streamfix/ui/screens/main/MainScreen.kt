@@ -55,16 +55,12 @@ import nl.streamfix.ui.screens.live.LiveTvScreen
 import nl.streamfix.ui.screens.series.SeriesScreen
 import nl.streamfix.ui.screens.vod.VodScreen
 
-private enum class Tab(
-    val label: String,
-    val icon: ImageVector,
-    val navLabel: String? = null,
-) {
+private enum class Tab(val label: String, val icon: ImageVector) {
     LiveTv("Live TV", Icons.Filled.LiveTv),
     Movies("Films", Icons.Filled.Movie),
     Series("Series", Icons.Filled.Tv),
     History("Verder", Icons.Filled.History),
-    Settings("Instellingen", Icons.Filled.Settings, navLabel = "Meer"),
+    Settings("Meer", Icons.Filled.Settings),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,12 +93,7 @@ fun MainScreen(
                         selected = selected == index,
                         onClick = { selected = index },
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = {
-                            Text(
-                                text = tab.navLabel ?: tab.label,
-                                maxLines = 1,
-                            )
-                        },
+                        label = { Text(tab.label, maxLines = 1) },
                     )
                 }
             }
@@ -238,7 +229,7 @@ private fun SettingsContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(enabled = !isActive) { onSwitchProvider(acc.id) }
-                    .padding(vertical = 6.dp),
+                    .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RadioButton(
@@ -252,10 +243,14 @@ private fun SettingsContent(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { onRemoveProvider(acc.id) }) {
+                IconButton(
+                    onClick = { onRemoveProvider(acc.id) },
+                    modifier = Modifier.size(36.dp),
+                ) {
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Provider verwijderen",
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
