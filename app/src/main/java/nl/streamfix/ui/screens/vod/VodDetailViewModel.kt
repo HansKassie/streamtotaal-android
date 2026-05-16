@@ -10,9 +10,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import nl.streamfix.domain.model.HistoryItem
 import nl.streamfix.domain.model.VodDetail
 import nl.streamfix.domain.usecase.GetVodDetailUseCase
 import nl.streamfix.domain.usecase.GetVodStreamUrlUseCase
+import nl.streamfix.domain.usecase.StartWatchingUseCase
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.ui.navigation.Routes
 import nl.streamfix.ui.uiMessage
@@ -28,6 +30,7 @@ class VodDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getDetail: GetVodDetailUseCase,
     private val getStreamUrl: GetVodStreamUrlUseCase,
+    private val startWatching: StartWatchingUseCase,
 ) : ViewModel() {
 
     private val vodId: String =
@@ -49,10 +52,27 @@ class VodDetailViewModel @Inject constructor(
         }
     }
 
-    /** (streamUrl, title, mediaId) of null als er nog geen detail is. */
-    fun playbackTarget(): Triple<String, String, String>? {
+    /**
+     * Registreert het item in "Verder kijken" en geeft (streamUrl, title,
+     * mediaId) terug, of null als er nog geen detail is.
+     */
+    fun startAndTarget(): Triple<String, String, String>? {
         val d = _state.value.detail ?: return null
         val url = getStreamUrl(d.id, d.containerExtension) ?: return null
-        return Triple(url, d.name, "vod:${d.id}")
+        val mediaId = "vod:${d.id}"
+        viewModelScope.launch {
+            startWatching(
+                HistoryItem(
+                    mediaId = mediaId,
+                    title = d.name,
+                    posterUrl = d.posterUrl,
+                    type = "vod",
+                    contentId = d.id,
+                    extension = d.containerExtension,
+                    positionMs = 0L,
+                ),
+            )
+        }
+        return Triple(url, d.name, mediaId)
     }
 }

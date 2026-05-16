@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Settings
@@ -45,6 +46,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nl.streamfix.BuildConfig
 import nl.streamfix.ui.formatXtreamExpiry
+import nl.streamfix.ui.screens.history.HistoryScreen
 import nl.streamfix.ui.screens.live.LiveTvScreen
 import nl.streamfix.ui.screens.vod.VodScreen
 
@@ -52,6 +54,7 @@ private enum class Tab(val label: String, val icon: ImageVector) {
     LiveTv("Live TV", Icons.Filled.LiveTv),
     Movies("Films", Icons.Filled.Movie),
     Series("Series", Icons.Filled.Tv),
+    History("Verder", Icons.Filled.History),
     Settings("Instellingen", Icons.Filled.Settings),
 }
 
@@ -62,6 +65,7 @@ fun MainScreen(
     onAddProvider: () -> Unit,
     onOpenChannel: (categoryId: String, channelId: String) -> Unit,
     onOpenVod: (vodId: String) -> Unit,
+    onResumeMedia: (streamUrl: String, title: String, mediaId: String) -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -96,6 +100,7 @@ fun MainScreen(
             when (tabs[selected]) {
                 Tab.LiveTv -> LiveTvScreen(onOpenChannel = onOpenChannel)
                 Tab.Movies -> VodScreen(onOpenVod = onOpenVod)
+                Tab.History -> HistoryScreen(onResume = onResumeMedia)
                 Tab.Settings -> Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,

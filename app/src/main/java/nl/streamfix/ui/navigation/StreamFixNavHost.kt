@@ -61,6 +61,9 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
                 onOpenVod = { vodId ->
                     navController.navigate(Routes.vodDetail(vodId))
                 },
+                onResumeMedia = { url, title, mediaId ->
+                    navController.navigate(Routes.playback(url, title, mediaId))
+                },
             )
         }
 

@@ -1,6 +1,8 @@
 package nl.streamfix.domain.usecase
 
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import nl.streamfix.domain.model.HistoryItem
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.VodDetail
 import nl.streamfix.domain.model.VodItem
@@ -48,4 +50,17 @@ class SaveResumePositionUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(mediaId: String, positionMs: Long) =
         repository.savePosition(mediaId, positionMs)
+}
+
+class StartWatchingUseCase @Inject constructor(
+    private val repository: PlaybackRepository,
+) {
+    suspend operator fun invoke(item: HistoryItem) =
+        repository.startWatching(item)
+}
+
+class ObserveHistoryUseCase @Inject constructor(
+    private val repository: PlaybackRepository,
+) {
+    operator fun invoke(): Flow<List<HistoryItem>> = repository.observeHistory()
 }

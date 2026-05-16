@@ -111,7 +111,7 @@ fun VodDetailScreen(
                     Spacer(Modifier.height(20.dp))
                     Button(
                         onClick = {
-                            viewModel.playbackTarget()?.let { (url, title, mid) ->
+                            viewModel.startAndTarget()?.let { (url, title, mid) ->
                                 onPlay(url, title, mid)
                             }
                         },
