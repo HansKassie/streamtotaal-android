@@ -56,17 +56,24 @@ fun M3uLoginScreen(
     ) { uri ->
         if (uri != null) {
             val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            runCatching {
+            val persisted = runCatching {
                 context.contentResolver.takePersistableUriPermission(uri, flags)
-            }
-            var name: String? = null
-            runCatching {
-                context.contentResolver.query(uri, null, null, null, null)?.use { c ->
-                    val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (idx >= 0 && c.moveToFirst()) name = c.getString(idx)
+            }.isSuccess
+            if (!persisted) {
+                // Zonder persistente toegang werkt de playlist niet meer na
+                // herstart: blokkeer de keuze i.p.v. stil door te gaan.
+                viewModel.onFilePickError()
+            } else {
+                var name: String? = null
+                runCatching {
+                    context.contentResolver.query(uri, null, null, null, null)
+                        ?.use { c ->
+                            val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            if (idx >= 0 && c.moveToFirst()) name = c.getString(idx)
+                        }
                 }
+                viewModel.onFilePicked(uri.toString(), name)
             }
-            viewModel.onFilePicked(uri.toString(), name)
         }
     }
 

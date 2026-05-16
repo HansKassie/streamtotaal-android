@@ -54,6 +54,8 @@ class M3uValidator @Inject constructor(
             AppResult.Failure(AppError.ServerUnreachable)
         } catch (e: IOException) {
             AppResult.Failure(AppError.NetworkUnavailable)
+        } catch (e: IllegalArgumentException) {
+            AppResult.Failure(AppError.InvalidUrl)
         } catch (e: Exception) {
             AppResult.Failure(AppError.Unknown)
         }

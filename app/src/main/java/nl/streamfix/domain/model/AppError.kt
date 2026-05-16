@@ -10,6 +10,7 @@ enum class AppError {
     ServerUnreachable,
     NetworkUnavailable,
     NotAnXtreamServer,
+    InvalidUrl,
     InvalidM3u,
     Unknown,
 }

@@ -58,6 +58,18 @@ class M3uLoginViewModel @Inject constructor(
             )
         }
 
+    /** Persistente toegang tot het bestand mislukte: zonder dat is de
+     *  playlist na een app-herstart onleesbaar, dus blokkeren we de keuze. */
+    fun onFilePickError() =
+        _state.update {
+            it.copy(
+                pickedFileUri = null,
+                pickedFileName = null,
+                errorMessage = "Kon geen blijvende toegang tot dit bestand " +
+                    "krijgen. Kies het opnieuw of gebruik een M3U-URL.",
+            )
+        }
+
     fun submit() {
         val current = _state.value
         if (!current.canSubmit) return

@@ -40,14 +40,21 @@ Belangrijk: bewaar de keystore en wachtwoorden op minimaal twee veilige
 locaties. Zonder deze keystore kun je later geen updates uitbrengen die op
 dezelfde app installeren.
 
-## 3. Sentry koppelen
+## 3. Sentry koppelen (pas in Fase 6)
+
+Dit criterium is bewust geparkeerd tot het begin van Fase 6 (zie
+"Acceptatiecriteria Fase 0"). De oude testcrash-knop is bij de Fase 1
+-herschrijf uit de UI verwijderd, dus verifieer met een bewuste testfout.
 
 1. Maak een gratis account op sentry.io en een nieuw Android-project.
 2. Kopieer de DSN.
 3. Vul de DSN in `app/src/main/java/nl/streamfix/StreamFixApplication.kt`
    bij de constante `SENTRY_DSN`.
-4. Build en draai de app, druk op "Testcrash naar Sentry".
-5. Controleer dat de crash binnenkomt in het Sentry-dashboard.
+4. Forceer eenmalig een testfout, bijvoorbeeld door tijdelijk
+   `throw RuntimeException("Sentry-test")` in `MainActivity.onCreate` te zetten
+   (of `Sentry.captureException(...)` aan te roepen), en draai een debug-build.
+5. Controleer dat de fout binnenkomt in het Sentry-dashboard en haal de
+   tijdelijke testfout daarna weg.
 
 ## 4. APK op een toestel
 

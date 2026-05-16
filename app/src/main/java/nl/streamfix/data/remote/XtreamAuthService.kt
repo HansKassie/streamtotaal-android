@@ -56,6 +56,9 @@ class XtreamAuthService @Inject constructor(
             AppResult.Failure(AppError.NotAnXtreamServer)
         } catch (e: IOException) {
             AppResult.Failure(AppError.NetworkUnavailable)
+        } catch (e: IllegalArgumentException) {
+            // OkHttp gooit dit bij een onbruikbare URL (spaties, lege host, alleen http://)
+            AppResult.Failure(AppError.InvalidUrl)
         } catch (e: Exception) {
             // Retrofit/converter wikkelt parse-fouten soms in een runtime-exception
             if (e.cause is SerializationException) {

@@ -14,6 +14,8 @@ fun AppError.uiMessage(): String = when (this) {
         "Geen internetverbinding. Probeer het opnieuw."
     AppError.NotAnXtreamServer ->
         "Dit lijkt geen geldige Xtream Codes server."
+    AppError.InvalidUrl ->
+        "De URL is ongeldig. Controleer op spaties en of het webadres klopt."
     AppError.InvalidM3u ->
         "Dit is geen geldige M3U-playlist."
     AppError.Unknown ->
