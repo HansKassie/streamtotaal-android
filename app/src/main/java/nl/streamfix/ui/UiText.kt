@@ -19,8 +19,6 @@ fun AppError.uiMessage(): String = when (this) {
         "Dit lijkt geen geldige Xtream Codes server."
     AppError.InvalidUrl ->
         "De URL is ongeldig. Controleer op spaties en of het webadres klopt."
-    AppError.InvalidM3u ->
-        "Dit is geen geldige M3U-playlist."
     AppError.Unknown ->
         "Er ging iets mis. Probeer het opnieuw."
 }

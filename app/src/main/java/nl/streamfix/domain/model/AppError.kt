@@ -12,6 +12,5 @@ enum class AppError {
     NetworkUnavailable,
     NotAnXtreamServer,
     InvalidUrl,
-    InvalidM3u,
     Unknown,
 }

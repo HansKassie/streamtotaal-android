@@ -5,18 +5,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import nl.streamfix.data.local.SecureCredentialStore
-import nl.streamfix.data.remote.M3uValidator
 import nl.streamfix.data.remote.XtreamAuthService
 import nl.streamfix.domain.model.Account
 import nl.streamfix.domain.model.AccountInfo
-import nl.streamfix.domain.model.M3uSource
 import nl.streamfix.domain.repository.AuthRepository
 import nl.streamfix.domain.util.AppResult
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val xtreamAuthService: XtreamAuthService,
-    private val m3uValidator: M3uValidator,
     private val store: SecureCredentialStore,
 ) : AuthRepository {
 
@@ -36,30 +33,6 @@ class AuthRepositoryImpl @Inject constructor(
                     serverUrl = data.normalizedServerUrl,
                     username = username,
                     password = password,
-                )
-                store.saveAndActivate(account)
-                AppResult.Success(account)
-            }
-        }
-    }
-
-    override suspend fun loginWithM3u(
-        displayName: String,
-        source: M3uSource,
-    ): AppResult<Account.M3u> {
-        return when (val result = m3uValidator.validate(source)) {
-            is AppResult.Failure -> result
-            is AppResult.Success -> {
-                val name = displayName.ifBlank {
-                    when (source) {
-                        is M3uSource.Url -> source.url.hostLabel()
-                        is M3uSource.LocalFile -> "M3U-bestand"
-                    }
-                }
-                val account = Account.M3u(
-                    id = UUID.randomUUID().toString(),
-                    displayName = name,
-                    source = source,
                 )
                 store.saveAndActivate(account)
                 AppResult.Success(account)
