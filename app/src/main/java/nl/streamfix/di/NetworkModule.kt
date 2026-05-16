@@ -108,7 +108,14 @@ object NetworkModule {
     }
 
     private fun redact(text: String): String =
-        text.replace(Regex("(?i)(username|password)=([^&\\s\"]+)"), "$1=***")
+        text
+            // query-vorm: username=...&password=...
+            .replace(Regex("(?i)(username|password)=([^&\\s\"]+)"), "$1=***")
+            // JSON-vorm uit de respons: "password":"..."
+            .replace(
+                Regex("(?i)\"(username|password)\"\\s*:\\s*\"[^\"]*\""),
+                "\"$1\":\"***\"",
+            )
             .take(300)
             .replace("\n", " ")
 }
