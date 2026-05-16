@@ -86,7 +86,7 @@ fun XtreamLoginScreen(
                 value = state.serverUrl,
                 onValueChange = viewModel::onServerUrlChange,
                 label = { Text("Server-URL") },
-                placeholder = { Text("http://provider.tv:8080") },
+                placeholder = { Text("bijv. mijnprovider.tv") },
                 singleLine = true,
                 enabled = !state.isLoading,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),

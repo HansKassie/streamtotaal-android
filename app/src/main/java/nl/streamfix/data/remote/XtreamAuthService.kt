@@ -83,11 +83,11 @@ class XtreamAuthService @Inject constructor(
     }
 
     private fun normalizeServerUrl(input: String): String {
-        var url = input.trim()
-        if (!url.startsWith("http://", true) && !url.startsWith("https://", true)) {
-            url = "http://$url"
-        }
-        return url.trimEnd('/')
+        // We gebruiken altijd http://: een eventueel ingevoerd schema wordt
+        // genegeerd en hard op http:// gezet. Een door de klant ingevoerde
+        // poort blijft wel behouden (sommige panels draaien op :8080 e.d.).
+        val withoutScheme = input.trim().replace(Regex("(?i)^[a-z][a-z0-9+.-]*://"), "")
+        return "http://" + withoutScheme.trimEnd('/')
     }
 
     private fun encode(value: String): String =
