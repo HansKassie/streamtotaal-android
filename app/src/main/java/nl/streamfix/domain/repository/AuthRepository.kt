@@ -29,6 +29,9 @@ interface AuthRepository {
     /** Verwijdert één opgeslagen provider. */
     suspend fun removeAccount(id: String)
 
+    /** Zet het live-formaat ("auto"/"ts"/"m3u8") voor het actieve account. */
+    suspend fun setStreamFormat(format: String)
+
     /** Optionele account-info uit player_api.php, of null als ophalen faalt. */
     suspend fun getAccountInfo(): AccountInfo?
 

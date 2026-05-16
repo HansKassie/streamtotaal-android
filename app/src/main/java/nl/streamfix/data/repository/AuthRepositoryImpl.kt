@@ -69,6 +69,9 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun removeAccount(id: String) = store.removeAccount(id)
 
+    override suspend fun setStreamFormat(format: String) =
+        store.setStreamFormat(format)
+
     override suspend fun getAccountInfo(): AccountInfo? {
         val account = store.currentActiveAccount() as? Account.Xtream ?: return null
         val result = xtreamAuthService.authenticate(

@@ -16,6 +16,7 @@ import nl.streamfix.domain.usecase.GetAccountsUseCase
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
 import nl.streamfix.domain.usecase.LogoutUseCase
 import nl.streamfix.domain.usecase.RemoveAccountUseCase
+import nl.streamfix.domain.usecase.SetStreamFormatUseCase
 import nl.streamfix.domain.usecase.SwitchAccountUseCase
 
 data class MainState(
@@ -32,6 +33,7 @@ class MainViewModel @Inject constructor(
     private val getAccounts: GetAccountsUseCase,
     private val switchAccount: SwitchAccountUseCase,
     private val removeAccount: RemoveAccountUseCase,
+    private val setStreamFormat: SetStreamFormatUseCase,
     private val logout: LogoutUseCase,
 ) : ViewModel() {
 
@@ -73,6 +75,13 @@ class MainViewModel @Inject constructor(
             } else {
                 reload()
             }
+        }
+    }
+
+    fun onSetStreamFormat(format: String) {
+        viewModelScope.launch {
+            setStreamFormat(format)
+            reload()
         }
     }
 

@@ -81,9 +81,14 @@ class LiveRepositoryImpl @Inject constructor(
 
     override fun streamUrl(channelId: String): String? {
         val acc = activeXtream() ?: return null
+        val ext = when (acc.streamFormat) {
+            "ts" -> "ts"
+            "m3u8" -> "m3u8"
+            else -> acc.liveExtension
+        }
         return XtreamUrls.liveStream(
             acc.serverUrl, acc.username, acc.password, channelId,
-            extension = acc.liveExtension,
+            extension = ext,
         )
     }
 }

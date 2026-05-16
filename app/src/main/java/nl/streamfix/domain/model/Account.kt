@@ -16,5 +16,8 @@ sealed interface Account {
         val password: String,
         // Voorkeursextensie voor live streams (m3u8/ts), uit user_info.
         val liveExtension: String = "ts",
+        // Door de gebruiker gekozen live-formaat: "auto" volgt liveExtension,
+        // anders "ts" of "m3u8" als harde override.
+        val streamFormat: String = "auto",
     ) : Account
 }

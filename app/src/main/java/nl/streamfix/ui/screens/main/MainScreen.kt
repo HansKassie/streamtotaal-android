@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nl.streamfix.BuildConfig
+import nl.streamfix.domain.model.Account
 import nl.streamfix.ui.formatXtreamExpiry
 import nl.streamfix.ui.screens.history.HistoryScreen
 import nl.streamfix.ui.screens.live.LiveTvScreen
@@ -117,6 +118,7 @@ fun MainScreen(
                         state = state,
                         onSwitchProvider = viewModel::onSwitchProvider,
                         onRemoveProvider = viewModel::onRemoveProvider,
+                        onSetStreamFormat = viewModel::onSetStreamFormat,
                         onAddProvider = onAddProvider,
                         onLogout = viewModel::onLogout,
                     )
@@ -153,6 +155,7 @@ private fun SettingsContent(
     state: MainState,
     onSwitchProvider: (String) -> Unit,
     onRemoveProvider: (String) -> Unit,
+    onSetStreamFormat: (String) -> Unit,
     onAddProvider: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -176,6 +179,40 @@ private fun SettingsContent(
             }
             info.maxConnections?.let {
                 Text("Max verbindingen: $it", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+        (state.account as? Account.Xtream)?.let { xt ->
+            Spacer(Modifier.height(28.dp))
+            Text("Stream Format", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(4.dp))
+            val formats = listOf(
+                "auto" to "Automatisch",
+                "ts" to "MPEGTS (.ts)",
+                "m3u8" to "HLS (.m3u8)",
+            )
+            formats.forEach { (value, label) ->
+                val isSelected = xt.streamFormat == value
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !isSelected) {
+                            onSetStreamFormat(value)
+                        }
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = {
+                            if (!isSelected) onSetStreamFormat(value)
+                        },
+                    )
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
             }
         }
 

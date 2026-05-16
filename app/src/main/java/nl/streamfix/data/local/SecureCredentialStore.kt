@@ -90,6 +90,16 @@ class SecureCredentialStore @Inject constructor(
         )
     }
 
+    /** Zet het live-formaat ("auto"/"ts"/"m3u8") voor het actieve account. */
+    fun setStreamFormat(format: String) {
+        val state = readState()
+        val activeId = state.activeId ?: return
+        val updated = state.accounts.map {
+            if (it.id == activeId) it.copy(streamFormat = format) else it
+        }
+        writeState(state.copy(accounts = updated))
+    }
+
     /** Beeindigt de sessie maar bewaart opgeslagen providers (keuze gebruiker). */
     fun deactivate() {
         val state = readState()

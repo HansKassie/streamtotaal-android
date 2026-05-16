@@ -42,6 +42,13 @@ class RemoveAccountUseCase @Inject constructor(
     suspend operator fun invoke(id: String) = repository.removeAccount(id)
 }
 
+class SetStreamFormatUseCase @Inject constructor(
+    private val repository: AuthRepository,
+) {
+    suspend operator fun invoke(format: String) =
+        repository.setStreamFormat(format)
+}
+
 class GetActiveAccountUseCase @Inject constructor(
     private val repository: AuthRepository,
 ) {
