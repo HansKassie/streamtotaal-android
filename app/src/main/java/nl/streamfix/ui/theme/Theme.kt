@@ -1,10 +1,8 @@
 package nl.streamfix.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
@@ -12,38 +10,26 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColors = darkColorScheme(
-    primary = StreamFixPurple,
+    primary = StreamFixAccent,
     onPrimary = OnSurfaceDark,
-    primaryContainer = StreamFixPurpleDark,
+    primaryContainer = StreamFixAccentDark,
     onPrimaryContainer = OnSurfaceDark,
-    secondary = StreamFixPurpleLight,
+    secondary = StreamFixAccentLight,
     background = BackgroundDark,
     onBackground = OnSurfaceDark,
     surface = SurfaceDark,
     onSurface = OnSurfaceDark,
     surfaceVariant = SurfaceVariantDark,
     onSurfaceVariant = OnSurfaceVariantDark,
-    error = ErrorRed
-)
-
-private val LightColors = lightColorScheme(
-    primary = StreamFixPurple,
-    onPrimary = SurfaceLight,
-    primaryContainer = StreamFixPurpleLight,
-    secondary = StreamFixPurpleDark,
-    background = BackgroundLight,
-    onBackground = OnSurfaceLight,
-    surface = SurfaceLight,
-    onSurface = OnSurfaceLight,
-    error = ErrorRed
+    error = ErrorRed,
 )
 
 @Composable
 fun StreamFixTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (darkTheme) DarkColors else LightColors
+    // StreamFix is altijd donker (video-app).
+    val colorScheme = DarkColors
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -51,8 +37,8 @@ fun StreamFixTheme(
             window.statusBarColor = colorScheme.background.toArgb()
             window.navigationBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = !darkTheme
-                isAppearanceLightNavigationBars = !darkTheme
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
             }
         }
     }
@@ -60,6 +46,6 @@ fun StreamFixTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = StreamFixTypography,
-        content = content
+        content = content,
     )
 }

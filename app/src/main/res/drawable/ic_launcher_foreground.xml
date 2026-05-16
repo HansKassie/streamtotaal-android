@@ -6,7 +6,7 @@
     <!-- Glyph blijft binnen de adaptive-icon safe zone (midden ~66dp) -->
     <group android:scaleX="0.62" android:scaleY="0.62" android:pivotX="54" android:pivotY="54">
         <path
-            android:fillColor="#7C5CFC"
+            android:fillColor="#F97316"
             android:pathData="M54,46 m-30,0 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0" />
         <path
             android:fillColor="#FFFFFF"
