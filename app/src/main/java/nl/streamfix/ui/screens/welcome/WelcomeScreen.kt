@@ -56,12 +56,12 @@ fun WelcomeScreen(
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_streamfix_logo),
-            contentDescription = "StreamFix logo",
+            contentDescription = "StreamTotaal logo",
             modifier = Modifier.size(120.dp),
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "StreamFix",
+            text = "StreamTotaal",
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onBackground,
         )

@@ -220,7 +220,7 @@ private fun SettingsContent(
 
         Spacer(Modifier.height(24.dp))
         Text(
-            text = "StreamFix ${BuildConfig.VERSION_NAME}",
+            text = "StreamTotaal ${BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
