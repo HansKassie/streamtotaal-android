@@ -24,17 +24,34 @@ class SecureCredentialStore @Inject constructor(
     @ApplicationContext context: Context,
     private val json: Json,
 ) {
-    private val prefs: SharedPreferences = run {
+    private val prefs: SharedPreferences = createPrefs(context)
+
+    private fun createEncrypted(context: Context): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-        EncryptedSharedPreferences.create(
+        return EncryptedSharedPreferences.create(
             context,
             PREFS_FILE,
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
+    }
+
+    // Keystore-corruptie (bekend na restore/OS-upgrade) mag de app niet
+    // laten crashen bij opstart: opruimen en opnieuw, anders degraderen.
+    private fun createPrefs(context: Context): SharedPreferences {
+        return try {
+            createEncrypted(context)
+        } catch (e: Exception) {
+            runCatching { context.deleteSharedPreferences(PREFS_FILE) }
+            try {
+                createEncrypted(context)
+            } catch (e2: Exception) {
+                context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
+            }
+        }
     }
 
     private val _activeAccount = MutableStateFlow(readState().activeAccount())

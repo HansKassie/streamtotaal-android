@@ -19,8 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +37,9 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @Composable
@@ -47,6 +52,8 @@ fun PlaybackScreen(
     val scope = rememberCoroutineScope()
 
     val player = remember { ExoPlayer.Builder(context).build() }
+    var retryAttempt by remember { mutableIntStateOf(0) }
+    var retryJob by remember { mutableStateOf<Job?>(null) }
 
     DisposableEffect(Unit) {
         PlayerActive.inPlayer = true
@@ -58,16 +65,17 @@ fun PlaybackScreen(
     }
 
     DisposableEffect(player) {
-        var attempt = 0
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) attempt = 0
+                if (playbackState == Player.STATE_READY) retryAttempt = 0
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                val backoffMs = (1000L shl attempt.coerceAtMost(3)).coerceAtMost(8000L)
-                attempt++
-                scope.launch {
+                val backoffMs =
+                    (1000L shl retryAttempt.coerceAtMost(3)).coerceAtMost(8000L)
+                retryAttempt++
+                retryJob?.cancel()
+                retryJob = scope.launch {
                     delay(backoffMs)
                     player.prepare()
                     player.playWhenReady = true
@@ -80,10 +88,20 @@ fun PlaybackScreen(
 
     LaunchedEffect(state.ready, state.streamUrl) {
         if (!state.ready || state.streamUrl.isBlank()) return@LaunchedEffect
+        retryJob?.cancel()
+        retryAttempt = 0
         player.setMediaItem(MediaItem.fromUri(state.streamUrl))
         player.prepare()
         if (state.startPositionMs > 0L) player.seekTo(state.startPositionMs)
         player.playWhenReady = true
+    }
+
+    // Positie periodiek bewaren zodat resume ook na een proceskill werkt.
+    LaunchedEffect(state.streamUrl) {
+        while (isActive) {
+            delay(10_000)
+            if (player.isPlaying) viewModel.savePosition(player.currentPosition)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {

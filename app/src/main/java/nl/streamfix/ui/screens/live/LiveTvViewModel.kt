@@ -130,9 +130,10 @@ class LiveTvViewModel @Inject constructor(
             val result = getChannelEpg(channelId)
             if (result is AppResult.Success && result.data.isNotEmpty()) {
                 _epg.update { it + (channelId to result.data) }
-            } else {
-                epgRequested.remove(channelId) // mag later opnieuw geprobeerd
             }
+            // Bewust niet opnieuw aanvragen bij leeg/fout: anders een
+            // fetch-storm bij scrollen langs kanalen zonder EPG. De
+            // EpgRepository-cache (TTL) regelt versheid per sessie.
         }
     }
 

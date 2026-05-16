@@ -26,8 +26,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +46,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import kotlin.math.abs
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -57,6 +61,8 @@ fun PlayerScreen(
     val scope = rememberCoroutineScope()
 
     val player = remember { ExoPlayer.Builder(context).build() }
+    var retryAttempt by remember { mutableIntStateOf(0) }
+    var retryJob by remember { mutableStateOf<Job?>(null) }
 
     // Markeer dat we in de speler zitten zodat MainActivity PiP kan starten.
     DisposableEffect(Unit) {
@@ -69,16 +75,17 @@ fun PlayerScreen(
 
     // Auto-retry met exponentiele backoff (briefing: herstel binnen ~10s).
     DisposableEffect(player) {
-        var attempt = 0
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) attempt = 0
+                if (playbackState == Player.STATE_READY) retryAttempt = 0
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                val backoffMs = (1000L shl attempt.coerceAtMost(3)).coerceAtMost(8000L)
-                attempt++
-                scope.launch {
+                val backoffMs =
+                    (1000L shl retryAttempt.coerceAtMost(3)).coerceAtMost(8000L)
+                retryAttempt++
+                retryJob?.cancel()
+                retryJob = scope.launch {
                     delay(backoffMs)
                     player.prepare()
                     player.playWhenReady = true
@@ -92,6 +99,8 @@ fun PlayerScreen(
     // Wissel de bron als het kanaal verandert (vorige/volgende).
     LaunchedEffect(state.streamUrl) {
         val url = state.streamUrl ?: return@LaunchedEffect
+        retryJob?.cancel()
+        retryAttempt = 0
         player.setMediaItem(MediaItem.fromUri(url))
         player.prepare()
         player.playWhenReady = true

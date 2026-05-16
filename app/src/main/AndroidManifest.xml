@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Voor het in-app updatemechanisme (zelf-gehoste APK installeren). -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 

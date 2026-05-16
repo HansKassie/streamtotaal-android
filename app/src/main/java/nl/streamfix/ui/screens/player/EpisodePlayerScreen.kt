@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,7 +41,9 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @Composable
@@ -54,6 +57,8 @@ fun EpisodePlayerScreen(
 
     val player = remember { ExoPlayer.Builder(context).build() }
     var countdown by remember { mutableStateOf<Int?>(null) }
+    var retryAttempt by remember { mutableIntStateOf(0) }
+    var retryJob by remember { mutableStateOf<Job?>(null) }
 
     DisposableEffect(Unit) {
         PlayerActive.inPlayer = true
@@ -65,10 +70,9 @@ fun EpisodePlayerScreen(
     }
 
     DisposableEffect(player) {
-        var attempt = 0
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) attempt = 0
+                if (playbackState == Player.STATE_READY) retryAttempt = 0
                 if (playbackState == Player.STATE_ENDED &&
                     viewModel.state.value.hasNext
                 ) {
@@ -77,9 +81,11 @@ fun EpisodePlayerScreen(
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                val backoffMs = (1000L shl attempt.coerceAtMost(3)).coerceAtMost(8000L)
-                attempt++
-                scope.launch {
+                val backoffMs =
+                    (1000L shl retryAttempt.coerceAtMost(3)).coerceAtMost(8000L)
+                retryAttempt++
+                retryJob?.cancel()
+                retryJob = scope.launch {
                     delay(backoffMs)
                     player.prepare()
                     player.playWhenReady = true
@@ -90,14 +96,24 @@ fun EpisodePlayerScreen(
         onDispose { player.removeListener(listener) }
     }
 
-    // Nieuw kanaal/aflevering: bron verversen + hervatten op opgeslagen positie.
+    // Nieuwe aflevering: bron verversen + hervatten op opgeslagen positie.
     LaunchedEffect(state.mediaKey, state.streamUrl) {
         val url = state.streamUrl ?: return@LaunchedEffect
         countdown = null
+        retryJob?.cancel()
+        retryAttempt = 0
         player.setMediaItem(MediaItem.fromUri(url))
         player.prepare()
         if (state.startPositionMs > 0L) player.seekTo(state.startPositionMs)
         player.playWhenReady = true
+    }
+
+    // Positie periodiek bewaren zodat resume ook na een proceskill werkt.
+    LaunchedEffect(state.mediaKey) {
+        while (isActive) {
+            delay(10_000)
+            if (player.isPlaying) viewModel.savePosition(player.currentPosition)
+        }
     }
 
     LaunchedEffect(countdown) {
