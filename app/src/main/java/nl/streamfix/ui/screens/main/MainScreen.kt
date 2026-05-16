@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -53,12 +55,16 @@ import nl.streamfix.ui.screens.live.LiveTvScreen
 import nl.streamfix.ui.screens.series.SeriesScreen
 import nl.streamfix.ui.screens.vod.VodScreen
 
-private enum class Tab(val label: String, val icon: ImageVector) {
+private enum class Tab(
+    val label: String,
+    val icon: ImageVector,
+    val navLabel: String? = null,
+) {
     LiveTv("Live TV", Icons.Filled.LiveTv),
     Movies("Films", Icons.Filled.Movie),
     Series("Series", Icons.Filled.Tv),
     History("Verder", Icons.Filled.History),
-    Settings("Instellingen", Icons.Filled.Settings),
+    Settings("Instellingen", Icons.Filled.Settings, navLabel = "Meer"),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,7 +97,12 @@ fun MainScreen(
                         selected = selected == index,
                         onClick = { selected = index },
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label) },
+                        label = {
+                            Text(
+                                text = tab.navLabel ?: tab.label,
+                                maxLines = 1,
+                            )
+                        },
                     )
                 }
             }
@@ -183,7 +194,7 @@ private fun SettingsContent(
         }
 
         (state.account as? Account.Xtream)?.let { xt ->
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(16.dp))
             Text("Stream Format", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             val formats = listOf(
@@ -199,7 +210,7 @@ private fun SettingsContent(
                         .clickable(enabled = !isSelected) {
                             onSetStreamFormat(value)
                         }
-                        .padding(vertical = 10.dp),
+                        .padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(
@@ -207,7 +218,9 @@ private fun SettingsContent(
                         onClick = {
                             if (!isSelected) onSetStreamFormat(value)
                         },
+                        modifier = Modifier.size(20.dp),
                     )
+                    Spacer(Modifier.width(12.dp))
                     Text(
                         text = label,
                         style = MaterialTheme.typography.bodyLarge,
@@ -216,7 +229,7 @@ private fun SettingsContent(
             }
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(16.dp))
         Text("Providers", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(4.dp))
         state.accounts.forEach { acc ->
@@ -225,13 +238,15 @@ private fun SettingsContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(enabled = !isActive) { onSwitchProvider(acc.id) }
-                    .padding(vertical = 10.dp),
+                    .padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RadioButton(
                     selected = isActive,
                     onClick = { if (!isActive) onSwitchProvider(acc.id) },
+                    modifier = Modifier.size(20.dp),
                 )
+                Spacer(Modifier.width(12.dp))
                 Text(
                     text = acc.displayName,
                     style = MaterialTheme.typography.bodyLarge,
@@ -251,7 +266,7 @@ private fun SettingsContent(
             Text("Provider toevoegen")
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(16.dp))
         Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
             Text("Uitloggen")
         }
