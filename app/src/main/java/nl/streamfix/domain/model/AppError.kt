@@ -8,6 +8,7 @@ enum class AppError {
     InvalidCredentials,
     SubscriptionExpired,
     ServerUnreachable,
+    ProviderUnavailable,
     NetworkUnavailable,
     NotAnXtreamServer,
     InvalidUrl,

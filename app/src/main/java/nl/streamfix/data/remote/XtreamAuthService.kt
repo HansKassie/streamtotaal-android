@@ -59,6 +59,8 @@ class XtreamAuthService @Inject constructor(
             when (e.code()) {
                 401, 403 -> AppResult.Failure(AppError.InvalidCredentials)
                 404 -> AppResult.Failure(AppError.NotAnXtreamServer)
+                // Cloudflare origin-fouten: provider-server ligt eruit
+                in 520..526 -> AppResult.Failure(AppError.ProviderUnavailable)
                 in 500..599 -> AppResult.Failure(AppError.ServerUnreachable)
                 else -> AppResult.Failure(AppError.NotAnXtreamServer)
             }

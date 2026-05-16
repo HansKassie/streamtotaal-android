@@ -10,6 +10,9 @@ fun AppError.uiMessage(): String = when (this) {
         "Je abonnement is verlopen. Neem contact op met je provider."
     AppError.ServerUnreachable ->
         "De server is niet bereikbaar. Controleer de server-URL."
+    AppError.ProviderUnavailable ->
+        "De server van je provider reageert niet (mogelijk tijdelijk offline). " +
+            "Probeer het later opnieuw of gebruik een andere provider."
     AppError.NetworkUnavailable ->
         "Geen internetverbinding. Probeer het opnieuw."
     AppError.NotAnXtreamServer ->
