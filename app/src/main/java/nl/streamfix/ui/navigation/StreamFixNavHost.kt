@@ -18,6 +18,12 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
         composable(Routes.WELCOME) {
             WelcomeScreen(
                 onChooseXtream = { navController.navigate(Routes.LOGIN_XTREAM) },
+                onProviderChosen = {
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
 

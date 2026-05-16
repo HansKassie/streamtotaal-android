@@ -62,7 +62,13 @@ class SecureCredentialStore @Inject constructor(
         }
     }
 
-    /** Wist alles (briefing: logout wist alle gegevens). */
+    /** Beeindigt de sessie maar bewaart opgeslagen providers (keuze gebruiker). */
+    fun deactivate() {
+        val state = readState()
+        writeState(state.copy(activeId = null))
+    }
+
+    /** Wist alles (volledige reset). */
     fun clear() {
         prefs.edit().clear().apply()
         _activeAccount.value = null

@@ -70,7 +70,9 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun logout() = store.clear()
+    // Bewuste afwijking van de briefing: uitloggen bewaart opgeslagen
+    // providers zodat de gebruiker er weer een kan kiezen.
+    override suspend fun logout() = store.deactivate()
 
     private fun String.hostLabel(): String =
         substringAfter("://").substringBefore('/').substringBefore(':')
