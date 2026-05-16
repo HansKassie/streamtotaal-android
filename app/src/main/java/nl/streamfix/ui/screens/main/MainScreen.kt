@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nl.streamfix.BuildConfig
+import nl.streamfix.ui.formatXtreamExpiry
 
 private enum class Tab(val label: String, val icon: ImageVector) {
     LiveTv("Live TV", Icons.Filled.LiveTv),
@@ -142,7 +143,7 @@ private fun SettingsContent(
         state.accountInfo?.let { info ->
             Spacer(Modifier.height(8.dp))
             info.status?.let { Text("Status: $it", style = MaterialTheme.typography.bodyMedium) }
-            info.expirationDate?.let {
+            formatXtreamExpiry(info.expirationDate)?.let {
                 Text("Vervaldatum: $it", style = MaterialTheme.typography.bodyMedium)
             }
             info.maxConnections?.let {
