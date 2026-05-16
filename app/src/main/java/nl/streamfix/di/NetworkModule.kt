@@ -36,11 +36,29 @@ object NetworkModule {
             .readTimeout(20, TimeUnit.SECONDS)
             .callTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
+            .addInterceptor(userAgentInterceptor())
 
         if (BuildConfig.DEBUG) {
             builder.addInterceptor(passwordRedactingLogger())
         }
         return builder.build()
+    }
+
+    /**
+     * Veel Xtream-panels (vaak achter Cloudflare) blokkeren de standaard
+     * okhttp User-Agent met o.a. HTTP 520. Een normale browser-UA wordt
+     * breed geaccepteerd. (Briefing: providerafwijkingen.)
+     */
+    private fun userAgentInterceptor() = Interceptor { chain ->
+        val request = chain.request().newBuilder()
+            .header(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            )
+            .header("Accept", "*/*")
+            .build()
+        chain.proceed(request)
     }
 
     @Provides
