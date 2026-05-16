@@ -78,7 +78,7 @@ fun XtreamLoginScreen(
             verticalArrangement = Arrangement.Top,
         ) {
             Text(
-                text = "Provider",
+                text = "Kies je provider",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
