@@ -7,8 +7,12 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import nl.streamfix.data.repository.AuthRepositoryImpl
 import nl.streamfix.data.repository.LiveRepositoryImpl
+import nl.streamfix.data.repository.PlaybackRepositoryImpl
+import nl.streamfix.data.repository.VodRepositoryImpl
 import nl.streamfix.domain.repository.AuthRepository
 import nl.streamfix.domain.repository.LiveRepository
+import nl.streamfix.domain.repository.PlaybackRepository
+import nl.streamfix.domain.repository.VodRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -21,4 +25,14 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindLiveRepository(impl: LiveRepositoryImpl): LiveRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindVodRepository(impl: VodRepositoryImpl): VodRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPlaybackRepository(
+        impl: PlaybackRepositoryImpl,
+    ): PlaybackRepository
 }

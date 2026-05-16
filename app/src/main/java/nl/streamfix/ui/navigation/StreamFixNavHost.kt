@@ -8,7 +8,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import nl.streamfix.ui.screens.login.XtreamLoginScreen
 import nl.streamfix.ui.screens.main.MainScreen
+import nl.streamfix.ui.screens.player.PlaybackScreen
 import nl.streamfix.ui.screens.player.PlayerScreen
+import nl.streamfix.ui.screens.vod.VodDetailScreen
 import nl.streamfix.ui.screens.welcome.WelcomeScreen
 
 @Composable
@@ -56,6 +58,9 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
                 onOpenChannel = { categoryId, channelId ->
                     navController.navigate(Routes.player(categoryId, channelId))
                 },
+                onOpenVod = { vodId ->
+                    navController.navigate(Routes.vodDetail(vodId))
+                },
             )
         }
 
@@ -71,6 +76,37 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
             ),
         ) {
             PlayerScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.VOD_DETAIL_ROUTE,
+            arguments = listOf(
+                navArgument(Routes.VOD_ARG_ID) { type = NavType.StringType },
+            ),
+        ) {
+            VodDetailScreen(
+                onBack = { navController.popBackStack() },
+                onPlay = { url, title, mediaId ->
+                    navController.navigate(Routes.playback(url, title, mediaId))
+                },
+            )
+        }
+
+        composable(
+            route = Routes.PLAYBACK_ROUTE,
+            arguments = listOf(
+                navArgument(Routes.PLAYBACK_ARG_URL) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.PLAYBACK_ARG_TITLE) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.PLAYBACK_ARG_MEDIA) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+            ),
+        ) {
+            PlaybackScreen(onBack = { navController.popBackStack() })
         }
     }
 }

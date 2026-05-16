@@ -53,4 +53,15 @@ object XtreamUrls {
     ): String =
         "${normalizeServerUrl(serverUrl)}/live/" +
             "${encode(username)}/${encode(password)}/$streamId.$extension"
+
+    /** VOD-stream-URL (briefing 7.5). */
+    fun vodStream(
+        serverUrl: String,
+        username: String,
+        password: String,
+        vodId: String,
+        extension: String,
+    ): String =
+        "${normalizeServerUrl(serverUrl)}/movie/" +
+            "${encode(username)}/${encode(password)}/$vodId.$extension"
 }

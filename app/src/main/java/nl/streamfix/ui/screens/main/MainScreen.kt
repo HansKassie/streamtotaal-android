@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nl.streamfix.BuildConfig
 import nl.streamfix.ui.formatXtreamExpiry
 import nl.streamfix.ui.screens.live.LiveTvScreen
+import nl.streamfix.ui.screens.vod.VodScreen
 
 private enum class Tab(val label: String, val icon: ImageVector) {
     LiveTv("Live TV", Icons.Filled.LiveTv),
@@ -60,6 +61,7 @@ fun MainScreen(
     onLoggedOut: () -> Unit,
     onAddProvider: () -> Unit,
     onOpenChannel: (categoryId: String, channelId: String) -> Unit,
+    onOpenVod: (vodId: String) -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -93,6 +95,7 @@ fun MainScreen(
         ) {
             when (tabs[selected]) {
                 Tab.LiveTv -> LiveTvScreen(onOpenChannel = onOpenChannel)
+                Tab.Movies -> VodScreen(onOpenVod = onOpenVod)
                 Tab.Settings -> Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,

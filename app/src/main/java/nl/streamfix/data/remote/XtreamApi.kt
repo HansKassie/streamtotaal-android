@@ -3,6 +3,8 @@ package nl.streamfix.data.remote
 import nl.streamfix.data.remote.dto.XtreamAuthResponseDto
 import nl.streamfix.data.remote.dto.XtreamCategoryDto
 import nl.streamfix.data.remote.dto.XtreamLiveStreamDto
+import nl.streamfix.data.remote.dto.XtreamVodInfoResponseDto
+import nl.streamfix.data.remote.dto.XtreamVodStreamDto
 import retrofit2.http.GET
 import retrofit2.http.Url
 
@@ -19,5 +21,14 @@ interface XtreamApi {
 
     @GET
     suspend fun getLiveStreams(@Url url: String): List<XtreamLiveStreamDto>
+
+    @GET
+    suspend fun getVodCategories(@Url url: String): List<XtreamCategoryDto>
+
+    @GET
+    suspend fun getVodStreams(@Url url: String): List<XtreamVodStreamDto>
+
+    @GET
+    suspend fun getVodInfo(@Url url: String): XtreamVodInfoResponseDto
 }
 
