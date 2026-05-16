@@ -2,6 +2,7 @@ package nl.streamfix.ui.screens.main
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,6 +45,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nl.streamfix.BuildConfig
 import nl.streamfix.ui.formatXtreamExpiry
+import nl.streamfix.ui.screens.live.LiveTvScreen
 
 private enum class Tab(val label: String, val icon: ImageVector) {
     LiveTv("Live TV", Icons.Filled.LiveTv),
@@ -57,6 +59,7 @@ private enum class Tab(val label: String, val icon: ImageVector) {
 fun MainScreen(
     onLoggedOut: () -> Unit,
     onAddProvider: () -> Unit,
+    onOpenChannel: (streamUrl: String, title: String) -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -83,22 +86,31 @@ fun MainScreen(
             }
         },
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(padding),
         ) {
             when (tabs[selected]) {
-                Tab.Settings -> SettingsContent(
-                    state = state,
-                    onSwitchProvider = viewModel::onSwitchProvider,
-                    onRemoveProvider = viewModel::onRemoveProvider,
-                    onAddProvider = onAddProvider,
-                    onLogout = viewModel::onLogout,
-                )
-                else -> PlaceholderContent(tabs[selected].label)
+                Tab.LiveTv -> LiveTvScreen(onOpenChannel = onOpenChannel)
+                Tab.Settings -> Column(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    SettingsContent(
+                        state = state,
+                        onSwitchProvider = viewModel::onSwitchProvider,
+                        onRemoveProvider = viewModel::onRemoveProvider,
+                        onAddProvider = onAddProvider,
+                        onLogout = viewModel::onLogout,
+                    )
+                }
+                else -> Column(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    PlaceholderContent(tabs[selected].label)
+                }
             }
         }
     }

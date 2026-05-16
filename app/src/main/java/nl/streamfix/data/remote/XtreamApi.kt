@@ -1,6 +1,8 @@
 package nl.streamfix.data.remote
 
 import nl.streamfix.data.remote.dto.XtreamAuthResponseDto
+import nl.streamfix.data.remote.dto.XtreamCategoryDto
+import nl.streamfix.data.remote.dto.XtreamLiveStreamDto
 import retrofit2.http.GET
 import retrofit2.http.Url
 
@@ -11,4 +13,11 @@ import retrofit2.http.Url
 interface XtreamApi {
     @GET
     suspend fun authenticate(@Url url: String): XtreamAuthResponseDto
+
+    @GET
+    suspend fun getLiveCategories(@Url url: String): List<XtreamCategoryDto>
+
+    @GET
+    suspend fun getLiveStreams(@Url url: String): List<XtreamLiveStreamDto>
 }
+

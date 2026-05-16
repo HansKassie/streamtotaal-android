@@ -1,11 +1,14 @@
 package nl.streamfix.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import nl.streamfix.ui.screens.login.XtreamLoginScreen
 import nl.streamfix.ui.screens.main.MainScreen
+import nl.streamfix.ui.screens.player.PlayerScreen
 import nl.streamfix.ui.screens.welcome.WelcomeScreen
 
 @Composable
@@ -50,7 +53,25 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
                     }
                 },
                 onAddProvider = { navController.navigate(Routes.LOGIN_XTREAM) },
+                onOpenChannel = { url, title ->
+                    navController.navigate(Routes.player(url, title))
+                },
             )
+        }
+
+        composable(
+            route = Routes.PLAYER_ROUTE,
+            arguments = listOf(
+                navArgument(Routes.PLAYER_ARG_URL) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.PLAYER_ARG_TITLE) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+            ),
+        ) { entry ->
+            val url = entry.arguments?.getString(Routes.PLAYER_ARG_URL).orEmpty()
+            PlayerScreen(streamUrl = url)
         }
     }
 }
