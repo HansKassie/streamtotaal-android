@@ -78,14 +78,15 @@ Dit criterium is bewust geparkeerd tot het begin van Fase 6 (zie
 
 ## 5. Repository online zetten
 
-De git-repo is lokaal al geinitialiseerd met een eerste commit. Online zetten:
+De git-repo is lokaal al geinitialiseerd. Online zetten:
 
 ```powershell
-git remote add origin https://github.com/<jouw-account>/streamfix-android.git
+git remote add origin https://github.com/HansKassie/streamtotaal-android.git
 git push -u origin main
 ```
 
-Maak de repo op GitHub/GitLab als **prive** aan.
+Let op: voor het in-app updatemechanisme (raw `version.json` + release-
+assets anoniem ophalen) moet deze repo **publiek** zijn.
 
 ## Wat is al geregeld in code
 
@@ -114,23 +115,32 @@ JSON-bestand met de vorm
 constante `REMOTE_CATALOG_URL` in datzelfde bestand. Is die leeg of
 onbereikbaar, dan gebruikt de app de ingebouwde lijst.
 
-## In-app updates (zelf-gehoste APK)
+## In-app updates via GitHub
 
-1. Host een `version.json`:
-   `{"versionCode":2,"versionName":"1.0.1","apkUrl":"https://.../app.apk",
-   "releaseNotes":"...","minSupportedVersionCode":1,"forceUpdate":false}`
-2. Zet die URL in `UPDATE_MANIFEST_URL` in
-   `data/repository/UpdateRepositoryImpl.kt`. Leeg = updatecheck uit.
-3. Bij opstart vergelijkt de app `versionCode` met de geinstalleerde
-   `versionCode` (in `app/build.gradle.kts`). Hoger = updatedialog met
-   release notes. `forceUpdate=true` of versie onder
-   `minSupportedVersionCode` maakt de update verplicht (geen "Later").
-4. Verhoog bij elke release de `versionCode` in `app/build.gradle.kts` en
-   upload de nieuwe APK + bijgewerkte `version.json`.
-5. De `apkUrl` MOET https zijn. De klant moet eenmalig "installeren uit
-   onbekende bronnen" toestaan (systeemprompt). REQUEST_INSTALL_PACKAGES
-   staat in de manifest; "install unknown apps" is een toestelinstelling
-   die de gebruiker zelf goedkeurt.
+Alles staat al bedraad op `github.com/HansKassie/streamtotaal-android`:
+- App haalt op: `https://raw.githubusercontent.com/HansKassie/
+  streamtotaal-android/main/version.json` (constante `UPDATE_MANIFEST_URL`).
+- `version.json` (repo-root) wijst met `apkUrl` naar
+  `https://github.com/HansKassie/streamtotaal-android/releases/latest/
+  download/streamtotaal.apk` (volgt automatisch de nieuwste Release).
 
-Niet vergeten: release-APK signen met je keystore (zie sectie 2), anders
-installeert een update niet over een bestaande installatie heen.
+Eenmalig:
+1. Repo **publiek** online zetten (sectie 5), branch `main`.
+2. Keystore aanmaken en release signen (sectie 2).
+
+Per nieuwe versie uitrollen:
+1. Verhoog `versionCode` (en `versionName`) in `app/build.gradle.kts`.
+2. Bouw de gesigneerde release-APK, hernoem naar `streamtotaal.apk`.
+3. Maak een GitHub **Release** (nieuwe tag) en upload `streamtotaal.apk`
+   als asset.
+4. Werk `version.json` bij (zelfde `versionCode`/`versionName`, nieuwe
+   `releaseNotes`) en push naar `main`. Raw cachet ~5 min.
+
+De app vergelijkt bij opstart `version.json`-`versionCode` met de
+geinstalleerde versie; hoger = updatedialog. `forceUpdate:true` of een
+versie onder `minSupportedVersionCode` maakt de update verplicht.
+
+De klant moet bij de eerste update eenmalig "installeren uit onbekende
+bronnen" toestaan (systeemprompt; `REQUEST_INSTALL_PACKAGES` staat in de
+manifest). Zonder consistente keystore-signing installeert een update
+niet over een bestaande app heen.

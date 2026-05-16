@@ -1,0 +1,8 @@
+{
+  "versionCode": 1,
+  "versionName": "1.0.0",
+  "apkUrl": "https://github.com/HansKassie/streamtotaal-android/releases/latest/download/streamtotaal.apk",
+  "releaseNotes": "Eerste versie van StreamTotaal.",
+  "minSupportedVersionCode": 1,
+  "forceUpdate": false
+}

@@ -32,10 +32,10 @@ class UpdateRepositoryImpl @Inject constructor(
     }
 
     private companion object {
-        // Vul met je gehoste version.json
-        // ({"versionCode":N,"versionName":"x.y.z","apkUrl":"https://...",
-        //   "releaseNotes":"...","minSupportedVersionCode":N,"forceUpdate":false}).
-        // Leeg = updatecheck uit.
-        const val UPDATE_MANIFEST_URL = ""
+        // version.json in de repo (branch main). Bewerk + push om een
+        // update uit te rollen. Leeg maken = updatecheck uit.
+        const val UPDATE_MANIFEST_URL =
+            "https://raw.githubusercontent.com/HansKassie/" +
+                "streamtotaal-android/main/version.json"
     }
 }

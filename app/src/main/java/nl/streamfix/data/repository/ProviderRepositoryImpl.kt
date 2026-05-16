@@ -33,7 +33,7 @@ class ProviderRepositoryImpl @Inject constructor(
         val BUNDLED = listOf(
             Provider("PROMAX", "http://line.smarttelevision.xyz"),
             Provider("DIAMOND", "http://kassiee.clear-ocean.link"),
-            Provider("Nettv", "http://sales.vivotv.vip"),
+            Provider(, "http://sales.vivotv.vip"),
             Provider("TIVIONE", "http://line.tivi-ott.net"),
         )
     }
