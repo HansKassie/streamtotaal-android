@@ -26,6 +26,9 @@ interface AuthRepository {
     /** Wisselt naar een reeds opgeslagen provider. */
     suspend fun switchActiveAccount(id: String)
 
+    /** Verwijdert één opgeslagen provider. */
+    suspend fun removeAccount(id: String)
+
     /** Optionele account-info uit player_api.php, of null als ophalen faalt. */
     suspend fun getAccountInfo(): AccountInfo?
 

@@ -36,6 +36,12 @@ class SwitchAccountUseCase @Inject constructor(
     suspend operator fun invoke(id: String) = repository.switchActiveAccount(id)
 }
 
+class RemoveAccountUseCase @Inject constructor(
+    private val repository: AuthRepository,
+) {
+    suspend operator fun invoke(id: String) = repository.removeAccount(id)
+}
+
 class GetActiveAccountUseCase @Inject constructor(
     private val repository: AuthRepository,
 ) {

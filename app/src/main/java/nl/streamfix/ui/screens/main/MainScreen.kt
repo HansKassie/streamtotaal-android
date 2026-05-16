@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Settings
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -91,6 +93,7 @@ fun MainScreen(
                 Tab.Settings -> SettingsContent(
                     state = state,
                     onSwitchProvider = viewModel::onSwitchProvider,
+                    onRemoveProvider = viewModel::onRemoveProvider,
                     onAddProvider = onAddProvider,
                     onLogout = viewModel::onLogout,
                 )
@@ -120,6 +123,7 @@ private fun PlaceholderContent(name: String) {
 private fun SettingsContent(
     state: MainState,
     onSwitchProvider: (String) -> Unit,
+    onRemoveProvider: (String) -> Unit,
     onAddProvider: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -165,7 +169,14 @@ private fun SettingsContent(
                 Text(
                     text = acc.displayName,
                     style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = { onRemoveProvider(acc.id) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Provider verwijderen",
+                    )
+                }
             }
         }
 

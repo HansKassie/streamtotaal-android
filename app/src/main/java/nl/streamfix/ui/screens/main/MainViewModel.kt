@@ -15,6 +15,7 @@ import nl.streamfix.domain.usecase.GetAccountInfoUseCase
 import nl.streamfix.domain.usecase.GetAccountsUseCase
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
 import nl.streamfix.domain.usecase.LogoutUseCase
+import nl.streamfix.domain.usecase.RemoveAccountUseCase
 import nl.streamfix.domain.usecase.SwitchAccountUseCase
 
 data class MainState(
@@ -30,6 +31,7 @@ class MainViewModel @Inject constructor(
     private val getAccountInfo: GetAccountInfoUseCase,
     private val getAccounts: GetAccountsUseCase,
     private val switchAccount: SwitchAccountUseCase,
+    private val removeAccount: RemoveAccountUseCase,
     private val logout: LogoutUseCase,
 ) : ViewModel() {
 
@@ -58,6 +60,19 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             switchAccount(id)
             reload()
+        }
+    }
+
+    fun onRemoveProvider(id: String) {
+        viewModelScope.launch {
+            val wasActive = _state.value.account?.id == id
+            removeAccount(id)
+            if (wasActive) {
+                // Actieve provider weg: terug naar het keuzescherm.
+                _state.update { it.copy(loggedOut = true) }
+            } else {
+                reload()
+            }
         }
     }
 

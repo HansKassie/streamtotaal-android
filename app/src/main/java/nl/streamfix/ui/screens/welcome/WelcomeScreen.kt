@@ -9,11 +9,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -88,16 +93,24 @@ fun WelcomeScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .clickable { viewModel.onPickProvider(acc.id) },
+                        .padding(vertical = 6.dp),
                 ) {
-                    Text(
-                        text = acc.displayName,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = acc.displayName,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { viewModel.onPickProvider(acc.id) }
+                                .padding(16.dp),
+                        )
+                        IconButton(onClick = { viewModel.onRemoveProvider(acc.id) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Provider verwijderen",
+                            )
+                        }
+                    }
                 }
             }
             Spacer(Modifier.height(16.dp))

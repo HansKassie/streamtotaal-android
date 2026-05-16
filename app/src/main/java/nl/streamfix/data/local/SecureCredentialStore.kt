@@ -62,6 +62,17 @@ class SecureCredentialStore @Inject constructor(
         }
     }
 
+    /** Verwijdert één opgeslagen provider. Was die actief, dan geen actieve meer. */
+    fun removeAccount(id: String) {
+        val state = readState()
+        writeState(
+            CredentialState(
+                accounts = state.accounts.filterNot { it.id == id },
+                activeId = state.activeId?.takeIf { it != id },
+            ),
+        )
+    }
+
     /** Beeindigt de sessie maar bewaart opgeslagen providers (keuze gebruiker). */
     fun deactivate() {
         val state = readState()
