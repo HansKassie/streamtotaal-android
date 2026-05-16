@@ -1,5 +1,6 @@
 package nl.streamfix.data.remote
 
+import nl.streamfix.data.remote.dto.ProviderDto
 import nl.streamfix.data.remote.dto.XtreamAuthResponseDto
 import nl.streamfix.data.remote.dto.XtreamCategoryDto
 import nl.streamfix.data.remote.dto.XtreamEpgResponseDto
@@ -45,5 +46,8 @@ interface XtreamApi {
 
     @GET
     suspend fun getShortEpg(@Url url: String): XtreamEpgResponseDto
+
+    @GET
+    suspend fun getProviderCatalog(@Url url: String): List<ProviderDto>
 }
 

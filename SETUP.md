@@ -101,3 +101,15 @@ Maak de repo op GitHub/GitLab als **prive** aan.
 - Package-skelet conform de briefing (ui, domain, data/remote, data/local,
   data/repository, player, di, util).
 - Debug- en release-buildvariants; release met minify en signing-hook.
+
+## Providerlijst beheren
+
+De klant kiest bij inloggen uit een vaste providerlijst (geen vrije
+server-URL meer). De ingebouwde lijst staat in
+`data/repository/ProviderRepositoryImpl.kt` (`BUNDLED`).
+
+Wil je providers wijzigen zonder een nieuwe APK uit te rollen: host een
+JSON-bestand met de vorm
+`[{"name":"PROMAX","url":"http://..."}, ...]` en zet de URL in de
+constante `REMOTE_CATALOG_URL` in datzelfde bestand. Is die leeg of
+onbereikbaar, dan gebruikt de app de ingebouwde lijst.
