@@ -59,6 +59,9 @@ class XtreamAuthService @Inject constructor(
             when (e.code()) {
                 401, 403 -> AppResult.Failure(AppError.InvalidCredentials)
                 404 -> AppResult.Failure(AppError.NotAnXtreamServer)
+                // Sommige panels (achter een WAF) geven 512 met lege body
+                // terug bij een geweigerde login i.p.v. auth:0 in een 200.
+                512 -> AppResult.Failure(AppError.InvalidCredentials)
                 // Cloudflare origin-fouten: provider-server ligt eruit
                 in 520..526 -> AppResult.Failure(AppError.ProviderUnavailable)
                 in 500..599 -> AppResult.Failure(AppError.ServerUnreachable)
