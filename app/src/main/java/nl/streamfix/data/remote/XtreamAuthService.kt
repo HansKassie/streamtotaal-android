@@ -11,6 +11,7 @@ import kotlinx.serialization.SerializationException
 import nl.streamfix.data.remote.dto.XtreamUserInfoDto
 import nl.streamfix.domain.model.AppError
 import nl.streamfix.domain.util.AppResult
+import retrofit2.HttpException
 
 data class XtreamAuthData(
     val normalizedServerUrl: String,
@@ -54,6 +55,13 @@ class XtreamAuthService @Inject constructor(
             AppResult.Failure(AppError.ServerUnreachable)
         } catch (e: SerializationException) {
             AppResult.Failure(AppError.NotAnXtreamServer)
+        } catch (e: HttpException) {
+            when (e.code()) {
+                401, 403 -> AppResult.Failure(AppError.InvalidCredentials)
+                404 -> AppResult.Failure(AppError.NotAnXtreamServer)
+                in 500..599 -> AppResult.Failure(AppError.ServerUnreachable)
+                else -> AppResult.Failure(AppError.NotAnXtreamServer)
+            }
         } catch (e: IOException) {
             AppResult.Failure(AppError.NetworkUnavailable)
         } catch (e: IllegalArgumentException) {

@@ -61,13 +61,33 @@ object NetworkModule {
         retrofit.create(XtreamApi::class.java)
 
     /**
-     * Logt alleen methode + host, nooit de query string. Voorkomt dat
-     * gebruikersnaam en wachtwoord in de Logcat belanden (briefing 6.1).
+     * Debug-only logger. Logt methode, host, pad en HTTP-status plus een
+     * korte body-preview, met username/password geredigeerd, zodat
+     * providerafwijkingen te diagnosticeren zijn zonder credentials te lekken
+     * (briefing 6.1: geen PII in logs).
      */
     private fun passwordRedactingLogger() = Interceptor { chain ->
         val request = chain.request()
-        val host = request.url.host
-        android.util.Log.d("StreamFixHttp", "${request.method} -> $host")
-        chain.proceed(request)
+        val safeUrl = "${request.url.scheme}://${request.url.host}" +
+            (if (request.url.port != -1) ":${request.url.port}" else "") +
+            request.url.encodedPath
+        android.util.Log.d("StreamFixHttp", "${request.method} -> $safeUrl")
+
+        val response = chain.proceed(request)
+
+        val preview = runCatching {
+            val body = response.peekBody(512)
+            redact(body.string())
+        }.getOrDefault("<body niet leesbaar>")
+        android.util.Log.d(
+            "StreamFixHttp",
+            "<- HTTP ${response.code} ${response.message}; body: $preview",
+        )
+        response
     }
+
+    private fun redact(text: String): String =
+        text.replace(Regex("(?i)(username|password)=([^&\\s\"]+)"), "$1=***")
+            .take(300)
+            .replace("\n", " ")
 }
