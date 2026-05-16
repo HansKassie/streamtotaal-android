@@ -16,6 +16,7 @@ data class StoredAccount(
     val serverUrl: String? = null,
     val username: String? = null,
     val password: String? = null,
+    val liveExtension: String = "ts",
 )
 
 @Serializable
@@ -32,6 +33,7 @@ fun StoredAccount.toDomain(): Account? {
             serverUrl = serverUrl ?: return null,
             username = username ?: return null,
             password = password ?: return null,
+            liveExtension = liveExtension,
         )
 
         else -> null
@@ -46,5 +48,6 @@ fun Account.toStored(): StoredAccount = when (this) {
         serverUrl = serverUrl,
         username = username,
         password = password,
+        liveExtension = liveExtension,
     )
 }

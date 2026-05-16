@@ -8,11 +8,13 @@ import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
 data class XtreamSeriesStreamDto(
-    @SerialName("series_id") val seriesId: Long? = null,
+    @SerialName("series_id") val seriesId: JsonElement? = null,
     @SerialName("name") val name: String? = null,
     @SerialName("cover") val cover: String? = null,
     @SerialName("category_id") val categoryId: String? = null,
-)
+) {
+    val seriesIdValue: String? get() = seriesId?.jsonPrimitive?.contentOrNull
+}
 
 @Serializable
 data class XtreamSeriesInfoResponseDto(

@@ -29,7 +29,7 @@ class XtreamAuthService @Inject constructor(
                 ?: return@withContext AppResult.Failure(AppError.NotAnXtreamServer)
 
             when {
-                info.auth != 1 -> AppResult.Failure(AppError.InvalidCredentials)
+                info.authValue != 1 -> AppResult.Failure(AppError.InvalidCredentials)
                 info.status.equalsIgnoreCase("Expired") ->
                     AppResult.Failure(AppError.SubscriptionExpired)
                 info.status.equalsIgnoreCase("Banned") ||

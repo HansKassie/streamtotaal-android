@@ -45,7 +45,7 @@ class XtreamVodService @Inject constructor(
             )
             AppResult.Success(
                 api.getVodStreams(url).mapNotNull { dto ->
-                    val id = dto.streamId?.toString() ?: return@mapNotNull null
+                    val id = dto.streamIdValue ?: return@mapNotNull null
                     VodItem(
                         id = id,
                         name = dto.name?.ifBlank { "Film $id" } ?: "Film $id",

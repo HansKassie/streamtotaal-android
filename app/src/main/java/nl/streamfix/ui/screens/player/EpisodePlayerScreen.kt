@@ -56,7 +56,9 @@ fun EpisodePlayerScreen(
     var countdown by remember { mutableStateOf<Int?>(null) }
 
     DisposableEffect(Unit) {
+        PlayerActive.inPlayer = true
         onDispose {
+            PlayerActive.inPlayer = false
             viewModel.savePosition(player.currentPosition)
             player.release()
         }

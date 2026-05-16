@@ -42,7 +42,7 @@ class XtreamLiveService @Inject constructor(
                 action = "get_live_streams", params = params,
             )
             val result = api.getLiveStreams(url).mapNotNull { dto ->
-                val id = dto.streamId?.toString() ?: return@mapNotNull null
+                val id = dto.streamIdValue ?: return@mapNotNull null
                 LiveChannel(
                     id = id,
                     name = dto.name?.ifBlank { "Kanaal $id" } ?: "Kanaal $id",

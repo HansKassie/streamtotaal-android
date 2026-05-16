@@ -14,5 +14,7 @@ sealed interface Account {
         val serverUrl: String,
         val username: String,
         val password: String,
+        // Voorkeursextensie voor live streams (m3u8/ts), uit user_info.
+        val liveExtension: String = "ts",
     ) : Account
 }

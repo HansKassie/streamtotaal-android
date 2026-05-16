@@ -49,7 +49,9 @@ fun PlaybackScreen(
     val player = remember { ExoPlayer.Builder(context).build() }
 
     DisposableEffect(Unit) {
+        PlayerActive.inPlayer = true
         onDispose {
+            PlayerActive.inPlayer = false
             viewModel.savePosition(player.currentPosition)
             player.release()
         }

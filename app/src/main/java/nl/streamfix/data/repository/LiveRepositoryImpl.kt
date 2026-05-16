@@ -83,6 +83,7 @@ class LiveRepositoryImpl @Inject constructor(
         val acc = activeXtream() ?: return null
         return XtreamUrls.liveStream(
             acc.serverUrl, acc.username, acc.password, channelId,
+            extension = acc.liveExtension,
         )
     }
 }

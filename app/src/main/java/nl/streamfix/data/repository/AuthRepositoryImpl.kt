@@ -31,12 +31,27 @@ class AuthRepositoryImpl @Inject constructor(
                 val label = name.ifBlank {
                     "$username @ ${data.normalizedServerUrl.hostLabel()}"
                 }
+                // Hergebruik bestaand id voor dezelfde server+gebruiker zodat
+                // favorieten en "Verder kijken" niet wegvallen bij herinloggen.
+                val existingId = store.allAccounts()
+                    .filterIsInstance<Account.Xtream>()
+                    .firstOrNull {
+                        it.serverUrl == data.normalizedServerUrl &&
+                            it.username == username
+                    }?.id
+                val formats = data.userInfo.outputFormats
+                val ext = when {
+                    "m3u8" in formats -> "m3u8"
+                    "ts" in formats -> "ts"
+                    else -> formats.firstOrNull() ?: "ts"
+                }
                 val account = Account.Xtream(
-                    id = UUID.randomUUID().toString(),
+                    id = existingId ?: UUID.randomUUID().toString(),
                     displayName = label,
                     serverUrl = data.normalizedServerUrl,
                     username = username,
                     password = password,
+                    liveExtension = ext,
                 )
                 store.saveAndActivate(account)
                 AppResult.Success(account)
@@ -65,9 +80,9 @@ class AuthRepositoryImpl @Inject constructor(
             AccountInfo(
                 username = info.username ?: account.username,
                 status = info.status,
-                expirationDate = info.expDate,
-                maxConnections = info.maxConnections,
-                activeConnections = info.activeConnections,
+                expirationDate = info.expDateValue,
+                maxConnections = info.maxConnectionsValue,
+                activeConnections = info.activeConnectionsValue,
             )
         }
     }

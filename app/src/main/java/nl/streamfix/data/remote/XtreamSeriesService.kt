@@ -47,7 +47,7 @@ class XtreamSeriesService @Inject constructor(
             )
             AppResult.Success(
                 api.getSeriesStreams(url).mapNotNull { dto ->
-                    val id = dto.seriesId?.toString() ?: return@mapNotNull null
+                    val id = dto.seriesIdValue ?: return@mapNotNull null
                     SeriesItem(
                         id = id,
                         name = dto.name?.ifBlank { "Serie $id" } ?: "Serie $id",
