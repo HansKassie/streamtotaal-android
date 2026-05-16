@@ -86,7 +86,7 @@ fun XtreamLoginScreen(
                 value = state.serverUrl,
                 onValueChange = viewModel::onServerUrlChange,
                 label = { Text("Server-URL") },
-                prefix = { Text("http://") },
+                leadingIcon = { Text("http://", style = MaterialTheme.typography.bodyLarge) },
                 placeholder = { Text("mijnprovider.tv") },
                 singleLine = true,
                 enabled = !state.isLoading,
