@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
@@ -23,11 +24,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,14 +42,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveChannel
 
 @Composable
 fun LiveTvScreen(
     onOpenChannel: (categoryId: String, channelId: String) -> Unit,
+    onOpenChannelEpg: (channelId: String, channelName: String) -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val epgMap by viewModel.epg.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -135,8 +141,10 @@ fun LiveTvScreen(
 
             else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(state.visibleChannels, key = { it.id }) { channel ->
+                    LaunchedEffect(channel.id) { viewModel.ensureEpg(channel.id) }
                     ChannelRow(
                         channel = channel,
+                        programmes = epgMap[channel.id],
                         isFavorite = state.favoriteIds.contains(channel.id),
                         onClick = {
                             onOpenChannel(
@@ -145,6 +153,7 @@ fun LiveTvScreen(
                             )
                         },
                         onToggleFavorite = { viewModel.toggleFavorite(channel) },
+                        onInfo = { onOpenChannelEpg(channel.id, channel.name) },
                     )
                 }
             }
@@ -155,10 +164,20 @@ fun LiveTvScreen(
 @Composable
 private fun ChannelRow(
     channel: LiveChannel,
+    programmes: List<EpgProgramme>?,
     isFavorite: Boolean,
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onInfo: () -> Unit,
 ) {
+    val now = System.currentTimeMillis()
+    val current = programmes?.firstOrNull { now in it.startMs until it.endMs }
+    val next = programmes?.firstOrNull { it.startMs > now }
+    val progress = current?.let {
+        ((now - it.startMs).toFloat() / (it.endMs - it.startMs))
+            .coerceIn(0f, 1f)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -172,13 +191,43 @@ private fun ChannelRow(
             modifier = Modifier.size(44.dp),
         )
         Spacer(Modifier.width(12.dp))
-        Text(
-            text = channel.name,
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = channel.name,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (current != null) {
+                Text(
+                    text = current.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (progress != null) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 2.dp, bottom = 2.dp),
+                    )
+                }
+            }
+            if (next != null) {
+                Text(
+                    text = "Straks: ${next.title}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        IconButton(onClick = onInfo) {
+            Icon(Icons.Filled.Info, contentDescription = "Programmagids")
+        }
         IconButton(onClick = onToggleFavorite) {
             Icon(
                 imageVector = if (isFavorite) Icons.Filled.Star

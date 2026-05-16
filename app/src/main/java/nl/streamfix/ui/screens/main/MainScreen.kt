@@ -65,6 +65,7 @@ fun MainScreen(
     onLoggedOut: () -> Unit,
     onAddProvider: () -> Unit,
     onOpenChannel: (categoryId: String, channelId: String) -> Unit,
+    onOpenChannelEpg: (channelId: String, channelName: String) -> Unit,
     onOpenVod: (vodId: String) -> Unit,
     onOpenSeries: (seriesId: String) -> Unit,
     onResumeMedia: (streamUrl: String, title: String, mediaId: String) -> Unit,
@@ -100,7 +101,10 @@ fun MainScreen(
                 .padding(padding),
         ) {
             when (tabs[selected]) {
-                Tab.LiveTv -> LiveTvScreen(onOpenChannel = onOpenChannel)
+                Tab.LiveTv -> LiveTvScreen(
+                    onOpenChannel = onOpenChannel,
+                    onOpenChannelEpg = onOpenChannelEpg,
+                )
                 Tab.Movies -> VodScreen(onOpenVod = onOpenVod)
                 Tab.Series -> SeriesScreen(onOpenSeries = onOpenSeries)
                 Tab.History -> HistoryScreen(onResume = onResumeMedia)

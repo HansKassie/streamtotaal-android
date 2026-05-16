@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import nl.streamfix.ui.screens.login.XtreamLoginScreen
 import nl.streamfix.ui.screens.main.MainScreen
+import nl.streamfix.ui.screens.epg.ChannelEpgScreen
 import nl.streamfix.ui.screens.player.EpisodePlayerScreen
 import nl.streamfix.ui.screens.player.PlaybackScreen
 import nl.streamfix.ui.screens.player.PlayerScreen
@@ -59,6 +60,11 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
                 onAddProvider = { navController.navigate(Routes.LOGIN_XTREAM) },
                 onOpenChannel = { categoryId, channelId ->
                     navController.navigate(Routes.player(categoryId, channelId))
+                },
+                onOpenChannelEpg = { channelId, channelName ->
+                    navController.navigate(
+                        Routes.channelEpg(channelId, channelName),
+                    )
                 },
                 onOpenVod = { vodId ->
                     navController.navigate(Routes.vodDetail(vodId))
@@ -148,6 +154,20 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
             ),
         ) {
             EpisodePlayerScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.CHANNEL_EPG_ROUTE,
+            arguments = listOf(
+                navArgument(Routes.CHANNEL_EPG_ARG_ID) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.CHANNEL_EPG_ARG_NAME) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+            ),
+        ) {
+            ChannelEpgScreen(onBack = { navController.popBackStack() })
         }
     }
 }

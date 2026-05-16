@@ -2,6 +2,7 @@ package nl.streamfix.data.remote
 
 import nl.streamfix.data.remote.dto.XtreamAuthResponseDto
 import nl.streamfix.data.remote.dto.XtreamCategoryDto
+import nl.streamfix.data.remote.dto.XtreamEpgResponseDto
 import nl.streamfix.data.remote.dto.XtreamLiveStreamDto
 import nl.streamfix.data.remote.dto.XtreamSeriesInfoResponseDto
 import nl.streamfix.data.remote.dto.XtreamSeriesStreamDto
@@ -41,5 +42,8 @@ interface XtreamApi {
 
     @GET
     suspend fun getSeriesInfo(@Url url: String): XtreamSeriesInfoResponseDto
+
+    @GET
+    suspend fun getShortEpg(@Url url: String): XtreamEpgResponseDto
 }
 

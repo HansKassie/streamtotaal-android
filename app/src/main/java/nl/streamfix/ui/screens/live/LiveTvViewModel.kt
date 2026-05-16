@@ -9,8 +9,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
+import nl.streamfix.domain.usecase.GetChannelEpgUseCase
 import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
 import nl.streamfix.domain.usecase.GetStreamUrlUseCase
@@ -42,10 +44,17 @@ class LiveTvViewModel @Inject constructor(
     private val observeFavorites: ObserveFavoritesUseCase,
     private val setFavorite: SetFavoriteUseCase,
     private val getStreamUrl: GetStreamUrlUseCase,
+    private val getChannelEpg: GetChannelEpgUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LiveUiState())
     val state: StateFlow<LiveUiState> = _state.asStateFlow()
+
+    private val _epg = MutableStateFlow<Map<String, List<EpgProgramme>>>(emptyMap())
+    /** Per kanaal-id de (gecachte) programma's; gevuld zodra een rij erom vraagt. */
+    val epg: StateFlow<Map<String, List<EpgProgramme>>> = _epg.asStateFlow()
+
+    private val epgRequested = mutableSetOf<String>()
 
     private var favorites: List<LiveChannel> = emptyList()
 
@@ -110,6 +119,19 @@ class LiveTvViewModel @Inject constructor(
                             channels = emptyList(),
                         )
                     }
+            }
+        }
+    }
+
+    /** Laadt EPG voor een kanaal eenmalig (lazy, vanuit de zichtbare rij). */
+    fun ensureEpg(channelId: String) {
+        if (!epgRequested.add(channelId)) return
+        viewModelScope.launch {
+            val result = getChannelEpg(channelId)
+            if (result is AppResult.Success && result.data.isNotEmpty()) {
+                _epg.update { it + (channelId to result.data) }
+            } else {
+                epgRequested.remove(channelId) // mag later opnieuw geprobeerd
             }
         }
     }

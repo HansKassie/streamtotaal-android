@@ -9,8 +9,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import nl.streamfix.data.local.db.FavoriteDao
+import nl.streamfix.data.local.db.EpgDao
 import nl.streamfix.data.local.db.MIGRATION_1_2
 import nl.streamfix.data.local.db.MIGRATION_2_3
+import nl.streamfix.data.local.db.MIGRATION_3_4
 import nl.streamfix.data.local.db.PlaybackDao
 import nl.streamfix.data.local.db.StreamFixDatabase
 
@@ -25,11 +27,14 @@ object DatabaseModule {
             context,
             StreamFixDatabase::class.java,
             "streamfix.db",
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
 
     @Provides
     fun provideFavoriteDao(db: StreamFixDatabase): FavoriteDao = db.favoriteDao()
 
     @Provides
     fun providePlaybackDao(db: StreamFixDatabase): PlaybackDao = db.playbackDao()
+
+    @Provides
+    fun provideEpgDao(db: StreamFixDatabase): EpgDao = db.epgDao()
 }

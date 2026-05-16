@@ -49,4 +49,14 @@ object Routes {
         val e = android.net.Uri.encode(episodeId)
         return "episode?s=$s&se=$season&e=$e"
     }
+
+    const val CHANNEL_EPG_ARG_ID = "id"
+    const val CHANNEL_EPG_ARG_NAME = "name"
+    const val CHANNEL_EPG_ROUTE = "channelEpg?id={id}&name={name}"
+
+    fun channelEpg(channelId: String, channelName: String): String {
+        val id = android.net.Uri.encode(channelId)
+        val n = android.net.Uri.encode(channelName)
+        return "channelEpg?id=$id&name=$n"
+    }
 }
