@@ -1,10 +1,14 @@
-# kotlinx.serialization: behoud @Serializable model-klassen
--keepattributes *Annotation*, InnerClasses
+# ---- Algemene attributen ----
+-keepattributes *Annotation*, InnerClasses, EnclosingMethod
+-keepattributes Signature, Exceptions
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+-keepattributes AnnotationDefault
+# Sentry/leesbare stacktraces
+-keepattributes LineNumberTable, SourceFile
+
+# ---- kotlinx.serialization ----
 -dontnote kotlinx.serialization.**
 -keepclassmembers class **$$serializer { *; }
--keepclasseswithmembers class * {
-    @kotlinx.serialization.Serializable <fields>;
-}
 -keep,includedescriptorclasses class nl.streamfix.**$$serializer { *; }
 -keepclassmembers class nl.streamfix.** {
     *** Companion;
@@ -12,15 +16,39 @@
 -keepclasseswithmembers class nl.streamfix.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
+-keepclasseswithmembers class * {
+    @kotlinx.serialization.Serializable <fields>;
+}
+# @Serializable model/DTO-klassen die alleen via reflectie/serializer leven
+-keep @kotlinx.serialization.Serializable class nl.streamfix.** { *; }
+-keep class nl.streamfix.data.remote.dto.** { *; }
 
-# Retrofit / OkHttp
--keepattributes Signature, Exceptions
+# ---- Retrofit 2 (R8 fullMode-veilig) ----
+-dontwarn retrofit2.**
+-dontwarn javax.annotation.**
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+-dontwarn kotlin.Unit
+-dontwarn retrofit2.KotlinExtensions
+-dontwarn retrofit2.KotlinExtensions$*
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+-if interface * { @retrofit2.http.* <methods>; }
+-keep,allowobfuscation interface <1>
+-keep,allowobfuscation,allowshrinking interface retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+# Onze Retrofit-API interface
+-keep interface nl.streamfix.data.remote.XtreamApi { *; }
+
+# ---- OkHttp / Okio ----
 -dontwarn okhttp3.**
 -dontwarn okio.**
--dontwarn retrofit2.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
 
-# Media3 / ExoPlayer
+# ---- Media3 / ExoPlayer ----
 -dontwarn androidx.media3.**
 
-# Sentry behoudt regelnummers voor leesbare stacktraces
--keepattributes LineNumberTable,SourceFile
+# Hilt, Room en Coil leveren hun eigen consumer-regels; niets extra nodig.
