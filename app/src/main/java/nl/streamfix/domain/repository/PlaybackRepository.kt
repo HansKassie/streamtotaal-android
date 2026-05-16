@@ -15,4 +15,10 @@ interface PlaybackRepository {
 
     /** "Verder kijken"-lijst, meest recent eerst, voor de actieve provider. */
     fun observeHistory(): Flow<List<HistoryItem>>
+
+    /** Verwijdert een enkel item uit de historie van de actieve provider. */
+    suspend fun removeFromHistory(mediaId: String)
+
+    /** Wist de volledige historie van de actieve provider. */
+    suspend fun clearHistory()
 }

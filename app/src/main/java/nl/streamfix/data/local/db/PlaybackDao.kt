@@ -37,4 +37,13 @@ interface PlaybackDao {
             "ORDER BY updatedAt DESC",
     )
     fun observeHistory(accountId: String): Flow<List<PlaybackProgressEntity>>
+
+    @Query(
+        "DELETE FROM playback_progress " +
+            "WHERE accountId = :accountId AND mediaId = :mediaId",
+    )
+    suspend fun deleteOne(accountId: String, mediaId: String)
+
+    @Query("DELETE FROM playback_progress WHERE accountId = :accountId")
+    suspend fun clearAll(accountId: String)
 }

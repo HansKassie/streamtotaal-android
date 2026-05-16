@@ -64,3 +64,16 @@ class ObserveHistoryUseCase @Inject constructor(
 ) {
     operator fun invoke(): Flow<List<HistoryItem>> = repository.observeHistory()
 }
+
+class RemoveFromHistoryUseCase @Inject constructor(
+    private val repository: PlaybackRepository,
+) {
+    suspend operator fun invoke(mediaId: String) =
+        repository.removeFromHistory(mediaId)
+}
+
+class ClearHistoryUseCase @Inject constructor(
+    private val repository: PlaybackRepository,
+) {
+    suspend operator fun invoke() = repository.clearHistory()
+}

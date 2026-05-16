@@ -50,6 +50,16 @@ class PlaybackRepositoryImpl @Inject constructor(
         dao.updatePosition(id, mediaId, positionMs, System.currentTimeMillis())
     }
 
+    override suspend fun removeFromHistory(mediaId: String) {
+        val id = accountId() ?: return
+        dao.deleteOne(id, mediaId)
+    }
+
+    override suspend fun clearHistory() {
+        val id = accountId() ?: return
+        dao.clearAll(id)
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeHistory(): Flow<List<HistoryItem>> =
         store.activeAccount.flatMapLatest { account ->

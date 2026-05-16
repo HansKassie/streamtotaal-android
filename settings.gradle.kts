@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "StreamFix"
+rootProject.name = "Streamfix-Android"
 include(":app")
