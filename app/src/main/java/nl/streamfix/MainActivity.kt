@@ -14,6 +14,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import nl.streamfix.ui.RootState
@@ -21,6 +22,8 @@ import nl.streamfix.ui.RootViewModel
 import nl.streamfix.ui.navigation.StreamFixNavHost
 import nl.streamfix.ui.screens.player.PlayerActive
 import nl.streamfix.ui.theme.StreamFixTheme
+import nl.streamfix.ui.update.UpdateDialog
+import nl.streamfix.ui.update.UpdateViewModel
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -42,6 +45,21 @@ class MainActivity : ComponentActivity() {
                         RootState.Loading -> Unit // splash blijft staan
                         RootState.LoggedIn -> StreamFixNavHost(startLoggedIn = true)
                         RootState.LoggedOut -> StreamFixNavHost(startLoggedIn = false)
+                    }
+
+                    if (state != RootState.Loading) {
+                        val updateVm: UpdateViewModel = hiltViewModel()
+                        val update by updateVm.update.collectAsStateWithLifecycle()
+                        val dismissed by updateVm.dismissed
+                            .collectAsStateWithLifecycle()
+                        update?.let {
+                            if (!dismissed) {
+                                UpdateDialog(
+                                    update = it,
+                                    onDismiss = updateVm::dismiss,
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -1,6 +1,7 @@
 package nl.streamfix.data.remote
 
 import nl.streamfix.data.remote.dto.ProviderDto
+import nl.streamfix.data.remote.dto.UpdateManifestDto
 import nl.streamfix.data.remote.dto.XtreamAuthResponseDto
 import nl.streamfix.data.remote.dto.XtreamCategoryDto
 import nl.streamfix.data.remote.dto.XtreamEpgResponseDto
@@ -49,5 +50,8 @@ interface XtreamApi {
 
     @GET
     suspend fun getProviderCatalog(@Url url: String): List<ProviderDto>
+
+    @GET
+    suspend fun getUpdateManifest(@Url url: String): UpdateManifestDto
 }
 

@@ -113,3 +113,24 @@ JSON-bestand met de vorm
 `[{"name":"PROMAX","url":"http://..."}, ...]` en zet de URL in de
 constante `REMOTE_CATALOG_URL` in datzelfde bestand. Is die leeg of
 onbereikbaar, dan gebruikt de app de ingebouwde lijst.
+
+## In-app updates (zelf-gehoste APK)
+
+1. Host een `version.json`:
+   `{"versionCode":2,"versionName":"1.0.1","apkUrl":"https://.../app.apk",
+   "releaseNotes":"...","minSupportedVersionCode":1,"forceUpdate":false}`
+2. Zet die URL in `UPDATE_MANIFEST_URL` in
+   `data/repository/UpdateRepositoryImpl.kt`. Leeg = updatecheck uit.
+3. Bij opstart vergelijkt de app `versionCode` met de geinstalleerde
+   `versionCode` (in `app/build.gradle.kts`). Hoger = updatedialog met
+   release notes. `forceUpdate=true` of versie onder
+   `minSupportedVersionCode` maakt de update verplicht (geen "Later").
+4. Verhoog bij elke release de `versionCode` in `app/build.gradle.kts` en
+   upload de nieuwe APK + bijgewerkte `version.json`.
+5. De `apkUrl` MOET https zijn. De klant moet eenmalig "installeren uit
+   onbekende bronnen" toestaan (systeemprompt). REQUEST_INSTALL_PACKAGES
+   staat in de manifest; "install unknown apps" is een toestelinstelling
+   die de gebruiker zelf goedkeurt.
+
+Niet vergeten: release-APK signen met je keystore (zie sectie 2), anders
+installeert een update niet over een bestaande installatie heen.

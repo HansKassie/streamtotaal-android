@@ -11,6 +11,7 @@ import nl.streamfix.data.repository.EpgRepositoryImpl
 import nl.streamfix.data.repository.PlaybackRepositoryImpl
 import nl.streamfix.data.repository.ProviderRepositoryImpl
 import nl.streamfix.data.repository.SeriesRepositoryImpl
+import nl.streamfix.data.repository.UpdateRepositoryImpl
 import nl.streamfix.data.repository.VodRepositoryImpl
 import nl.streamfix.domain.repository.AuthRepository
 import nl.streamfix.domain.repository.EpgRepository
@@ -18,6 +19,7 @@ import nl.streamfix.domain.repository.LiveRepository
 import nl.streamfix.domain.repository.PlaybackRepository
 import nl.streamfix.domain.repository.ProviderRepository
 import nl.streamfix.domain.repository.SeriesRepository
+import nl.streamfix.domain.repository.UpdateRepository
 import nl.streamfix.domain.repository.VodRepository
 
 @Module
@@ -57,4 +59,10 @@ abstract class RepositoryModule {
     abstract fun bindProviderRepository(
         impl: ProviderRepositoryImpl,
     ): ProviderRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUpdateRepository(
+        impl: UpdateRepositoryImpl,
+    ): UpdateRepository
 }
