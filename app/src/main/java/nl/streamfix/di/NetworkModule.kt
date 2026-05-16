@@ -86,9 +86,12 @@ object NetworkModule {
      */
     private fun passwordRedactingLogger() = Interceptor { chain ->
         val request = chain.request()
-        val safeUrl = "${request.url.scheme}://${request.url.host}" +
-            (if (request.url.port != -1) ":${request.url.port}" else "") +
-            request.url.encodedPath
+        val url = request.url
+        val isDefaultPort =
+            (url.scheme == "http" && url.port == 80) ||
+                (url.scheme == "https" && url.port == 443)
+        val portPart = if (isDefaultPort) "" else ":${url.port}"
+        val safeUrl = "${url.scheme}://${url.host}$portPart${url.encodedPath}"
         android.util.Log.d("StreamFixHttp", "${request.method} -> $safeUrl")
 
         val response = chain.proceed(request)
