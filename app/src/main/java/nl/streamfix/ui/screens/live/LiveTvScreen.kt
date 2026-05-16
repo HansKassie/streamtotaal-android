@@ -1,8 +1,6 @@
 package nl.streamfix.ui.screens.live
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,20 +13,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,24 +60,47 @@ fun LiveTvScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilterChip(
-                selected = state.selectedCategoryId == FAVORITES_ID,
-                onClick = { viewModel.selectCategory(FAVORITES_ID) },
-                label = { Text("Favorieten") },
-            )
-            state.categories.forEach { cat ->
-                FilterChip(
-                    selected = state.selectedCategoryId == cat.id,
-                    onClick = { viewModel.selectCategory(cat.id) },
-                    label = { Text(cat.name) },
+        var menuOpen by remember { mutableStateOf(false) }
+        val selectedLabel = when (state.selectedCategoryId) {
+            FAVORITES_ID -> "Favorieten"
+            null -> "Categorie"
+            else -> state.categories.find { it.id == state.selectedCategoryId }
+                ?.name ?: "Categorie"
+        }
+
+        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+            OutlinedButton(
+                onClick = { menuOpen = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = selectedLabel,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
+                Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+            }
+            DropdownMenu(
+                expanded = menuOpen,
+                onDismissRequest = { menuOpen = false },
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Favorieten") },
+                    onClick = {
+                        menuOpen = false
+                        viewModel.selectCategory(FAVORITES_ID)
+                    },
+                )
+                state.categories.forEach { cat ->
+                    DropdownMenuItem(
+                        text = { Text(cat.name) },
+                        onClick = {
+                            menuOpen = false
+                            viewModel.selectCategory(cat.id)
+                        },
+                    )
+                }
             }
         }
 
