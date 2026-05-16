@@ -48,6 +48,7 @@ import nl.streamfix.BuildConfig
 import nl.streamfix.ui.formatXtreamExpiry
 import nl.streamfix.ui.screens.history.HistoryScreen
 import nl.streamfix.ui.screens.live.LiveTvScreen
+import nl.streamfix.ui.screens.series.SeriesScreen
 import nl.streamfix.ui.screens.vod.VodScreen
 
 private enum class Tab(val label: String, val icon: ImageVector) {
@@ -65,6 +66,7 @@ fun MainScreen(
     onAddProvider: () -> Unit,
     onOpenChannel: (categoryId: String, channelId: String) -> Unit,
     onOpenVod: (vodId: String) -> Unit,
+    onOpenSeries: (seriesId: String) -> Unit,
     onResumeMedia: (streamUrl: String, title: String, mediaId: String) -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
@@ -100,6 +102,7 @@ fun MainScreen(
             when (tabs[selected]) {
                 Tab.LiveTv -> LiveTvScreen(onOpenChannel = onOpenChannel)
                 Tab.Movies -> VodScreen(onOpenVod = onOpenVod)
+                Tab.Series -> SeriesScreen(onOpenSeries = onOpenSeries)
                 Tab.History -> HistoryScreen(onResume = onResumeMedia)
                 Tab.Settings -> Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),

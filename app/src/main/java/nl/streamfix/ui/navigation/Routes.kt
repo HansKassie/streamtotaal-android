@@ -32,4 +32,21 @@ object Routes {
         val m = android.net.Uri.encode(mediaId)
         return "playback?u=$u&t=$t&m=$m"
     }
+
+    const val SERIES_ARG_ID = "id"
+    const val SERIES_DETAIL_ROUTE = "series/{id}"
+
+    fun seriesDetail(seriesId: String): String =
+        "series/${android.net.Uri.encode(seriesId)}"
+
+    const val EPISODE_ARG_SERIES = "s"
+    const val EPISODE_ARG_SEASON = "se"
+    const val EPISODE_ARG_EPISODE = "e"
+    const val EPISODE_ROUTE = "episode?s={s}&se={se}&e={e}"
+
+    fun episode(seriesId: String, season: Int, episodeId: String): String {
+        val s = android.net.Uri.encode(seriesId)
+        val e = android.net.Uri.encode(episodeId)
+        return "episode?s=$s&se=$season&e=$e"
+    }
 }

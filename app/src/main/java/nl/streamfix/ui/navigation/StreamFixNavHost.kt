@@ -8,8 +8,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import nl.streamfix.ui.screens.login.XtreamLoginScreen
 import nl.streamfix.ui.screens.main.MainScreen
+import nl.streamfix.ui.screens.player.EpisodePlayerScreen
 import nl.streamfix.ui.screens.player.PlaybackScreen
 import nl.streamfix.ui.screens.player.PlayerScreen
+import nl.streamfix.ui.screens.series.SeriesDetailScreen
 import nl.streamfix.ui.screens.vod.VodDetailScreen
 import nl.streamfix.ui.screens.welcome.WelcomeScreen
 
@@ -61,6 +63,9 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
                 onOpenVod = { vodId ->
                     navController.navigate(Routes.vodDetail(vodId))
                 },
+                onOpenSeries = { seriesId ->
+                    navController.navigate(Routes.seriesDetail(seriesId))
+                },
                 onResumeMedia = { url, title, mediaId ->
                     navController.navigate(Routes.playback(url, title, mediaId))
                 },
@@ -110,6 +115,39 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
             ),
         ) {
             PlaybackScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.SERIES_DETAIL_ROUTE,
+            arguments = listOf(
+                navArgument(Routes.SERIES_ARG_ID) { type = NavType.StringType },
+            ),
+        ) {
+            SeriesDetailScreen(
+                onBack = { navController.popBackStack() },
+                onOpenEpisode = { seriesId, season, episodeId ->
+                    navController.navigate(
+                        Routes.episode(seriesId, season, episodeId),
+                    )
+                },
+            )
+        }
+
+        composable(
+            route = Routes.EPISODE_ROUTE,
+            arguments = listOf(
+                navArgument(Routes.EPISODE_ARG_SERIES) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.EPISODE_ARG_SEASON) {
+                    type = NavType.StringType; defaultValue = "0"
+                },
+                navArgument(Routes.EPISODE_ARG_EPISODE) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+            ),
+        ) {
+            EpisodePlayerScreen(onBack = { navController.popBackStack() })
         }
     }
 }

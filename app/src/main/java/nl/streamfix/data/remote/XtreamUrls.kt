@@ -64,4 +64,15 @@ object XtreamUrls {
     ): String =
         "${normalizeServerUrl(serverUrl)}/movie/" +
             "${encode(username)}/${encode(password)}/$vodId.$extension"
+
+    /** Series-aflevering-stream-URL (briefing 7.5). */
+    fun seriesStream(
+        serverUrl: String,
+        username: String,
+        password: String,
+        episodeId: String,
+        extension: String,
+    ): String =
+        "${normalizeServerUrl(serverUrl)}/series/" +
+            "${encode(username)}/${encode(password)}/$episodeId.$extension"
 }

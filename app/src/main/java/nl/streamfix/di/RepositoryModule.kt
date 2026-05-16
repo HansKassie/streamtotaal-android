@@ -8,10 +8,12 @@ import javax.inject.Singleton
 import nl.streamfix.data.repository.AuthRepositoryImpl
 import nl.streamfix.data.repository.LiveRepositoryImpl
 import nl.streamfix.data.repository.PlaybackRepositoryImpl
+import nl.streamfix.data.repository.SeriesRepositoryImpl
 import nl.streamfix.data.repository.VodRepositoryImpl
 import nl.streamfix.domain.repository.AuthRepository
 import nl.streamfix.domain.repository.LiveRepository
 import nl.streamfix.domain.repository.PlaybackRepository
+import nl.streamfix.domain.repository.SeriesRepository
 import nl.streamfix.domain.repository.VodRepository
 
 @Module
@@ -35,4 +37,10 @@ abstract class RepositoryModule {
     abstract fun bindPlaybackRepository(
         impl: PlaybackRepositoryImpl,
     ): PlaybackRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSeriesRepository(
+        impl: SeriesRepositoryImpl,
+    ): SeriesRepository
 }
