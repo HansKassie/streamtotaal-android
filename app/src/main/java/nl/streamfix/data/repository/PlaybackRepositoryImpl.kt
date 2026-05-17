@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import nl.streamfix.data.local.AdultContent
+import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.data.local.SecureCredentialStore
 import nl.streamfix.data.local.db.PlaybackDao
 import nl.streamfix.data.local.db.PlaybackProgressEntity
@@ -17,6 +19,7 @@ import nl.streamfix.domain.repository.PlaybackRepository
 class PlaybackRepositoryImpl @Inject constructor(
     private val dao: PlaybackDao,
     private val store: SecureCredentialStore,
+    private val appSettings: AppSettingsStore,
 ) : PlaybackRepository {
 
     private fun accountId(): String? = store.currentActiveAccount()?.id
@@ -67,17 +70,22 @@ class PlaybackRepositoryImpl @Inject constructor(
                 flowOf(emptyList())
             } else {
                 dao.observeHistory(account.id).map { rows ->
-                    rows.map {
-                        HistoryItem(
-                            mediaId = it.mediaId,
-                            title = it.title,
-                            posterUrl = it.posterUrl,
-                            type = it.type,
-                            contentId = it.contentId,
-                            extension = it.extension,
-                            positionMs = it.positionMs,
-                        )
-                    }
+                    rows
+                        .filterNot {
+                            appSettings.adultFilterActive() &&
+                                AdultContent.isAdult(it.title)
+                        }
+                        .map {
+                            HistoryItem(
+                                mediaId = it.mediaId,
+                                title = it.title,
+                                posterUrl = it.posterUrl,
+                                type = it.type,
+                                contentId = it.contentId,
+                                extension = it.extension,
+                                positionMs = it.positionMs,
+                            )
+                        }
                 }
             }
         }

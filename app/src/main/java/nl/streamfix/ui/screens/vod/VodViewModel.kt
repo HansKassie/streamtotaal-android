@@ -7,8 +7,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.VodItem
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
@@ -43,6 +45,7 @@ class VodViewModel @Inject constructor(
     private val getItems: GetVodItemsUseCase,
     observeFavorites: ObserveVodFavoritesUseCase,
     private val getActiveAccount: GetActiveAccountUseCase,
+    private val appSettings: AppSettingsStore,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VodUiState())
@@ -67,6 +70,9 @@ class VodViewModel @Inject constructor(
                     if (acc != null) loadCategories()
                 }
             }
+        }
+        viewModelScope.launch {
+            appSettings.adultState.drop(1).collect { loadCategories() }
         }
     }
 

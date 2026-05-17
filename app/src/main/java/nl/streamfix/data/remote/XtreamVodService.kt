@@ -60,6 +60,33 @@ class XtreamVodService @Inject constructor(
         }
     }
 
+    /** Alle films (zonder categorie), voor de globale zoekfunctie. */
+    suspend fun allItems(
+        serverUrl: String,
+        username: String,
+        password: String,
+    ): AppResult<List<VodItem>> = withContext(Dispatchers.IO) {
+        try {
+            val url = XtreamUrls.playerApi(
+                serverUrl, username, password, action = "get_vod_streams",
+            )
+            AppResult.Success(
+                api.getVodStreams(url).mapNotNull { dto ->
+                    val id = dto.streamIdValue ?: return@mapNotNull null
+                    VodItem(
+                        id = id,
+                        name = dto.name?.ifBlank { "Film $id" } ?: "Film $id",
+                        posterUrl = dto.streamIcon?.takeIf { it.isNotBlank() },
+                        categoryId = dto.categoryId,
+                        containerExtension = dto.containerExtension,
+                    )
+                },
+            )
+        } catch (e: Exception) {
+            AppResult.Failure(XtreamErrorMapper.map(e))
+        }
+    }
+
     suspend fun detail(
         serverUrl: String,
         username: String,

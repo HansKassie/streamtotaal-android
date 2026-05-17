@@ -23,6 +23,13 @@ class GetSeriesItemsUseCase @Inject constructor(
         repository.getItems(categoryId)
 }
 
+class GetAllSeriesUseCase @Inject constructor(
+    private val repository: SeriesRepository,
+) {
+    suspend operator fun invoke(): AppResult<List<SeriesItem>> =
+        repository.getAllItems()
+}
+
 class GetSeriesDetailUseCase @Inject constructor(
     private val repository: SeriesRepository,
 ) {

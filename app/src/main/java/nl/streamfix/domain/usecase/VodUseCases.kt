@@ -25,6 +25,13 @@ class GetVodItemsUseCase @Inject constructor(
         repository.getItems(categoryId)
 }
 
+class GetAllVodUseCase @Inject constructor(
+    private val repository: VodRepository,
+) {
+    suspend operator fun invoke(): AppResult<List<VodItem>> =
+        repository.getAllItems()
+}
+
 class GetVodDetailUseCase @Inject constructor(
     private val repository: VodRepository,
 ) {

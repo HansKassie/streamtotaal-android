@@ -115,26 +115,33 @@ JSON-bestand met de vorm
 constante `REMOTE_CATALOG_URL` in datzelfde bestand. Is die leeg of
 onbereikbaar, dan gebruikt de app de ingebouwde lijst.
 
-## In-app updates via GitHub
+## In-app updates via Cloudflare R2
 
-Alles staat al bedraad op `github.com/HansKassie/streamtotaal-android`:
-- App haalt op: `https://raw.githubusercontent.com/HansKassie/
-  streamtotaal-android/main/version.json` (constante `UPDATE_MANIFEST_URL`).
-- `version.json` (repo-root) wijst met `apkUrl` naar
-  `https://github.com/HansKassie/streamtotaal-android/releases/latest/
-  download/streamtotaal.apk` (volgt automatisch de nieuwste Release).
+Distributie loopt via een Cloudflare R2-bucket op een eigen domein:
+- App haalt op: `https://updates.smarttv-solutions.xyz/version.json`
+  (constante `UPDATE_MANIFEST_URL` in `UpdateRepositoryImpl.kt`).
+- `version.json` wijst met `apkUrl` naar
+  `https://updates.smarttv-solutions.xyz/streamtotaal.apk`.
 
-Eenmalig:
-1. Repo **publiek** online zetten (sectie 5), branch `main`.
-2. Keystore aanmaken en release signen (sectie 2).
+Eenmalig (Cloudflare-dashboard):
+1. R2 > Create bucket, bijv. `streamtotaal-updates`.
+2. Bucket > Settings > Public access > Custom Domains > Connect Domain:
+   `updates.smarttv-solutions.xyz` (Cloudflare regelt DNS + TLS).
+3. Keystore aanmaken en release signen (sectie 2).
 
 Per nieuwe versie uitrollen:
 1. Verhoog `versionCode` (en `versionName`) in `app/build.gradle.kts`.
 2. Bouw de gesigneerde release-APK, hernoem naar `streamtotaal.apk`.
-3. Maak een GitHub **Release** (nieuwe tag) en upload `streamtotaal.apk`
-   als asset.
-4. Werk `version.json` bij (zelfde `versionCode`/`versionName`, nieuwe
-   `releaseNotes`) en push naar `main`. Raw cachet ~5 min.
+3. Upload in de R2-bucket (Objects > Upload) `streamtotaal.apk` en het
+   bijgewerkte `version.json` (overschrijf de bestaande objecten;
+   zelfde `versionCode`/`versionName` als de APK, nieuwe `releaseNotes`).
+4. Cloudflare-cache kan kort blijven hangen; eventueel die twee objecten
+   purgen via Caching > Configuration.
+
+Migratie vanaf GitHub: reeds geinstalleerde apps (<= 1.0.5) pollen nog de
+oude GitHub-`version.json`. Houd die daarom in stand en laat hem naar de
+nieuwe versie wijzen totdat vrijwel iedereen op een build met de
+Cloudflare-URL zit; daarna kan het GitHub-kanaal vervallen.
 
 De app vergelijkt bij opstart `version.json`-`versionCode` met de
 geinstalleerde versie; hoger = updatedialog. `forceUpdate:true` of een

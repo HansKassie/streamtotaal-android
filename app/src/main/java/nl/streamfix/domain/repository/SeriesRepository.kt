@@ -8,6 +8,7 @@ import nl.streamfix.domain.util.AppResult
 interface SeriesRepository {
     suspend fun getCategories(): AppResult<List<LiveCategory>>
     suspend fun getItems(categoryId: String): AppResult<List<SeriesItem>>
+    suspend fun getAllItems(): AppResult<List<SeriesItem>>
     suspend fun getDetail(seriesId: String): AppResult<SeriesDetail>
     fun episodeStreamUrl(episodeId: String, extension: String): String?
 }

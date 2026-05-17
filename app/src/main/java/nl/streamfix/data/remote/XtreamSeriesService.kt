@@ -61,6 +61,32 @@ class XtreamSeriesService @Inject constructor(
         }
     }
 
+    /** Alle series (zonder categorie), voor de globale zoekfunctie. */
+    suspend fun allItems(
+        serverUrl: String,
+        username: String,
+        password: String,
+    ): AppResult<List<SeriesItem>> = withContext(Dispatchers.IO) {
+        try {
+            val url = XtreamUrls.playerApi(
+                serverUrl, username, password, action = "get_series",
+            )
+            AppResult.Success(
+                api.getSeriesStreams(url).mapNotNull { dto ->
+                    val id = dto.seriesIdValue ?: return@mapNotNull null
+                    SeriesItem(
+                        id = id,
+                        name = dto.name?.ifBlank { "Serie $id" } ?: "Serie $id",
+                        posterUrl = dto.cover?.takeIf { it.isNotBlank() },
+                        categoryId = dto.categoryId,
+                    )
+                },
+            )
+        } catch (e: Exception) {
+            AppResult.Failure(XtreamErrorMapper.map(e))
+        }
+    }
+
     suspend fun detail(
         serverUrl: String,
         username: String,

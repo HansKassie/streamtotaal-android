@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import nl.streamfix.data.local.AdultState
+import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.domain.model.Account
 import nl.streamfix.domain.model.AccountInfo
 import nl.streamfix.domain.usecase.GetAccountInfoUseCase
@@ -35,10 +37,20 @@ class MainViewModel @Inject constructor(
     private val removeAccount: RemoveAccountUseCase,
     private val setStreamFormat: SetStreamFormatUseCase,
     private val logout: LogoutUseCase,
+    private val appSettings: AppSettingsStore,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state.asStateFlow()
+
+    val adultState: StateFlow<AdultState> = appSettings.adultState
+
+    fun onSetAdultPin(pin: String) = appSettings.setPin(pin)
+
+    /** True bij juiste pincode (sessie ontgrendeld). */
+    fun onUnlockAdult(pin: String): Boolean = appSettings.unlock(pin)
+
+    fun onHideAdult() = appSettings.hideAgain()
 
     init {
         reload()

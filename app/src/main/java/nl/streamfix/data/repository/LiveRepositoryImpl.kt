@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import nl.streamfix.data.local.AdultContent
+import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.data.local.SecureCredentialStore
 import nl.streamfix.data.local.db.FavoriteChannelEntity
 import nl.streamfix.data.local.db.FavoriteDao
@@ -24,6 +26,7 @@ class LiveRepositoryImpl @Inject constructor(
     private val liveService: XtreamLiveService,
     private val store: SecureCredentialStore,
     private val favoriteDao: FavoriteDao,
+    private val appSettings: AppSettingsStore,
 ) : LiveRepository {
 
     private fun activeXtream(): Account.Xtream? =
@@ -31,16 +34,40 @@ class LiveRepositoryImpl @Inject constructor(
 
     override suspend fun getCategories(): AppResult<List<LiveCategory>> {
         val acc = activeXtream() ?: return AppResult.Failure(AppError.Unknown)
-        return liveService.categories(acc.serverUrl, acc.username, acc.password)
+        val r = liveService.categories(acc.serverUrl, acc.username, acc.password)
+        return if (r is AppResult.Success && appSettings.adultFilterActive()) {
+            AppResult.Success(r.data.filterNot { AdultContent.isAdult(it.name) })
+        } else {
+            r
+        }
     }
 
     override suspend fun getChannels(
         categoryId: String?,
     ): AppResult<List<LiveChannel>> {
         val acc = activeXtream() ?: return AppResult.Failure(AppError.Unknown)
-        return liveService.channels(
+        val r = liveService.channels(
             acc.serverUrl, acc.username, acc.password, categoryId,
         )
+        if (r !is AppResult.Success || !appSettings.adultFilterActive()) return r
+        // "Alle kanalen" (zoeken/gemist): kanalen uit volwassen-categorieen
+        // weglaten op basis van de categorie-namen.
+        val adultIds = adultCategoryIds(acc)
+        return AppResult.Success(
+            r.data.filterNot {
+                it.categoryId in adultIds || AdultContent.isAdult(it.name)
+            },
+        )
+    }
+
+    private suspend fun adultCategoryIds(acc: Account.Xtream): Set<String> {
+        val c = liveService.categories(acc.serverUrl, acc.username, acc.password)
+        return if (c is AppResult.Success) {
+            c.data.filter { AdultContent.isAdult(it.name) }
+                .map { it.id }.toSet()
+        } else {
+            emptySet()
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -50,15 +77,20 @@ class LiveRepositoryImpl @Inject constructor(
                 flowOf(emptyList())
             } else {
                 favoriteDao.observe(account.id).map { list ->
-                    list.map {
-                        LiveChannel(
-                            id = it.channelId,
-                            name = it.name,
-                            logoUrl = it.logoUrl,
-                            categoryId = null,
-                            epgChannelId = null,
-                        )
-                    }
+                    list
+                        .filterNot {
+                            appSettings.adultFilterActive() &&
+                                AdultContent.isAdult(it.name)
+                        }
+                        .map {
+                            LiveChannel(
+                                id = it.channelId,
+                                name = it.name,
+                                logoUrl = it.logoUrl,
+                                categoryId = null,
+                                epgChannelId = null,
+                            )
+                        }
                 }
             }
         }

@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import nl.streamfix.data.local.AdultContent
+import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.data.local.SecureCredentialStore
 import nl.streamfix.data.local.db.FavoriteMediaDao
 import nl.streamfix.data.local.db.FavoriteMediaEntity
@@ -21,7 +23,12 @@ private const val TYPE_SERIES = "series"
 class MediaFavoritesRepositoryImpl @Inject constructor(
     private val dao: FavoriteMediaDao,
     private val store: SecureCredentialStore,
+    private val appSettings: AppSettingsStore,
 ) : MediaFavoritesRepository {
+
+    private fun List<FavoriteMediaEntity>.dropAdult() = filterNot {
+        appSettings.adultFilterActive() && AdultContent.isAdult(it.name)
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeVodFavorites(): Flow<List<VodItem>> =
@@ -30,7 +37,7 @@ class MediaFavoritesRepositoryImpl @Inject constructor(
                 flowOf(emptyList())
             } else {
                 dao.observe(account.id, TYPE_VOD).map { rows ->
-                    rows.map {
+                    rows.dropAdult().map {
                         VodItem(
                             id = it.mediaId,
                             name = it.name,
@@ -50,7 +57,7 @@ class MediaFavoritesRepositoryImpl @Inject constructor(
                 flowOf(emptyList())
             } else {
                 dao.observe(account.id, TYPE_SERIES).map { rows ->
-                    rows.map {
+                    rows.dropAdult().map {
                         SeriesItem(
                             id = it.mediaId,
                             name = it.name,

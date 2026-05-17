@@ -7,6 +7,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import nl.streamfix.ui.screens.catchup.CatchupChannelScreen
+import nl.streamfix.ui.screens.nowontv.NowOnTvScreen
+import nl.streamfix.ui.screens.search.SearchScreen
 import nl.streamfix.ui.screens.login.XtreamLoginScreen
 import nl.streamfix.ui.screens.main.MainScreen
 import nl.streamfix.ui.screens.epg.ChannelEpgScreen
@@ -80,6 +82,32 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
                     navController.navigate(
                         Routes.catchupChannel(channelId, channelName, days),
                     )
+                },
+                onOpenSearch = { navController.navigate(Routes.SEARCH) },
+                onOpenNowOnTv = { navController.navigate(Routes.NOW_ON_TV) },
+            )
+        }
+
+        composable(Routes.NOW_ON_TV) {
+            NowOnTvScreen(
+                onBack = { navController.popBackStack() },
+                onOpenChannel = { categoryId, channelId ->
+                    navController.navigate(Routes.player(categoryId, channelId))
+                },
+            )
+        }
+
+        composable(Routes.SEARCH) {
+            SearchScreen(
+                onBack = { navController.popBackStack() },
+                onOpenChannel = { categoryId, channelId ->
+                    navController.navigate(Routes.player(categoryId, channelId))
+                },
+                onOpenVod = { vodId ->
+                    navController.navigate(Routes.vodDetail(vodId))
+                },
+                onOpenSeries = { seriesId ->
+                    navController.navigate(Routes.seriesDetail(seriesId))
                 },
             )
         }

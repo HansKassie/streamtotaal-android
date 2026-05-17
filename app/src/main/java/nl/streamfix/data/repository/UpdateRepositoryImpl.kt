@@ -32,10 +32,9 @@ class UpdateRepositoryImpl @Inject constructor(
     }
 
     private companion object {
-        // version.json in de repo (branch main). Bewerk + push om een
-        // update uit te rollen. Leeg maken = updatecheck uit.
+        // version.json in de Cloudflare R2-bucket. Vervang het object om
+        // een update uit te rollen. Leeg maken = updatecheck uit.
         const val UPDATE_MANIFEST_URL =
-            "https://raw.githubusercontent.com/HansKassie/" +
-                "streamtotaal-android/main/version.json"
+            "https://updates.smarttv-solutions.xyz/version.json"
     }
 }

@@ -5,6 +5,9 @@ object Routes {
     const val LOGIN_XTREAM = "login/xtream"
     const val MAIN = "main"
 
+    const val SEARCH = "search"
+    const val NOW_ON_TV = "nowontv"
+
     const val PLAYER = "player"
     const val PLAYER_ARG_CATEGORY = "cat"
     const val PLAYER_ARG_CHANNEL = "ch"

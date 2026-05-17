@@ -23,8 +23,12 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,6 +37,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -49,6 +55,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -85,9 +93,12 @@ fun MainScreen(
     onOpenCatchupChannel: (
         channelId: String, channelName: String, days: Int,
     ) -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenNowOnTv: () -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val adultState by viewModel.adultState.collectAsStateWithLifecycle()
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val context = LocalContext.current
     var backArmed by remember { mutableStateOf(false) }
@@ -123,7 +134,25 @@ fun MainScreen(
     val tabs = Tab.entries
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(tabs[selected].label) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(tabs[selected].label) },
+                actions = {
+                    IconButton(onClick = onOpenNowOnTv) {
+                        Icon(
+                            Icons.Filled.Schedule,
+                            contentDescription = "Nu op tv",
+                        )
+                    }
+                    IconButton(onClick = onOpenSearch) {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = "Zoeken",
+                        )
+                    }
+                },
+            )
+        },
         bottomBar = {
             NavigationBar {
                 tabs.forEachIndexed { index, tab ->
@@ -159,9 +188,13 @@ fun MainScreen(
                 ) {
                     SettingsContent(
                         state = state,
+                        adult = adultState,
                         onSwitchProvider = viewModel::onSwitchProvider,
                         onRemoveProvider = viewModel::onRemoveProvider,
                         onSetStreamFormat = viewModel::onSetStreamFormat,
+                        onSetAdultPin = viewModel::onSetAdultPin,
+                        onUnlockAdult = viewModel::onUnlockAdult,
+                        onHideAdult = viewModel::onHideAdult,
                         onAddProvider = onAddProvider,
                         onLogout = viewModel::onLogout,
                     )
@@ -196,9 +229,13 @@ private fun PlaceholderContent(name: String) {
 @Composable
 private fun SettingsContent(
     state: MainState,
+    adult: nl.streamfix.data.local.AdultState,
     onSwitchProvider: (String) -> Unit,
     onRemoveProvider: (String) -> Unit,
     onSetStreamFormat: (String) -> Unit,
+    onSetAdultPin: (String) -> Unit,
+    onUnlockAdult: (String) -> Boolean,
+    onHideAdult: () -> Unit,
     onAddProvider: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -303,6 +340,16 @@ private fun SettingsContent(
         }
 
         Spacer(Modifier.height(16.dp))
+        Text("Volwassen content", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(4.dp))
+        AdultContentSection(
+            adult = adult,
+            onSetAdultPin = onSetAdultPin,
+            onUnlockAdult = onUnlockAdult,
+            onHideAdult = onHideAdult,
+        )
+
+        Spacer(Modifier.height(16.dp))
         Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
             Text("Uitloggen")
         }
@@ -314,4 +361,150 @@ private fun SettingsContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+@Composable
+private fun AdultContentSection(
+    adult: nl.streamfix.data.local.AdultState,
+    onSetAdultPin: (String) -> Unit,
+    onUnlockAdult: (String) -> Boolean,
+    onHideAdult: () -> Unit,
+) {
+    var showSet by remember { mutableStateOf(false) }
+    var showEnter by remember { mutableStateOf(false) }
+
+    when {
+        !adult.hasPin -> {
+            Text(
+                "Nog geen pincode. Volwassen content is verborgen.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { showSet = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Pincode instellen") }
+        }
+        adult.unlocked -> {
+            Text(
+                "Zichtbaar (deze sessie)",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onHideAdult,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Weer verbergen") }
+            TextButton(onClick = { showSet = true }) {
+                Text("Pincode wijzigen")
+            }
+        }
+        else -> {
+            Text("Verborgen", style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { showEnter = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Tonen met pincode") }
+            // Bewust geen "Pincode wijzigen" hier: wijzigen kan pas na
+            // ontgrendelen, anders omzeilt iemand het slot met een reset.
+        }
+    }
+
+    if (showSet) {
+        PinDialog(
+            title = "Pincode instellen",
+            confirmLabel = "Opslaan",
+            requireConfirm = true,
+            onDismiss = { showSet = false },
+            validate = { it.length >= 4 },
+        ) { pin ->
+            onSetAdultPin(pin)
+            showSet = false
+            true
+        }
+    }
+    if (showEnter) {
+        PinDialog(
+            title = "Pincode invoeren",
+            confirmLabel = "Tonen",
+            requireConfirm = false,
+            onDismiss = { showEnter = false },
+            validate = { it.isNotEmpty() },
+        ) { pin ->
+            val ok = onUnlockAdult(pin)
+            if (ok) showEnter = false
+            ok
+        }
+    }
+}
+
+/**
+ * Pincode-dialoog. [onConfirm] geeft true terug bij succes (sluit dan), of
+ * false (bv. onjuiste pincode) waarna de foutmelding zichtbaar wordt.
+ */
+@Composable
+private fun PinDialog(
+    title: String,
+    confirmLabel: String,
+    requireConfirm: Boolean,
+    onDismiss: () -> Unit,
+    validate: (String) -> Boolean,
+    onConfirm: (String) -> Boolean,
+) {
+    var pin by remember { mutableStateOf("") }
+    var repeat by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    val numeric = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = pin,
+                    onValueChange = { pin = it.filter { c -> c.isDigit() } },
+                    label = { Text("Pincode") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = numeric,
+                )
+                if (requireConfirm) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = repeat,
+                        onValueChange = {
+                            repeat = it.filter { c -> c.isDigit() }
+                        },
+                        label = { Text("Herhaal pincode") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = numeric,
+                    )
+                }
+                error?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it, color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                when {
+                    !validate(pin) ->
+                        error = "Pincode is te kort (minimaal 4 cijfers)."
+                    requireConfirm && pin != repeat ->
+                        error = "De pincodes zijn niet gelijk."
+                    else -> if (!onConfirm(pin)) {
+                        error = "Onjuiste pincode."
+                    }
+                }
+            }) { Text(confirmLabel) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Annuleren") }
+        },
+    )
 }

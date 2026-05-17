@@ -61,7 +61,9 @@ class PlayerViewModel @Inject constructor(
         if (categoryId == FAVORITES_ID) {
             observeFavorites().first()
         } else {
-            when (val r = getChannels(categoryId)) {
+            // Leeg (bijv. vanuit zoeken) = alle kanalen, anders de categorie.
+            val cat = categoryId.ifBlank { null }
+            when (val r = getChannels(cat)) {
                 is AppResult.Success -> r.data
                 is AppResult.Failure -> emptyList()
             }

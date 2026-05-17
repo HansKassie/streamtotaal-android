@@ -33,7 +33,10 @@ class StreamFixApplication : Application() {
     }
 
     companion object {
-        // TODO(SETUP.md): vervang door echte DSN uit het Sentry-dashboard
-        private const val SENTRY_DSN = ""
+        // Sentry-project "android" (org syncapp-beheer). DSN is geen geheim:
+        // hoort client-side in de app, dus mag in de broncode.
+        private const val SENTRY_DSN =
+            "https://f16704e9bf67c61e08330af478b44b2f" +
+                "@o4511403691540480.ingest.de.sentry.io/4511403704057936"
     }
 }
