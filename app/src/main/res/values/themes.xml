@@ -1,12 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Basistheme. Compose neemt de styling over via StreamFixTheme. -->
-    <style name="Theme.StreamFix" parent="android:Theme.Material.NoActionBar">
+    <!--
+      Basistheme. Compose neemt de styling over via StreamFixTheme. Parent
+      is AppCompat omdat de Cast-dialoog (AppCompatDialog) dat hard vereist;
+      window-kleuren zetten we expliciet zodat het beeld donker blijft.
+    -->
+    <style name="Theme.StreamFix" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@color/streamfix_background</item>
         <item name="android:statusBarColor">@color/streamfix_background</item>
         <item name="android:navigationBarColor">@color/streamfix_background</item>
         <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+        <!-- Cast-UI (knop + dialogen) gebruikt dit opake AppCompat-thema. -->
+        <item name="mediaRouteTheme">@style/Theme.StreamFix.Cast</item>
+        <!--
+          MediaRouterThemeHelper leest de AppCompat-colorPrimary uit de
+          Activity-context; expliciet opaak zetten, anders crasht de
+          cast-dialoog op een transparante kleur.
+        -->
+        <item name="colorPrimary">@color/streamfix_surface</item>
+        <item name="colorPrimaryDark">@color/streamfix_background</item>
+        <item name="colorAccent">@color/streamfix_accent</item>
+    </style>
+
+    <!--
+      Apart cast-thema (parent Theme.MediaRouter) met opake kleuren, gebruikt
+      via mediaRouteTheme zodat de MediaRouteButton/dialogen niet crashen.
+    -->
+    <style name="Theme.StreamFix.Cast" parent="Theme.MediaRouter">
+        <item name="colorPrimary">@color/streamfix_surface</item>
+        <item name="colorPrimaryDark">@color/streamfix_background</item>
+        <item name="colorAccent">@color/streamfix_accent</item>
     </style>
 
     <!-- Splash screen via androidx.core:core-splashscreen -->
@@ -14,6 +38,9 @@
         <item name="windowSplashScreenBackground">@color/streamfix_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_streamfix_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.StreamFix</item>
+        <item name="colorPrimary">@color/streamfix_surface</item>
+        <item name="colorPrimaryDark">@color/streamfix_background</item>
+        <item name="colorAccent">@color/streamfix_accent</item>
     </style>
 
 </resources>

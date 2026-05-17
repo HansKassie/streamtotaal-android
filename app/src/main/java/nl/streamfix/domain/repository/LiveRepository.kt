@@ -19,4 +19,14 @@ interface LiveRepository {
 
     /** Speelbare live-stream-URL, of null als er geen actieve provider is. */
     fun streamUrl(channelId: String): String?
+
+    /** Live-URL geforceerd als HLS (.m3u8), voor casten naar Chromecast. */
+    fun streamUrlForCast(channelId: String): String?
+
+    /** Catch-up/terugkijk-URL voor een programma, of null zonder provider. */
+    fun timeshiftUrl(
+        channelId: String,
+        startMs: Long,
+        durationMin: Int,
+    ): String?
 }

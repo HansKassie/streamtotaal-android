@@ -91,4 +91,27 @@ class LiveRepositoryImpl @Inject constructor(
             extension = ext,
         )
     }
+
+    override fun streamUrlForCast(channelId: String): String? {
+        val acc = activeXtream() ?: return null
+        // Chromecast-ontvanger kan geen rauwe .ts; forceer HLS.
+        return XtreamUrls.liveStream(
+            acc.serverUrl, acc.username, acc.password, channelId,
+            extension = "m3u8",
+        )
+    }
+
+    override fun timeshiftUrl(
+        channelId: String,
+        startMs: Long,
+        durationMin: Int,
+    ): String? {
+        val acc = activeXtream() ?: return null
+        return XtreamUrls.timeshift(
+            acc.serverUrl, acc.username, acc.password, channelId,
+            startMs = startMs,
+            durationMin = durationMin,
+            extension = "ts",
+        )
+    }
 }

@@ -40,3 +40,20 @@ class GetStreamUrlUseCase @Inject constructor(
     operator fun invoke(channelId: String): String? =
         repository.streamUrl(channelId)
 }
+
+class GetLiveCastUrlUseCase @Inject constructor(
+    private val repository: LiveRepository,
+) {
+    operator fun invoke(channelId: String): String? =
+        repository.streamUrlForCast(channelId)
+}
+
+class GetTimeshiftUrlUseCase @Inject constructor(
+    private val repository: LiveRepository,
+) {
+    operator fun invoke(
+        channelId: String,
+        startMs: Long,
+        durationMin: Int,
+    ): String? = repository.timeshiftUrl(channelId, startMs, durationMin)
+}

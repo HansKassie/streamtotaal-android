@@ -6,6 +6,7 @@ import nl.streamfix.domain.model.HistoryItem
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.VodDetail
 import nl.streamfix.domain.model.VodItem
+import nl.streamfix.domain.repository.MediaFavoritesRepository
 import nl.streamfix.domain.repository.PlaybackRepository
 import nl.streamfix.domain.repository.VodRepository
 import nl.streamfix.domain.util.AppResult
@@ -76,4 +77,29 @@ class ClearHistoryUseCase @Inject constructor(
     private val repository: PlaybackRepository,
 ) {
     suspend operator fun invoke() = repository.clearHistory()
+}
+
+class ObserveVodFavoritesUseCase @Inject constructor(
+    private val repository: MediaFavoritesRepository,
+) {
+    operator fun invoke(): Flow<List<VodItem>> =
+        repository.observeVodFavorites()
+}
+
+class IsVodFavoriteUseCase @Inject constructor(
+    private val repository: MediaFavoritesRepository,
+) {
+    operator fun invoke(id: String): Flow<Boolean> =
+        repository.isVodFavorite(id)
+}
+
+class SetVodFavoriteUseCase @Inject constructor(
+    private val repository: MediaFavoritesRepository,
+) {
+    suspend operator fun invoke(
+        id: String,
+        name: String,
+        posterUrl: String?,
+        favorite: Boolean,
+    ) = repository.setVodFavorite(id, name, posterUrl, favorite)
 }

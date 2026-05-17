@@ -59,4 +59,20 @@ object Routes {
         val n = android.net.Uri.encode(channelName)
         return "channelEpg?id=$id&name=$n"
     }
+
+    const val CATCHUP_ARG_ID = "id"
+    const val CATCHUP_ARG_NAME = "name"
+    const val CATCHUP_ARG_DAYS = "days"
+    const val CATCHUP_CHANNEL_ROUTE =
+        "catchup?id={id}&name={name}&days={days}"
+
+    fun catchupChannel(
+        channelId: String,
+        channelName: String,
+        days: Int,
+    ): String {
+        val id = android.net.Uri.encode(channelId)
+        val n = android.net.Uri.encode(channelName)
+        return "catchup?id=$id&name=$n&days=$days"
+    }
 }

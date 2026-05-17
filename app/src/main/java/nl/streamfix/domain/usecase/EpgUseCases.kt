@@ -11,3 +11,10 @@ class GetChannelEpgUseCase @Inject constructor(
     suspend operator fun invoke(streamId: String): AppResult<List<EpgProgramme>> =
         repository.getEpg(streamId)
 }
+
+class GetCatchupEpgUseCase @Inject constructor(
+    private val repository: EpgRepository,
+) {
+    suspend operator fun invoke(streamId: String): AppResult<List<EpgProgramme>> =
+        repository.getEpgTable(streamId)
+}

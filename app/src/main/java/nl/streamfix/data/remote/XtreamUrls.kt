@@ -1,6 +1,9 @@
 package nl.streamfix.data.remote
 
 import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Gedeelde Xtream-URL-opbouw (player_api en stream-URLs). */
 object XtreamUrls {
@@ -75,4 +78,25 @@ object XtreamUrls {
     ): String =
         "${normalizeServerUrl(serverUrl)}/series/" +
             "${encode(username)}/${encode(password)}/$episodeId.$extension"
+
+    /**
+     * Catch-up/terugkijk-URL (timeshift). Meest gangbare Xtream-vorm:
+     * /timeshift/user/pass/DUUR_MIN/yyyy-MM-dd:HH-mm/streamId.ext
+     * Starttijd in apparaattijd; duur in minuten.
+     */
+    fun timeshift(
+        serverUrl: String,
+        username: String,
+        password: String,
+        streamId: String,
+        startMs: Long,
+        durationMin: Int,
+        extension: String = "ts",
+    ): String {
+        val fmt = SimpleDateFormat("yyyy-MM-dd:HH-mm", Locale.US)
+        val start = fmt.format(Date(startMs))
+        return "${normalizeServerUrl(serverUrl)}/timeshift/" +
+            "${encode(username)}/${encode(password)}/" +
+            "$durationMin/$start/$streamId.$extension"
+    }
 }

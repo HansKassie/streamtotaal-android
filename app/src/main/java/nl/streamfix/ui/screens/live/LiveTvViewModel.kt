@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
+import nl.streamfix.domain.usecase.GetActiveAccountUseCase
 import nl.streamfix.domain.usecase.GetChannelEpgUseCase
 import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
@@ -45,6 +46,7 @@ class LiveTvViewModel @Inject constructor(
     private val setFavorite: SetFavoriteUseCase,
     private val getStreamUrl: GetStreamUrlUseCase,
     private val getChannelEpg: GetChannelEpgUseCase,
+    private val getActiveAccount: GetActiveAccountUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LiveUiState())
@@ -75,7 +77,22 @@ class LiveTvViewModel @Inject constructor(
                 }
             }
         }
-        loadCategories()
+        // Herlaad zodra de actieve provider wisselt (eerste emissie = start).
+        viewModelScope.launch {
+            var lastId: String? = null
+            var first = true
+            getActiveAccount().collect { acc ->
+                val id = acc?.id
+                if (first || id != lastId) {
+                    first = false
+                    lastId = id
+                    _state.value = LiveUiState()
+                    epgRequested.clear()
+                    _epg.value = emptyMap()
+                    if (acc != null) loadCategories()
+                }
+            }
+        }
     }
 
     private fun loadCategories() {

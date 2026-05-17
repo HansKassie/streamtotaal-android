@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
@@ -40,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -63,12 +63,17 @@ fun PlayerScreen(
     val player = remember { ExoPlayer.Builder(context).build() }
     var retryAttempt by remember { mutableIntStateOf(0) }
     var retryJob by remember { mutableStateOf<Job?>(null) }
+    var showError by remember { mutableStateOf(false) }
+    var showTracks by remember { mutableStateOf(false) }
+    val tracks = rememberTracks(player)
+    val cast = rememberCastController(player)
 
     // Markeer dat we in de speler zitten zodat MainActivity PiP kan starten.
     DisposableEffect(Unit) {
         PlayerActive.inPlayer = true
         onDispose {
             PlayerActive.inPlayer = false
+            cast.release()
             player.release()
         }
     }
@@ -77,18 +82,21 @@ fun PlayerScreen(
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) retryAttempt = 0
+                if (playbackState == Player.STATE_READY) {
+                    retryAttempt = 0
+                    showError = false
+                }
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                showError = true
                 val backoffMs =
                     (1000L shl retryAttempt.coerceAtMost(3)).coerceAtMost(8000L)
                 retryAttempt++
                 retryJob?.cancel()
                 retryJob = scope.launch {
                     delay(backoffMs)
-                    player.prepare()
-                    player.playWhenReady = true
+                    cast.retryLocal()
                 }
             }
         }
@@ -101,9 +109,14 @@ fun PlayerScreen(
         val url = state.streamUrl ?: return@LaunchedEffect
         retryJob?.cancel()
         retryAttempt = 0
-        player.setMediaItem(MediaItem.fromUri(url))
-        player.prepare()
-        player.playWhenReady = true
+        showError = false
+        cast.load(
+            url,
+            state.title,
+            0L,
+            isLive = true,
+            castUri = state.castStreamUrl ?: url,
+        )
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
@@ -136,11 +149,11 @@ fun PlayerScreen(
                 },
             factory = { ctx ->
                 PlayerView(ctx).apply {
-                    this.player = player
                     setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
                     setBackgroundColor(android.graphics.Color.BLACK)
                 }
             },
+            update = { it.player = cast.current },
         )
 
         Row(
@@ -161,6 +174,34 @@ fun PlayerScreen(
                 text = state.title,
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
+            if (cast.castAvailable) {
+                CastButton()
+            }
+            IconButton(onClick = { showTracks = true }) {
+                Icon(
+                    Icons.Filled.Settings,
+                    contentDescription = "Audio en ondertitels",
+                    tint = Color.White,
+                )
+            }
+        }
+
+        if (showError) {
+            PlayerErrorOverlay(onRetry = {
+                retryJob?.cancel()
+                retryAttempt = 0
+                cast.retryLocal()
+                showError = false
+            })
+        }
+
+        if (showTracks) {
+            TrackSelectorDialog(
+                player = player,
+                tracks = tracks,
+                onDismiss = { showTracks = false },
             )
         }
 

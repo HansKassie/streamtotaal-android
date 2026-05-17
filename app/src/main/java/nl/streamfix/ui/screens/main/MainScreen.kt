@@ -1,5 +1,8 @@
 package nl.streamfix.ui.screens.main
 
+import android.app.Activity
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +22,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Button
@@ -37,19 +41,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
 import nl.streamfix.BuildConfig
 import nl.streamfix.domain.model.Account
 import nl.streamfix.ui.formatXtreamExpiry
+import nl.streamfix.ui.screens.catchup.CatchupScreen
 import nl.streamfix.ui.screens.history.HistoryScreen
 import nl.streamfix.ui.screens.live.LiveTvScreen
 import nl.streamfix.ui.screens.series.SeriesScreen
@@ -59,6 +67,7 @@ private enum class Tab(val label: String, val icon: ImageVector) {
     LiveTv("Live TV", Icons.Filled.LiveTv),
     Movies("Films", Icons.Filled.Movie),
     Series("Series", Icons.Filled.Tv),
+    Catchup("Gemist", Icons.Filled.Replay),
     History("Verder", Icons.Filled.History),
     Settings("Meer", Icons.Filled.Settings),
 }
@@ -73,13 +82,42 @@ fun MainScreen(
     onOpenVod: (vodId: String) -> Unit,
     onOpenSeries: (seriesId: String) -> Unit,
     onResumeMedia: (streamUrl: String, title: String, mediaId: String) -> Unit,
+    onOpenCatchupChannel: (
+        channelId: String, channelName: String, days: Int,
+    ) -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selected by rememberSaveable { mutableIntStateOf(0) }
+    val context = LocalContext.current
+    var backArmed by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLoggedOut()
+    }
+
+    LaunchedEffect(backArmed) {
+        if (backArmed) {
+            delay(2000)
+            backArmed = false
+        }
+    }
+
+    // Terug-toets: niet meteen de app verlaten. Eerst terug naar Live TV,
+    // en op het eerste tabblad pas afsluiten na een tweede druk.
+    BackHandler {
+        when {
+            selected != 0 -> selected = 0
+            backArmed -> (context as? Activity)?.finish()
+            else -> {
+                backArmed = true
+                Toast.makeText(
+                    context,
+                    "Nogmaals terug om af te sluiten",
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+        }
     }
 
     val tabs = Tab.entries
@@ -111,6 +149,9 @@ fun MainScreen(
                 )
                 Tab.Movies -> VodScreen(onOpenVod = onOpenVod)
                 Tab.Series -> SeriesScreen(onOpenSeries = onOpenSeries)
+                Tab.Catchup -> CatchupScreen(
+                    onOpenChannel = onOpenCatchupChannel,
+                )
                 Tab.History -> HistoryScreen(onResume = onResumeMedia)
                 Tab.Settings -> Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),

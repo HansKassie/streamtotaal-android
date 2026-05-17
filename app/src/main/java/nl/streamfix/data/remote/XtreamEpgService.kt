@@ -41,6 +41,37 @@ class XtreamEpgService @Inject constructor(
         }
     }
 
+    /** Volledige EPG-tabel (get_simple_data_table) incl. afgelopen programma's. */
+    suspend fun epgTable(
+        serverUrl: String,
+        username: String,
+        password: String,
+        streamId: String,
+    ): AppResult<List<EpgProgramme>> = withContext(Dispatchers.IO) {
+        try {
+            val url = XtreamUrls.playerApi(
+                serverUrl, username, password,
+                action = "get_simple_data_table",
+                params = mapOf("stream_id" to streamId),
+            )
+            val programmes = api.getEpgTable(url).listings.orEmpty()
+                .mapNotNull { dto ->
+                    val start = dto.startSeconds ?: return@mapNotNull null
+                    val stop = dto.stopSeconds ?: return@mapNotNull null
+                    EpgProgramme(
+                        title = decode(dto.title),
+                        description = decode(dto.description),
+                        startMs = start * 1000L,
+                        endMs = stop * 1000L,
+                    )
+                }
+                .sortedBy { it.startMs }
+            AppResult.Success(programmes)
+        } catch (e: Exception) {
+            AppResult.Failure(XtreamErrorMapper.map(e))
+        }
+    }
+
     /** Xtream codeert titel/omschrijving als base64; val terug op ruw bij twijfel. */
     private fun decode(value: String?): String {
         val raw = value?.trim().orEmpty()

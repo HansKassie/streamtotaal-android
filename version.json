@@ -1,8 +1,8 @@
 {
-  "versionCode": 5,
-  "versionName": "1.0.4",
+  "versionCode": 6,
+  "versionName": "1.0.5",
   "apkUrl": "https://github.com/HansKassie/streamtotaal-android/releases/latest/download/streamtotaal.apk",
-  "releaseNotes": "Providers strakker weergegeven en de instellingen-tab heet nu Meer.",
+  "releaseNotes": "Nieuw: Gemist (tot 7 dagen terugkijken per kanaal) en casten naar Chromecast/Google TV. Verder: audiospoor- en ondertitelkeuze, verder kijken-vraag bij films/series, zichtbare foutmelding met opnieuw proberen, favorieten voor films en series, en een betere terug-toets.",
   "minSupportedVersionCode": 1,
   "forceUpdate": false
 }

@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import nl.streamfix.ui.screens.catchup.CatchupChannelScreen
 import nl.streamfix.ui.screens.login.XtreamLoginScreen
 import nl.streamfix.ui.screens.main.MainScreen
 import nl.streamfix.ui.screens.epg.ChannelEpgScreen
@@ -74,6 +75,11 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
                 },
                 onResumeMedia = { url, title, mediaId ->
                     navController.navigate(Routes.playback(url, title, mediaId))
+                },
+                onOpenCatchupChannel = { channelId, channelName, days ->
+                    navController.navigate(
+                        Routes.catchupChannel(channelId, channelName, days),
+                    )
                 },
             )
         }
@@ -168,6 +174,30 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
             ),
         ) {
             ChannelEpgScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.CATCHUP_CHANNEL_ROUTE,
+            arguments = listOf(
+                navArgument(Routes.CATCHUP_ARG_ID) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.CATCHUP_ARG_NAME) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.CATCHUP_ARG_DAYS) {
+                    type = NavType.StringType; defaultValue = "7"
+                },
+            ),
+        ) {
+            CatchupChannelScreen(
+                onBack = { navController.popBackStack() },
+                onPlay = { url, title, mediaId ->
+                    navController.navigate(
+                        Routes.playback(url, title, mediaId),
+                    )
+                },
+            )
         }
     }
 }

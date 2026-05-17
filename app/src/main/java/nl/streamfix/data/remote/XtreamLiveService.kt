@@ -49,6 +49,7 @@ class XtreamLiveService @Inject constructor(
                     logoUrl = dto.streamIcon?.takeIf { it.isNotBlank() },
                     categoryId = dto.categoryId ?: categoryId,
                     epgChannelId = dto.epgChannelId?.takeIf { it.isNotBlank() },
+                    archiveDays = dto.archiveDays,
                 )
             }
             AppResult.Success(result)

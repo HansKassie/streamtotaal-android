@@ -51,4 +51,13 @@
 # ---- Media3 / ExoPlayer ----
 -dontwarn androidx.media3.**
 
+# ---- Google Cast ----
+# CastOptionsProvider wordt via reflectie geladen vanuit de manifest-meta-data;
+# zonder keep verdwijnt hij in de release en werkt casten niet meer.
+-keep class nl.streamfix.cast.CastOptionsProvider { *; }
+-keep class * implements com.google.android.gms.cast.framework.OptionsProvider { *; }
+-keep class com.google.android.gms.cast.framework.** { *; }
+-dontwarn com.google.android.gms.**
+-dontwarn androidx.mediarouter.**
+
 # Hilt, Room en Coil leveren hun eigen consumer-regels; niets extra nodig.

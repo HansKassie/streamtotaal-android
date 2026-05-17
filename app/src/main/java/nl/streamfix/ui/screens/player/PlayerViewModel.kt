@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.streamfix.domain.model.LiveChannel
+import nl.streamfix.domain.usecase.GetLiveCastUrlUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
 import nl.streamfix.domain.usecase.GetStreamUrlUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
@@ -22,6 +23,7 @@ import nl.streamfix.ui.screens.live.FAVORITES_ID
 data class PlayerUiState(
     val title: String = "",
     val streamUrl: String? = null,
+    val castStreamUrl: String? = null,
     val hasPrevious: Boolean = false,
     val hasNext: Boolean = false,
 )
@@ -32,6 +34,7 @@ class PlayerViewModel @Inject constructor(
     private val getChannels: GetLiveChannelsUseCase,
     private val observeFavorites: ObserveFavoritesUseCase,
     private val getStreamUrl: GetStreamUrlUseCase,
+    private val getCastUrl: GetLiveCastUrlUseCase,
 ) : ViewModel() {
 
     private val categoryId: String =
@@ -74,6 +77,7 @@ class PlayerViewModel @Inject constructor(
             it.copy(
                 title = channel.name,
                 streamUrl = getStreamUrl(channel.id),
+                castStreamUrl = getCastUrl(channel.id),
                 hasPrevious = index > 0,
                 hasNext = index < channels.lastIndex,
             )

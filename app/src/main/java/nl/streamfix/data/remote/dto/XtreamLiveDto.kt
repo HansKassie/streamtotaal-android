@@ -20,6 +20,20 @@ data class XtreamLiveStreamDto(
     @SerialName("stream_icon") val streamIcon: String? = null,
     @SerialName("epg_channel_id") val epgChannelId: String? = null,
     @SerialName("category_id") val categoryId: String? = null,
+    // Catch-up: 0/1 (soms string) en aantal dagen archief.
+    @SerialName("tv_archive") val tvArchive: JsonElement? = null,
+    @SerialName("tv_archive_duration") val tvArchiveDuration: JsonElement? = null,
 ) {
     val streamIdValue: String? get() = streamId?.jsonPrimitive?.contentOrNull
+
+    /** Aantal dagen terugkijken, of 0 als het kanaal geen archief heeft. */
+    val archiveDays: Int
+        get() {
+            val on = tvArchive?.jsonPrimitive?.contentOrNull
+                ?.let { it == "1" || it.equals("true", ignoreCase = true) }
+                ?: false
+            if (!on) return 0
+            return tvArchiveDuration?.jsonPrimitive?.contentOrNull
+                ?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+        }
 }

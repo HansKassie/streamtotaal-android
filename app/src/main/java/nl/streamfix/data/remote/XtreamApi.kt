@@ -48,6 +48,10 @@ interface XtreamApi {
     @GET
     suspend fun getShortEpg(@Url url: String): XtreamEpgResponseDto
 
+    /** get_simple_data_table: volledige EPG-tabel (incl. afgelopen). */
+    @GET
+    suspend fun getEpgTable(@Url url: String): XtreamEpgResponseDto
+
     @GET
     suspend fun getProviderCatalog(@Url url: String): List<ProviderDto>
 

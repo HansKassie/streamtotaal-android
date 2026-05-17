@@ -6,14 +6,18 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.streamfix.domain.model.HistoryItem
 import nl.streamfix.domain.model.VodDetail
 import nl.streamfix.domain.usecase.GetVodDetailUseCase
 import nl.streamfix.domain.usecase.GetVodStreamUrlUseCase
+import nl.streamfix.domain.usecase.IsVodFavoriteUseCase
+import nl.streamfix.domain.usecase.SetVodFavoriteUseCase
 import nl.streamfix.domain.usecase.StartWatchingUseCase
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.ui.navigation.Routes
@@ -31,6 +35,8 @@ class VodDetailViewModel @Inject constructor(
     private val getDetail: GetVodDetailUseCase,
     private val getStreamUrl: GetVodStreamUrlUseCase,
     private val startWatching: StartWatchingUseCase,
+    private val isVodFavorite: IsVodFavoriteUseCase,
+    private val setVodFavorite: SetVodFavoriteUseCase,
 ) : ViewModel() {
 
     private val vodId: String =
@@ -38,6 +44,19 @@ class VodDetailViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(VodDetailState())
     val state: StateFlow<VodDetailState> = _state.asStateFlow()
+
+    val isFavorite: StateFlow<Boolean> = isVodFavorite(vodId).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = false,
+    )
+
+    fun toggleFavorite() {
+        val d = _state.value.detail ?: return
+        viewModelScope.launch {
+            setVodFavorite(d.id, d.name, d.posterUrl, !isFavorite.value)
+        }
+    }
 
     init {
         viewModelScope.launch {

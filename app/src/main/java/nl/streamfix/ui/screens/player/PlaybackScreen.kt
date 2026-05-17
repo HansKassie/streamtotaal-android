@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -54,12 +54,18 @@ fun PlaybackScreen(
     val player = remember { ExoPlayer.Builder(context).build() }
     var retryAttempt by remember { mutableIntStateOf(0) }
     var retryJob by remember { mutableStateOf<Job?>(null) }
+    var showError by remember { mutableStateOf(false) }
+    var showTracks by remember { mutableStateOf(false) }
+    var pendingResumeMs by remember { mutableStateOf<Long?>(null) }
+    val tracks = rememberTracks(player)
+    val cast = rememberCastController(player)
 
     DisposableEffect(Unit) {
         PlayerActive.inPlayer = true
         onDispose {
             PlayerActive.inPlayer = false
-            viewModel.savePosition(player.currentPosition)
+            viewModel.savePosition(cast.positionMs)
+            cast.release()
             player.release()
         }
     }
@@ -67,18 +73,21 @@ fun PlaybackScreen(
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) retryAttempt = 0
+                if (playbackState == Player.STATE_READY) {
+                    retryAttempt = 0
+                    showError = false
+                }
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                showError = true
                 val backoffMs =
                     (1000L shl retryAttempt.coerceAtMost(3)).coerceAtMost(8000L)
                 retryAttempt++
                 retryJob?.cancel()
                 retryJob = scope.launch {
                     delay(backoffMs)
-                    player.prepare()
-                    player.playWhenReady = true
+                    cast.retryLocal()
                 }
             }
         }
@@ -90,17 +99,20 @@ fun PlaybackScreen(
         if (!state.ready || state.streamUrl.isBlank()) return@LaunchedEffect
         retryJob?.cancel()
         retryAttempt = 0
-        player.setMediaItem(MediaItem.fromUri(state.streamUrl))
-        player.prepare()
-        if (state.startPositionMs > 0L) player.seekTo(state.startPositionMs)
-        player.playWhenReady = true
+        showError = false
+        val resume = state.startPositionMs > 0L
+        cast.load(state.streamUrl, state.title, 0L, autoPlay = !resume)
+        if (resume) {
+            // Eerst vragen: verder kijken of opnieuw.
+            pendingResumeMs = state.startPositionMs
+        }
     }
 
     // Positie periodiek bewaren zodat resume ook na een proceskill werkt.
     LaunchedEffect(state.streamUrl) {
         while (isActive) {
             delay(10_000)
-            if (player.isPlaying) viewModel.savePosition(player.currentPosition)
+            if (cast.current.isPlaying) viewModel.savePosition(cast.positionMs)
         }
     }
 
@@ -109,11 +121,11 @@ fun PlaybackScreen(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 PlayerView(ctx).apply {
-                    this.player = player
                     setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
                     setBackgroundColor(android.graphics.Color.BLACK)
                 }
             },
+            update = { it.player = cast.current },
         )
         Row(
             modifier = Modifier
@@ -133,6 +145,48 @@ fun PlaybackScreen(
                 text = state.title,
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
+            if (cast.castAvailable) {
+                CastButton()
+            }
+            IconButton(onClick = { showTracks = true }) {
+                Icon(
+                    Icons.Filled.Settings,
+                    contentDescription = "Audio en ondertitels",
+                    tint = Color.White,
+                )
+            }
+        }
+
+        if (showError) {
+            PlayerErrorOverlay(onRetry = {
+                retryJob?.cancel()
+                retryAttempt = 0
+                cast.retryLocal()
+                showError = false
+            })
+        }
+
+        if (showTracks) {
+            TrackSelectorDialog(
+                player = player,
+                tracks = tracks,
+                onDismiss = { showTracks = false },
+            )
+        }
+
+        pendingResumeMs?.let { resumeMs ->
+            ResumeDialog(
+                positionMs = resumeMs,
+                onResume = {
+                    cast.seekToAndPlay(resumeMs)
+                    pendingResumeMs = null
+                },
+                onRestart = {
+                    cast.seekToAndPlay(0)
+                    pendingResumeMs = null
+                },
             )
         }
     }

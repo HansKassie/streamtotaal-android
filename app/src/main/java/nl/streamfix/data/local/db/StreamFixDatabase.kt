@@ -8,14 +8,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [
         FavoriteChannelEntity::class,
+        FavoriteMediaEntity::class,
         PlaybackProgressEntity::class,
         EpgCacheEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class StreamFixDatabase : RoomDatabase() {
     abstract fun favoriteDao(): FavoriteDao
+    abstract fun favoriteMediaDao(): FavoriteMediaDao
     abstract fun playbackDao(): PlaybackDao
     abstract fun epgDao(): EpgDao
 }
@@ -64,6 +66,20 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
                 "payload TEXT NOT NULL, " +
                 "fetchedAt INTEGER NOT NULL, " +
                 "PRIMARY KEY(accountId, streamId))",
+        )
+    }
+}
+
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS favorite_media (" +
+                "accountId TEXT NOT NULL, " +
+                "mediaType TEXT NOT NULL, " +
+                "mediaId TEXT NOT NULL, " +
+                "name TEXT NOT NULL, " +
+                "posterUrl TEXT, " +
+                "PRIMARY KEY(accountId, mediaType, mediaId))",
         )
     }
 }

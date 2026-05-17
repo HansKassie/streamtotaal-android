@@ -11,4 +11,6 @@ data class LiveChannel(
     val logoUrl: String?,
     val categoryId: String?,
     val epgChannelId: String?,
+    /** Dagen terugkijken (catch-up); 0 = geen archief. */
+    val archiveDays: Int = 0,
 )
