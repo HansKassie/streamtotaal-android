@@ -2,6 +2,8 @@ package nl.streamfix.ui.screens.history
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.tvFocusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -85,6 +87,7 @@ fun HistoryScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .tvFocusable()
                         .combinedClickable(
                             onClick = {
                                 viewModel.targetFor(item)?.let { (url, title, mid) ->
@@ -93,7 +96,10 @@ fun HistoryScreen(
                             },
                             onLongClick = { pendingDelete = item },
                         )
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(
+                            horizontal = 16.dp,
+                            vertical = if (LocalIsTv.current) 16.dp else 8.dp,
+                        ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     AsyncImage(

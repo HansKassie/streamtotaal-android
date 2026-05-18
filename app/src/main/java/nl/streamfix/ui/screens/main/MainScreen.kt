@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -36,6 +37,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -66,6 +69,7 @@ import nl.streamfix.BuildConfig
 import nl.streamfix.domain.model.Account
 import nl.streamfix.ui.formatXtreamExpiry
 import nl.streamfix.ui.screens.catchup.CatchupScreen
+import nl.streamfix.ui.screens.favorites.FavoritesScreen
 import nl.streamfix.ui.screens.history.HistoryScreen
 import nl.streamfix.ui.screens.live.LiveTvScreen
 import nl.streamfix.ui.screens.series.SeriesScreen
@@ -73,6 +77,7 @@ import nl.streamfix.ui.screens.vod.VodScreen
 
 private enum class Tab(val label: String, val icon: ImageVector) {
     LiveTv("Live TV", Icons.Filled.LiveTv),
+    Favorites("Fav", Icons.Filled.Star),
     Movies("Films", Icons.Filled.Movie),
     Series("Series", Icons.Filled.Tv),
     Catchup("Gemist", Icons.Filled.Replay),
@@ -95,10 +100,17 @@ fun MainScreen(
     ) -> Unit,
     onOpenSearch: () -> Unit,
     onOpenNowOnTv: () -> Unit,
+    deviceIsTv: Boolean,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val adultState by viewModel.adultState.collectAsStateWithLifecycle()
+    val tvMode by viewModel.tvMode.collectAsStateWithLifecycle()
+    val isTv = when (tvMode) {
+        "tv" -> true
+        "phone" -> false
+        else -> deviceIsTv
+    }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val context = LocalContext.current
     var backArmed by remember { mutableStateOf(false) }
@@ -133,6 +145,47 @@ fun MainScreen(
 
     val tabs = Tab.entries
 
+    val tabContent: @Composable () -> Unit = {
+        when (tabs[selected]) {
+            Tab.LiveTv -> LiveTvScreen(
+                onOpenChannel = onOpenChannel,
+                onOpenChannelEpg = onOpenChannelEpg,
+            )
+            Tab.Favorites -> FavoritesScreen(onOpenChannel = onOpenChannel)
+            Tab.Movies -> VodScreen(onOpenVod = onOpenVod)
+            Tab.Series -> SeriesScreen(onOpenSeries = onOpenSeries)
+            Tab.Catchup -> CatchupScreen(
+                onOpenChannel = onOpenCatchupChannel,
+            )
+            Tab.History -> HistoryScreen(onResume = onResumeMedia)
+            Tab.Settings -> Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                SettingsContent(
+                    state = state,
+                    adult = adultState,
+                    tvMode = tvMode,
+                    onSwitchProvider = viewModel::onSwitchProvider,
+                    onRemoveProvider = viewModel::onRemoveProvider,
+                    onSetStreamFormat = viewModel::onSetStreamFormat,
+                    onSetAdultPin = viewModel::onSetAdultPin,
+                    onUnlockAdult = viewModel::onUnlockAdult,
+                    onHideAdult = viewModel::onHideAdult,
+                    onSetTvMode = viewModel::onSetTvMode,
+                    onAddProvider = onAddProvider,
+                    onLogout = viewModel::onLogout,
+                )
+            }
+            else -> Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                PlaceholderContent(tabs[selected].label)
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -154,58 +207,49 @@ fun MainScreen(
             )
         },
         bottomBar = {
-            NavigationBar {
-                tabs.forEachIndexed { index, tab ->
-                    NavigationBarItem(
-                        selected = selected == index,
-                        onClick = { selected = index },
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label, maxLines = 1) },
-                    )
+            if (!isTv) {
+                NavigationBar {
+                    tabs.forEachIndexed { index, tab ->
+                        NavigationBarItem(
+                            selected = selected == index,
+                            onClick = { selected = index },
+                            icon = {
+                                Icon(tab.icon, contentDescription = tab.label)
+                            },
+                            label = { Text(tab.label, maxLines = 1) },
+                        )
+                    }
                 }
             }
         },
     ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            when (tabs[selected]) {
-                Tab.LiveTv -> LiveTvScreen(
-                    onOpenChannel = onOpenChannel,
-                    onOpenChannelEpg = onOpenChannelEpg,
-                )
-                Tab.Movies -> VodScreen(onOpenVod = onOpenVod)
-                Tab.Series -> SeriesScreen(onOpenSeries = onOpenSeries)
-                Tab.Catchup -> CatchupScreen(
-                    onOpenChannel = onOpenCatchupChannel,
-                )
-                Tab.History -> HistoryScreen(onResume = onResumeMedia)
-                Tab.Settings -> Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    SettingsContent(
-                        state = state,
-                        adult = adultState,
-                        onSwitchProvider = viewModel::onSwitchProvider,
-                        onRemoveProvider = viewModel::onRemoveProvider,
-                        onSetStreamFormat = viewModel::onSetStreamFormat,
-                        onSetAdultPin = viewModel::onSetAdultPin,
-                        onUnlockAdult = viewModel::onUnlockAdult,
-                        onHideAdult = viewModel::onHideAdult,
-                        onAddProvider = onAddProvider,
-                        onLogout = viewModel::onLogout,
-                    )
+        if (isTv) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(padding),
+            ) {
+                NavigationRail {
+                    tabs.forEachIndexed { index, tab ->
+                        NavigationRailItem(
+                            selected = selected == index,
+                            onClick = { selected = index },
+                            icon = {
+                                Icon(tab.icon, contentDescription = tab.label)
+                            },
+                            label = { Text(tab.label, maxLines = 1) },
+                        )
+                    }
                 }
-                else -> Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    PlaceholderContent(tabs[selected].label)
-                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // Overscan-veilige marge: tv's snijden de randen af.
+                        .padding(end = 24.dp, top = 8.dp, bottom = 16.dp),
+                ) { tabContent() }
             }
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+            ) { tabContent() }
         }
     }
 }
@@ -230,12 +274,14 @@ private fun PlaceholderContent(name: String) {
 private fun SettingsContent(
     state: MainState,
     adult: nl.streamfix.data.local.AdultState,
+    tvMode: String,
     onSwitchProvider: (String) -> Unit,
     onRemoveProvider: (String) -> Unit,
     onSetStreamFormat: (String) -> Unit,
     onSetAdultPin: (String) -> Unit,
     onUnlockAdult: (String) -> Boolean,
     onHideAdult: () -> Unit,
+    onSetTvMode: (String) -> Unit,
     onAddProvider: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -295,6 +341,35 @@ private fun SettingsContent(
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Text("Weergave", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(4.dp))
+        listOf(
+            "auto" to "Automatisch (aanbevolen)",
+            "tv" to "Tv (afstandsbediening)",
+            "phone" to "Telefoon of tablet",
+        ).forEach { (value, label) ->
+            val isSelected = tvMode == value
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isSelected) { onSetTvMode(value) }
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(
+                    selected = isSelected,
+                    onClick = { if (!isSelected) onSetTvMode(value) },
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
             }
         }
 

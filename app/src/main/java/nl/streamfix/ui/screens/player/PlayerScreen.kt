@@ -4,6 +4,7 @@ import android.app.Activity
 import android.media.AudioManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +36,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -45,6 +53,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import nl.streamfix.ui.LocalIsTv
 import kotlin.math.abs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -57,7 +66,18 @@ fun PlayerScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val isTv = LocalIsTv.current
     val activity = context as? Activity
+    var chromeVisible by remember { mutableStateOf(true) }
+    var wakeTick by remember { mutableIntStateOf(0) }
+    val chromeFocus = remember { FocusRequester() }
+    LaunchedEffect(wakeTick, isTv) {
+        if (!isTv) return@LaunchedEffect
+        chromeVisible = true
+        delay(4000)
+        chromeVisible = false
+    }
+    LaunchedEffect(isTv) { if (isTv) chromeFocus.requestFocus() }
     val scope = rememberCoroutineScope()
 
     val player = remember { ExoPlayer.Builder(context).build() }
@@ -119,7 +139,38 @@ fun PlayerScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .then(
+                if (isTv) Modifier
+                    .focusRequester(chromeFocus)
+                    .focusable()
+                    .onPreviewKeyEvent { e ->
+                        if (e.type != KeyEventType.KeyDown) {
+                            return@onPreviewKeyEvent false
+                        }
+                        if (e.key == Key.Back) return@onPreviewKeyEvent false
+                        when (e.key) {
+                            Key.DirectionRight -> {
+                                if (state.hasNext) viewModel.next()
+                                wakeTick++
+                                return@onPreviewKeyEvent true
+                            }
+                            Key.DirectionLeft -> {
+                                if (state.hasPrevious) viewModel.previous()
+                                wakeTick++
+                                return@onPreviewKeyEvent true
+                            }
+                        }
+                        val wasHidden = !chromeVisible
+                        wakeTick++
+                        wasHidden
+                    }
+                else Modifier,
+            ),
+    ) {
         AndroidView(
             modifier = Modifier
                 .fillMaxSize()
@@ -151,12 +202,19 @@ fun PlayerScreen(
                 PlayerView(ctx).apply {
                     setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
                     setBackgroundColor(android.graphics.Color.BLACK)
+                    if (isTv) {
+                        setUseController(false)
+                        isFocusable = false
+                    } else {
+                        isFocusable = true
+                        post { requestFocus() }
+                    }
                 }
             },
             update = { it.player = cast.current },
         )
 
-        Row(
+        if (!isTv || chromeVisible) Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)
@@ -205,7 +263,7 @@ fun PlayerScreen(
             )
         }
 
-        Row(
+        if (!isTv) Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp),

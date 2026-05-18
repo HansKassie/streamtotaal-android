@@ -1,6 +1,7 @@
 package nl.streamfix.ui.screens.catchup
 
 import androidx.compose.foundation.clickable
+import nl.streamfix.ui.tvFocusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -103,6 +104,7 @@ fun CatchupChannelScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .tvFocusable()
                                 .clickable {
                                     viewModel.targetFor(p)?.let { (u, t, m) ->
                                         onPlay(u, t, m)

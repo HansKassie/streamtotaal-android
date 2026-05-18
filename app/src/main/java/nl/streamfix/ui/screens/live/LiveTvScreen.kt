@@ -1,6 +1,9 @@
 package nl.streamfix.ui.screens.live
 
 import androidx.compose.foundation.clickable
+import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.dpadExitField
+import nl.streamfix.ui.tvFocusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,8 +38,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,15 +64,34 @@ fun LiveTvScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val epgMap by viewModel.epg.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
+    val isTv = LocalIsTv.current
+    val listFocus = remember { FocusRequester() }
+    LaunchedEffect(
+        isTv,
+        state.selectedCategoryId,
+        state.visibleChannels.isNotEmpty(),
+    ) {
+        if (!isTv || state.visibleChannels.isEmpty()) {
+            return@LaunchedEffect
+        }
+        withFrameNanos {}
+        runCatching { listFocus.requestFocus() }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        OutlinedTextField(
+        if (!LocalIsTv.current) OutlinedTextField(
             value = state.query,
             onValueChange = viewModel::onQueryChange,
             label = { Text("Zoek kanaal") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(
+                onSearch = { focusManager.clearFocus() },
+            ),
             modifier = Modifier
+                .dpadExitField(focusManager)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
@@ -139,7 +169,11 @@ fun LiveTvScreen(
                 )
             }
 
-            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+            else -> LazyColumn(
+                modifier = Modifier.fillMaxSize()
+                    .focusRequester(listFocus)
+                    .focusGroup(),
+            ) {
                 items(state.visibleChannels, key = { it.id }) { channel ->
                     LaunchedEffect(channel.id) { viewModel.ensureEpg(channel.id) }
                     ChannelRow(
@@ -181,48 +215,59 @@ private fun ChannelRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .focusGroup()
+            .padding(
+                horizontal = 16.dp,
+                vertical = if (LocalIsTv.current) 16.dp else 10.dp,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AsyncImage(
-            model = channel.logoUrl,
-            contentDescription = null,
-            modifier = Modifier.size(44.dp),
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = channel.name,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .tvFocusable()
+                .clickable(onClick = onClick),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AsyncImage(
+                model = channel.logoUrl,
+                contentDescription = null,
+                modifier = Modifier.size(44.dp),
             )
-            if (current != null) {
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = current.title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = channel.name,
+                    style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (progress != null) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 2.dp, bottom = 2.dp),
+                if (current != null) {
+                    Text(
+                        text = current.title,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (progress != null) {
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 2.dp, bottom = 2.dp),
+                        )
+                    }
+                }
+                if (next != null) {
+                    Text(
+                        text = "Straks: ${next.title}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-            if (next != null) {
-                Text(
-                    text = "Straks: ${next.title}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
         }
         IconButton(onClick = onInfo) {

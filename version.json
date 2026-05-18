@@ -1,8 +1,8 @@
 {
-  "versionCode": 7,
-  "versionName": "1.0.6",
+  "versionCode": 8,
+  "versionName": "1.0.7",
   "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-  "releaseNotes": "Nieuw: zoeken door live, films en series tegelijk; Nu op tv (huidige uitzending op je favorieten); en een pincodeslot voor volwassen content.",
+  "releaseNotes": "Nieuw: volledige ondersteuning voor Android TV en Google TV. De app herkent automatisch een tv en past de bediening aan op de afstandsbediening: navigeren met de pijltjes, in live tv wisselen van kanaal met links en rechts, en een opgeruimd beeld dat tijdens het kijken vanzelf verdwijnt.",
   "minSupportedVersionCode": 1,
   "forceUpdate": false
 }

@@ -20,7 +20,7 @@ import nl.streamfix.ui.screens.vod.VodDetailScreen
 import nl.streamfix.ui.screens.welcome.WelcomeScreen
 
 @Composable
-fun StreamFixNavHost(startLoggedIn: Boolean) {
+fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
     val navController = rememberNavController()
     val start = if (startLoggedIn) Routes.MAIN else Routes.WELCOME
 
@@ -85,6 +85,7 @@ fun StreamFixNavHost(startLoggedIn: Boolean) {
                 },
                 onOpenSearch = { navController.navigate(Routes.SEARCH) },
                 onOpenNowOnTv = { navController.navigate(Routes.NOW_ON_TV) },
+                deviceIsTv = deviceIsTv,
             )
         }
 

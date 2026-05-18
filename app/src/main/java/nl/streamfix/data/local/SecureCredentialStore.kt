@@ -21,10 +21,10 @@ import nl.streamfix.domain.model.Account
  */
 @Singleton
 class SecureCredentialStore @Inject constructor(
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
     private val json: Json,
 ) {
-    private val prefs: SharedPreferences = createPrefs(context)
+    private val prefs: SharedPreferences by lazy { createPrefs(context) }
 
     private fun createEncrypted(context: Context): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
@@ -54,8 +54,10 @@ class SecureCredentialStore @Inject constructor(
         }
     }
 
-    private val _activeAccount = MutableStateFlow(readState().activeAccount())
-    val activeAccount: StateFlow<Account?> = _activeAccount.asStateFlow()
+    private val _activeAccount: MutableStateFlow<Account?> by lazy {
+        MutableStateFlow(readState().activeAccount())
+    }
+    val activeAccount: StateFlow<Account?> by lazy { _activeAccount.asStateFlow() }
 
     fun currentActiveAccount(): Account? = readState().activeAccount()
 

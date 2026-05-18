@@ -28,3 +28,5 @@ sentry.properties
 
 # Logs
 *.log
+build_log.txt
+build_release_log.txt

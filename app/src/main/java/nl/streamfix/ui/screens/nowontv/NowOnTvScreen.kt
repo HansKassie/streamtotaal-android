@@ -1,6 +1,8 @@
 package nl.streamfix.ui.screens.nowontv
 
 import androidx.compose.foundation.clickable
+import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.tvFocusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -83,10 +85,15 @@ fun NowOnTvScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .tvFocusable()
                             .clickable {
                                 onOpenChannel(FAVORITES_ID, item.channel.id)
                             }
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .padding(
+                                horizontal = 16.dp,
+                                vertical = if (LocalIsTv.current) 16.dp
+                                else 10.dp,
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         AsyncImage(

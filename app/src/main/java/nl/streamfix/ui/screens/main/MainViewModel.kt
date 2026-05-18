@@ -45,6 +45,10 @@ class MainViewModel @Inject constructor(
 
     val adultState: StateFlow<AdultState> = appSettings.adultState
 
+    val tvMode: StateFlow<String> = appSettings.tvMode
+
+    fun onSetTvMode(mode: String) = appSettings.setTvMode(mode)
+
     fun onSetAdultPin(pin: String) = appSettings.setPin(pin)
 
     /** True bij juiste pincode (sessie ontgrendeld). */

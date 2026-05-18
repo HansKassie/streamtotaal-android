@@ -1,6 +1,9 @@
 package nl.streamfix.ui.screens.search
 
 import androidx.compose.foundation.clickable
+import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.dpadExitField
+import nl.streamfix.ui.tvFocusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,8 +28,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,6 +50,7 @@ fun SearchScreen(
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
 
     Scaffold(
         topBar = {
@@ -67,7 +75,14 @@ fun SearchScreen(
                 onValueChange = viewModel::onQueryChange,
                 label = { Text("Zoek in live, films en series") },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Search,
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = { focusManager.clearFocus() },
+                ),
                 modifier = Modifier
+                    .dpadExitField(focusManager)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
@@ -136,8 +151,12 @@ private fun ResultRow(name: String, image: String?, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .tvFocusable()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(
+                horizontal = 16.dp,
+                vertical = if (LocalIsTv.current) 16.dp else 10.dp,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AsyncImage(

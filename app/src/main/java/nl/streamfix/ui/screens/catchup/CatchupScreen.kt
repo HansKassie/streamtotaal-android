@@ -1,6 +1,9 @@
 package nl.streamfix.ui.screens.catchup
 
 import androidx.compose.foundation.clickable
+import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.dpadExitField
+import nl.streamfix.ui.tvFocusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,8 +32,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,15 +55,34 @@ fun CatchupScreen(
     viewModel: CatchupViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
+    val isTv = LocalIsTv.current
+    val listFocus = remember { FocusRequester() }
+    LaunchedEffect(
+        isTv,
+        state.selectedCategoryId,
+        state.visibleChannels.isNotEmpty(),
+    ) {
+        if (!isTv || state.visibleChannels.isEmpty()) {
+            return@LaunchedEffect
+        }
+        withFrameNanos {}
+        runCatching { listFocus.requestFocus() }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        OutlinedTextField(
+        if (!LocalIsTv.current) OutlinedTextField(
             value = state.query,
             onValueChange = viewModel::onQueryChange,
             label = { Text("Zoek kanaal") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(
+                onSearch = { focusManager.clearFocus() },
+            ),
             modifier = Modifier
+                .dpadExitField(focusManager)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
@@ -117,15 +148,24 @@ fun CatchupScreen(
                 )
             }
 
-            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+            else -> LazyColumn(
+                modifier = Modifier.fillMaxSize()
+                    .focusRequester(listFocus)
+                    .focusGroup(),
+            ) {
                 items(state.visibleChannels, key = { it.id }) { ch ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .tvFocusable()
                             .clickable {
                                 onOpenChannel(ch.id, ch.name, ch.archiveDays)
                             }
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .padding(
+                                horizontal = 16.dp,
+                                vertical = if (LocalIsTv.current) 16.dp
+                                else 10.dp,
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         AsyncImage(

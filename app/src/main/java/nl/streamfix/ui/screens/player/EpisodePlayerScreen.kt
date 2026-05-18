@@ -41,6 +41,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import nl.streamfix.ui.LocalIsTv
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -53,7 +54,9 @@ fun EpisodePlayerScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val isTv = LocalIsTv.current
     val scope = rememberCoroutineScope()
+    var chromeVisible by remember { mutableStateOf(false) }
 
     val player = remember { ExoPlayer.Builder(context).build() }
     var countdown by remember { mutableStateOf<Int?>(null) }
@@ -145,12 +148,23 @@ fun EpisodePlayerScreen(
                 PlayerView(ctx).apply {
                     setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
                     setBackgroundColor(android.graphics.Color.BLACK)
+                    isFocusable = true
+                    if (isTv) {
+                        setControllerAutoShow(false)
+                        setControllerShowTimeoutMs(4000)
+                        setControllerVisibilityListener(
+                            PlayerView.ControllerVisibilityListener { vis ->
+                                chromeVisible = vis == android.view.View.VISIBLE
+                            },
+                        )
+                    }
+                    post { requestFocus() }
                 }
             },
             update = { it.player = cast.current },
         )
 
-        Row(
+        if (!isTv || chromeVisible) Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)

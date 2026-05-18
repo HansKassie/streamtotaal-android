@@ -1,6 +1,9 @@
 package nl.streamfix.ui.screens.series
 
 import androidx.compose.foundation.clickable
+import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.dpadExitField
+import nl.streamfix.ui.tvFocusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
@@ -30,6 +33,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,15 +55,34 @@ fun SeriesScreen(
     viewModel: SeriesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isTv = LocalIsTv.current
+    val focusManager = LocalFocusManager.current
+    val listFocus = remember { FocusRequester() }
+    LaunchedEffect(
+        isTv,
+        state.selectedCategoryId,
+        state.visibleItems.isNotEmpty(),
+    ) {
+        if (!isTv || state.visibleItems.isEmpty()) {
+            return@LaunchedEffect
+        }
+        withFrameNanos {}
+        runCatching { listFocus.requestFocus() }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        OutlinedTextField(
+        if (!isTv) OutlinedTextField(
             value = state.query,
             onValueChange = viewModel::onQueryChange,
             label = { Text("Zoek serie") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(
+                onSearch = { focusManager.clearFocus() },
+            ),
             modifier = Modifier
+                .dpadExitField(focusManager)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
@@ -119,13 +150,16 @@ fun SeriesScreen(
             }
 
             else -> LazyVerticalGrid(
-                columns = GridCells.Adaptive(110.dp),
-                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                columns = GridCells.Adaptive(if (isTv) 140.dp else 110.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp)
+                    .focusRequester(listFocus)
+                    .focusGroup(),
             ) {
                 items(state.visibleItems, key = { it.id }) { item ->
                     Column(
                         modifier = Modifier
                             .padding(6.dp)
+                            .tvFocusable()
                             .clickable { onOpenSeries(item.id) },
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -139,7 +173,11 @@ fun SeriesScreen(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = item.name,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = if (isTv) {
+                                MaterialTheme.typography.bodyMedium
+                            } else {
+                                MaterialTheme.typography.bodySmall
+                            },
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center,

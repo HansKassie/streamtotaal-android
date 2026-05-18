@@ -3,7 +3,9 @@ package nl.streamfix.data.repository
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import nl.streamfix.data.local.SecureCredentialStore
 import nl.streamfix.data.remote.XtreamAuthService
 import nl.streamfix.domain.model.Account
@@ -61,7 +63,8 @@ class AuthRepositoryImpl @Inject constructor(
 
     override fun observeActiveAccount(): Flow<Account?> = store.activeAccount
 
-    override suspend fun getActiveAccount(): Account? = store.currentActiveAccount()
+    override suspend fun getActiveAccount(): Account? =
+        withContext(Dispatchers.IO) { store.currentActiveAccount() }
 
     override suspend fun getAccounts(): List<Account> = store.allAccounts()
 

@@ -50,6 +50,16 @@ class AppSettingsStore @Inject constructor(
     private val _adultState = MutableStateFlow(readAdultState())
     val adultState: StateFlow<AdultState> = _adultState.asStateFlow()
 
+    // "auto" | "tv" | "phone" - weergavemodus-override.
+    private val _tvMode =
+        MutableStateFlow(prefs.getString(KEY_TV_MODE, "auto") ?: "auto")
+    val tvMode: StateFlow<String> = _tvMode.asStateFlow()
+
+    fun setTvMode(mode: String) {
+        prefs.edit().putString(KEY_TV_MODE, mode).apply()
+        _tvMode.value = mode
+    }
+
     private var sessionUnlocked = false
 
     private fun readAdultState() = AdultState(
@@ -97,6 +107,7 @@ class AppSettingsStore @Inject constructor(
         const val PREFS_FILE = "streamtotaal_settings"
         const val KEY_PIN = "adult_pin"
         const val KEY_HIDDEN = "adult_hidden"
+        const val KEY_TV_MODE = "tv_mode"
     }
 }
 
