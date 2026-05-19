@@ -26,6 +26,8 @@ data class PlayerUiState(
     val castStreamUrl: String? = null,
     val hasPrevious: Boolean = false,
     val hasNext: Boolean = false,
+    val channels: List<LiveChannel> = emptyList(),
+    val currentChannelId: String? = null,
 )
 
 @HiltViewModel
@@ -84,7 +86,17 @@ class PlayerViewModel @Inject constructor(
                 castStreamUrl = getCastUrl(channel.id),
                 hasPrevious = index > 0,
                 hasNext = index < channels.lastIndex,
+                channels = channels,
+                currentChannelId = channel.id,
             )
+        }
+    }
+
+    fun selectChannel(id: String) {
+        val i = channels.indexOfFirst { it.id == id }
+        if (i >= 0 && i != index) {
+            index = i
+            emitCurrent()
         }
     }
 

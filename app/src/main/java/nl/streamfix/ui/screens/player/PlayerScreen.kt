@@ -3,6 +3,7 @@ package nl.streamfix.ui.screens.player
 import android.app.Activity
 import android.media.AudioManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -15,6 +16,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.SkipNext
@@ -26,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +51,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,6 +61,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.tvFocusable
 import kotlin.math.abs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -69,6 +78,7 @@ fun PlayerScreen(
     val isTv = LocalIsTv.current
     val activity = context as? Activity
     var chromeVisible by remember { mutableStateOf(true) }
+    var channelListOpen by remember { mutableStateOf(false) }
     var wakeTick by remember { mutableIntStateOf(0) }
     val chromeFocus = remember { FocusRequester() }
     LaunchedEffect(wakeTick, isTv) {
@@ -78,6 +88,9 @@ fun PlayerScreen(
         chromeVisible = false
     }
     LaunchedEffect(isTv) { if (isTv) chromeFocus.requestFocus() }
+    LaunchedEffect(channelListOpen) {
+        if (isTv && !channelListOpen) runCatching { chromeFocus.requestFocus() }
+    }
     var zapTick by remember { mutableIntStateOf(0) }
     var zapVisible by remember { mutableStateOf(false) }
     LaunchedEffect(zapTick) {
@@ -157,6 +170,13 @@ fun PlayerScreen(
                         if (e.type != KeyEventType.KeyDown) {
                             return@onPreviewKeyEvent false
                         }
+                        if (channelListOpen) {
+                            if (e.key == Key.Back) {
+                                channelListOpen = false
+                                return@onPreviewKeyEvent true
+                            }
+                            return@onPreviewKeyEvent false
+                        }
                         if (e.key == Key.Back) return@onPreviewKeyEvent false
                         val ekc = e.nativeKeyEvent.keyCode
                         if (ekc ==
@@ -175,6 +195,10 @@ fun PlayerScreen(
                             Key.DirectionLeft -> {
                                 if (state.hasPrevious) viewModel.previous()
                                 zapTick++
+                                return@onPreviewKeyEvent true
+                            }
+                            Key.DirectionUp, Key.DirectionDown -> {
+                                channelListOpen = true
                                 return@onPreviewKeyEvent true
                             }
                         }
@@ -298,6 +322,68 @@ fun PlayerScreen(
                     contentDescription = "Volgend kanaal",
                     tint = Color.White,
                 )
+            }
+        }
+
+        if (isTv && channelListOpen) {
+            val listState = rememberLazyListState()
+            val currentFocus = remember { FocusRequester() }
+            LaunchedEffect(channelListOpen) {
+                val idx = state.channels
+                    .indexOfFirst { it.id == state.currentChannelId }
+                    .takeIf { it >= 0 } ?: 0
+                listState.scrollToItem(idx)
+                withFrameNanos {}
+                runCatching { currentFocus.requestFocus() }
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .width(360.dp)
+                    .background(Color.Black.copy(alpha = 0.85f)),
+            ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                ) {
+                    items(state.channels, key = { it.id }) { ch ->
+                        val isCurrent = ch.id == state.currentChannelId
+                        Text(
+                            text = ch.name,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (isCurrent) {
+                                        Modifier.focusRequester(currentFocus)
+                                    } else {
+                                        Modifier
+                                    },
+                                )
+                                .tvFocusable()
+                                .clickable {
+                                    viewModel.selectChannel(ch.id)
+                                    channelListOpen = false
+                                }
+                                .background(
+                                    if (isCurrent) {
+                                        MaterialTheme.colorScheme
+                                            .primaryContainer
+                                    } else {
+                                        Color.Transparent
+                                    },
+                                )
+                                .padding(
+                                    horizontal = 12.dp,
+                                    vertical = 10.dp,
+                                ),
+                        )
+                    }
+                }
             }
         }
     }
