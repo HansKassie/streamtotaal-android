@@ -24,14 +24,17 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +55,7 @@ import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.screens.live.FAVORITES_ID
 import nl.streamfix.ui.tvFocusable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -81,6 +85,8 @@ fun EpgGuideScreen(
             nowMs = System.currentTimeMillis()
         }
     }
+    val timeScroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
     val half = 30L * 60_000L
     val windowStart = remember(openNow) { (openNow / half) * half - half }
     val windowEnd = remember(openNow) {
@@ -127,6 +133,13 @@ fun EpgGuideScreen(
                         )
                     }
                 },
+                actions = {
+                    TextButton(
+                        onClick = {
+                            scope.launch { timeScroll.animateScrollTo(0) }
+                        },
+                    ) { Text("Nu") }
+                },
             )
         },
     ) { padding ->
@@ -158,7 +171,6 @@ fun EpgGuideScreen(
                 }
 
                 else -> {
-                    val timeScroll = rememberScrollState()
                     val density = LocalDensity.current
 
                     Column(modifier = Modifier.fillMaxSize()) {
@@ -354,8 +366,14 @@ fun EpgGuideScreen(
                                 .background(MaterialTheme.colorScheme.surface)
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                         ) {
+                            val status = when {
+                                nowMs >= p.startMs && nowMs < p.endMs -> "Nu"
+                                p.startMs > nowMs -> "Straks"
+                                else -> "Eerder"
+                            }
                             Text(
-                                text = hourFmt.format(Date(p.startMs)) +
+                                text = status + "  -  " +
+                                    hourFmt.format(Date(p.startMs)) +
                                     " - " + hourFmt.format(Date(p.endMs)) +
                                     "  -  " + focusedChannelName,
                                 style = MaterialTheme.typography.labelMedium,
@@ -368,7 +386,19 @@ fun EpgGuideScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            if (status == "Nu" && p.endMs > p.startMs) {
+                                Spacer(Modifier.height(6.dp))
+                                LinearProgressIndicator(
+                                    progress = {
+                                        ((nowMs - p.startMs).toFloat() /
+                                            (p.endMs - p.startMs))
+                                            .coerceIn(0f, 1f)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
                             if (p.description.isNotBlank()) {
+                                Spacer(Modifier.height(6.dp))
                                 Text(
                                     text = p.description,
                                     style = MaterialTheme.typography.bodySmall,
