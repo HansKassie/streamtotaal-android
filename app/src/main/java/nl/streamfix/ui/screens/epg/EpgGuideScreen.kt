@@ -1,0 +1,269 @@
+package nl.streamfix.ui.screens.epg
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.screens.live.FAVORITES_ID
+import nl.streamfix.ui.tvFocusable
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+private val CHANNEL_COL = 132.dp
+private val ROW_HEIGHT = 64.dp
+private val PX_PER_MIN = 3.dp
+private const val WINDOW_HOURS = 6
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EpgGuideScreen(
+    onBack: () -> Unit,
+    onOpenChannel: (categoryId: String, channelId: String) -> Unit,
+    viewModel: EpgGuideViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val epgMap by viewModel.epg.collectAsStateWithLifecycle()
+    val isTv = LocalIsTv.current
+    val cat = viewModel.categoryId.ifBlank { FAVORITES_ID }
+
+    val now = remember { System.currentTimeMillis() }
+    val half = 30L * 60_000L
+    val windowStart = remember(now) { (now / half) * half - half }
+    val windowEnd = remember(now) { windowStart + WINDOW_HOURS * 3_600_000L }
+    val totalWidth = PX_PER_MIN * (WINDOW_HOURS * 60).toFloat()
+    val hourFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    fun msToDp(ms: Long): Dp = PX_PER_MIN * ((ms - windowStart) / 60_000f)
+
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(isTv, state.channels.isNotEmpty()) {
+        if (!isTv || state.channels.isEmpty()) return@LaunchedEffect
+        withFrameNanos {}
+        runCatching { firstFocus.requestFocus() }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Gids") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Terug",
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            when {
+                state.isLoading -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) { CircularProgressIndicator() }
+
+                state.errorMessage != null -> Box(
+                    Modifier.fillMaxSize().padding(24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = state.errorMessage!!,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                state.channels.isEmpty() -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "Geen zenders",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                else -> {
+                    val timeScroll = rememberScrollState()
+
+                    Row {
+                        Spacer(Modifier.width(CHANNEL_COL))
+                        Box(
+                            modifier = Modifier
+                                .horizontalScroll(timeScroll)
+                                .width(totalWidth)
+                                .height(24.dp),
+                        ) {
+                            for (h in 0..WINDOW_HOURS) {
+                                val tickMs = windowStart + h * 3_600_000L
+                                Text(
+                                    text = hourFmt.format(Date(tickMs)),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme
+                                        .onSurfaceVariant,
+                                    modifier = Modifier
+                                        .offset(x = msToDp(tickMs))
+                                        .padding(start = 4.dp),
+                                )
+                            }
+                        }
+                    }
+
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(state.channels, key = { it.id }) { ch ->
+                            LaunchedEffect(ch.id) { viewModel.ensureEpg(ch.id) }
+                            val isFirst = ch.id == state.channels.first().id
+                            Row(modifier = Modifier.height(ROW_HEIGHT)) {
+                                Row(
+                                    modifier = Modifier
+                                        .width(CHANNEL_COL)
+                                        .fillMaxHeight()
+                                        .then(
+                                            if (isFirst) {
+                                                Modifier.focusRequester(
+                                                    firstFocus,
+                                                )
+                                            } else {
+                                                Modifier
+                                            },
+                                        )
+                                        .tvFocusable()
+                                        .clickable { onOpenChannel(cat, ch.id) }
+                                        .padding(8.dp),
+                                    verticalAlignment =
+                                        Alignment.CenterVertically,
+                                ) {
+                                    AsyncImage(
+                                        model = ch.logoUrl,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(36.dp),
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = ch.name,
+                                        style = MaterialTheme.typography
+                                            .bodySmall,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .horizontalScroll(timeScroll)
+                                        .width(totalWidth)
+                                        .fillMaxHeight(),
+                                ) {
+                                    val progs = epgMap[ch.id]
+                                    if (progs == null) {
+                                        Text(
+                                            text = "Gids laden...",
+                                            style = MaterialTheme.typography
+                                                .bodySmall,
+                                            color = MaterialTheme.colorScheme
+                                                .onSurfaceVariant,
+                                            modifier = Modifier
+                                                .offset(x = 4.dp)
+                                                .padding(top = 8.dp),
+                                        )
+                                    } else {
+                                        progs.filter {
+                                            it.endMs > windowStart &&
+                                                it.startMs < windowEnd
+                                        }.forEach { p ->
+                                            val s = p.startMs
+                                                .coerceAtLeast(windowStart)
+                                            val e = p.endMs
+                                                .coerceAtMost(windowEnd)
+                                            val w = (PX_PER_MIN *
+                                                ((e - s) / 60_000f))
+                                            val isNowP = now >= p.startMs &&
+                                                now < p.endMs
+                                            Box(
+                                                modifier = Modifier
+                                                    .offset(x = msToDp(s))
+                                                    .width(w)
+                                                    .fillMaxHeight()
+                                                    .padding(2.dp)
+                                                    .tvFocusable()
+                                                    .clickable {
+                                                        onOpenChannel(
+                                                            cat, ch.id,
+                                                        )
+                                                    }
+                                                    .background(
+                                                        if (isNowP) {
+                                                            MaterialTheme
+                                                                .colorScheme
+                                                                .primaryContainer
+                                                        } else {
+                                                            MaterialTheme
+                                                                .colorScheme
+                                                                .surfaceVariant
+                                                        },
+                                                    )
+                                                    .padding(
+                                                        horizontal = 6.dp,
+                                                        vertical = 4.dp,
+                                                    ),
+                                            ) {
+                                                Text(
+                                                    text = p.title,
+                                                    style = MaterialTheme
+                                                        .typography.bodySmall,
+                                                    maxLines = 2,
+                                                    overflow =
+                                                        TextOverflow.Ellipsis,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(2.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

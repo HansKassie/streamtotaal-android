@@ -53,7 +53,7 @@ fun CastButton(modifier: Modifier = Modifier) {
     )
 }
 
-private fun mimeFor(url: String): String {
+internal fun mimeFor(url: String): String {
     val u = url.substringBefore('?').lowercase()
     return when {
         u.contains(".m3u8") -> MimeTypes.APPLICATION_M3U8

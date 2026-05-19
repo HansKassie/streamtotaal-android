@@ -12,6 +12,7 @@ import nl.streamfix.ui.screens.search.SearchScreen
 import nl.streamfix.ui.screens.login.XtreamLoginScreen
 import nl.streamfix.ui.screens.main.MainScreen
 import nl.streamfix.ui.screens.epg.ChannelEpgScreen
+import nl.streamfix.ui.screens.epg.EpgGuideScreen
 import nl.streamfix.ui.screens.player.EpisodePlayerScreen
 import nl.streamfix.ui.screens.player.PlaybackScreen
 import nl.streamfix.ui.screens.player.PlayerScreen
@@ -69,6 +70,9 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
                         Routes.channelEpg(channelId, channelName),
                     )
                 },
+                onOpenGuide = { categoryId ->
+                    navController.navigate(Routes.epgGuide(categoryId))
+                },
                 onOpenVod = { vodId ->
                     navController.navigate(Routes.vodDetail(vodId))
                 },
@@ -124,7 +128,12 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
                 },
             ),
         ) {
-            PlayerScreen(onBack = { navController.popBackStack() })
+            PlayerScreen(
+                onBack = { navController.popBackStack() },
+                onOpenGuide = { categoryId ->
+                    navController.navigate(Routes.epgGuide(categoryId))
+                },
+            )
         }
 
         composable(
@@ -203,6 +212,22 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
             ),
         ) {
             ChannelEpgScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.EPG_GUIDE_ROUTE,
+            arguments = listOf(
+                navArgument(Routes.EPG_GUIDE_ARG_CAT) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+            ),
+        ) {
+            EpgGuideScreen(
+                onBack = { navController.popBackStack() },
+                onOpenChannel = { categoryId, channelId ->
+                    navController.navigate(Routes.player(categoryId, channelId))
+                },
+            )
         }
 
         composable(

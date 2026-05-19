@@ -63,6 +63,14 @@ object Routes {
         return "channelEpg?id=$id&name=$n"
     }
 
+    const val EPG_GUIDE_ARG_CAT = "cat"
+    const val EPG_GUIDE_ROUTE = "epgGuide?cat={cat}"
+
+    fun epgGuide(categoryId: String): String {
+        val c = android.net.Uri.encode(categoryId)
+        return "epgGuide?cat=$c"
+    }
+
     const val CATCHUP_ARG_ID = "id"
     const val CATCHUP_ARG_NAME = "name"
     const val CATCHUP_ARG_DAYS = "days"

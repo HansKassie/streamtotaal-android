@@ -94,6 +94,7 @@ fun MainScreen(
     onAddProvider: () -> Unit,
     onOpenChannel: (categoryId: String, channelId: String) -> Unit,
     onOpenChannelEpg: (channelId: String, channelName: String) -> Unit,
+    onOpenGuide: (categoryId: String) -> Unit,
     onOpenVod: (vodId: String) -> Unit,
     onOpenSeries: (seriesId: String) -> Unit,
     onResumeMedia: (streamUrl: String, title: String, mediaId: String) -> Unit,
@@ -152,6 +153,7 @@ fun MainScreen(
             Tab.LiveTv -> LiveTvScreen(
                 onOpenChannel = onOpenChannel,
                 onOpenChannelEpg = onOpenChannelEpg,
+                onOpenGuide = onOpenGuide,
             )
             Tab.Favorites -> FavoritesScreen(onOpenChannel = onOpenChannel)
             Tab.Movies -> VodScreen(onOpenVod = onOpenVod)

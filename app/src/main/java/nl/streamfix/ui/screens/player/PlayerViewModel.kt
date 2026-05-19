@@ -42,6 +42,8 @@ class PlayerViewModel @Inject constructor(
     private val startChannelId: String =
         savedStateHandle.get<String>(Routes.PLAYER_ARG_CHANNEL).orEmpty()
 
+    val guideCategoryId: String get() = categoryId.ifBlank { FAVORITES_ID }
+
     private var channels: List<LiveChannel> = emptyList()
     private var index: Int = 0
 

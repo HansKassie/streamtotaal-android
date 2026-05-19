@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
@@ -62,6 +61,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PlayerScreen(
     onBack: () -> Unit,
+    onOpenGuide: (categoryId: String) -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -78,14 +78,20 @@ fun PlayerScreen(
         chromeVisible = false
     }
     LaunchedEffect(isTv) { if (isTv) chromeFocus.requestFocus() }
+    var zapTick by remember { mutableIntStateOf(0) }
+    var zapVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(zapTick) {
+        if (zapTick == 0) return@LaunchedEffect
+        zapVisible = true
+        delay(2500)
+        zapVisible = false
+    }
     val scope = rememberCoroutineScope()
 
     val player = remember { ExoPlayer.Builder(context).build() }
     var retryAttempt by remember { mutableIntStateOf(0) }
     var retryJob by remember { mutableStateOf<Job?>(null) }
     var showError by remember { mutableStateOf(false) }
-    var showTracks by remember { mutableStateOf(false) }
-    val tracks = rememberTracks(player)
     val cast = rememberCastController(player)
 
     // Markeer dat we in de speler zitten zodat MainActivity PiP kan starten.
@@ -152,15 +158,23 @@ fun PlayerScreen(
                             return@onPreviewKeyEvent false
                         }
                         if (e.key == Key.Back) return@onPreviewKeyEvent false
+                        val ekc = e.nativeKeyEvent.keyCode
+                        if (ekc ==
+                            android.view.KeyEvent.KEYCODE_PROG_YELLOW ||
+                            ekc == android.view.KeyEvent.KEYCODE_GUIDE
+                        ) {
+                            onOpenGuide(viewModel.guideCategoryId)
+                            return@onPreviewKeyEvent true
+                        }
                         when (e.key) {
                             Key.DirectionRight -> {
                                 if (state.hasNext) viewModel.next()
-                                wakeTick++
+                                zapTick++
                                 return@onPreviewKeyEvent true
                             }
                             Key.DirectionLeft -> {
                                 if (state.hasPrevious) viewModel.previous()
-                                wakeTick++
+                                zapTick++
                                 return@onPreviewKeyEvent true
                             }
                         }
@@ -214,6 +228,23 @@ fun PlayerScreen(
             update = { if (it.player !== cast.current) it.player = cast.current },
         )
 
+        if (isTv && zapVisible && !chromeVisible) {
+            Box(
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = state.title,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+        }
+
         if (!isTv || chromeVisible) Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -237,13 +268,6 @@ fun PlayerScreen(
             if (cast.castAvailable) {
                 CastButton()
             }
-            IconButton(onClick = { showTracks = true }) {
-                Icon(
-                    Icons.Filled.Settings,
-                    contentDescription = "Audio en ondertitels",
-                    tint = Color.White,
-                )
-            }
         }
 
         if (showError) {
@@ -253,14 +277,6 @@ fun PlayerScreen(
                 cast.retryLocal()
                 showError = false
             })
-        }
-
-        if (showTracks) {
-            TrackSelectorDialog(
-                player = player,
-                tracks = tracks,
-                onDismiss = { showTracks = false },
-            )
         }
 
         if (!isTv) Row(
