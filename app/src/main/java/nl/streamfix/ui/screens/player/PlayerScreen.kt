@@ -339,7 +339,7 @@ fun PlayerScreen(
                 val idx = state.channels
                     .indexOfFirst { it.id == state.currentChannelId }
                     .takeIf { it >= 0 } ?: 0
-                listState.scrollToItem(if (state.hasLast) idx + 1 else idx)
+                listState.scrollToItem(idx + if (state.hasLast) 2 else 1)
                 withFrameNanos {}
                 runCatching { currentFocus.requestFocus() }
             }
@@ -354,6 +354,24 @@ fun PlayerScreen(
                     state = listState,
                     modifier = Modifier.fillMaxSize().padding(8.dp),
                 ) {
+                    item(key = "__guide__") {
+                        Text(
+                            text = "☰  TV-gids",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .tvFocusable()
+                                .clickable {
+                                    channelListOpen = false
+                                    onOpenGuide(viewModel.guideCategoryId)
+                                }
+                                .padding(
+                                    horizontal = 12.dp,
+                                    vertical = 10.dp,
+                                ),
+                        )
+                    }
                     if (state.hasLast) {
                         item(key = "__last__") {
                             Text(
