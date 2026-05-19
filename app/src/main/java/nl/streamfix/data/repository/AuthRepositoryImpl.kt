@@ -10,6 +10,7 @@ import nl.streamfix.data.local.SecureCredentialStore
 import nl.streamfix.data.remote.XtreamAuthService
 import nl.streamfix.domain.model.Account
 import nl.streamfix.domain.model.AccountInfo
+import nl.streamfix.domain.model.AppError
 import nl.streamfix.domain.repository.AuthRepository
 import nl.streamfix.domain.util.AppResult
 
@@ -90,6 +91,21 @@ class AuthRepositoryImpl @Inject constructor(
                 maxConnections = info.maxConnectionsValue,
                 activeConnections = info.activeConnectionsValue,
             )
+        }
+    }
+
+    override suspend fun verifyActiveAccount(): AppResult<Unit> {
+        val account = store.currentActiveAccount() as? Account.Xtream
+            ?: return AppResult.Failure(AppError.Unknown)
+        return when (
+            val r = xtreamAuthService.authenticate(
+                account.serverUrl,
+                account.username,
+                account.password,
+            )
+        ) {
+            is AppResult.Success -> AppResult.Success(Unit)
+            is AppResult.Failure -> r
         }
     }
 

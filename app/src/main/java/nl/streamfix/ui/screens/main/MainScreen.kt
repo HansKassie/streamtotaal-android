@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -103,6 +105,7 @@ fun MainScreen(
     ) -> Unit,
     onOpenSearch: () -> Unit,
     onOpenNowOnTv: () -> Unit,
+    onOpenConnectionTest: () -> Unit,
     deviceIsTv: Boolean,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
@@ -178,6 +181,7 @@ fun MainScreen(
                     onHideAdult = viewModel::onHideAdult,
                     onSetTvMode = viewModel::onSetTvMode,
                     onAddProvider = onAddProvider,
+                    onOpenConnectionTest = onOpenConnectionTest,
                     onLogout = viewModel::onLogout,
                 )
             }
@@ -277,6 +281,20 @@ private fun PlaceholderContent(name: String) {
 }
 
 @Composable
+private fun SettingsCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(6.dp))
+            content()
+        }
+    }
+}
+
+@Composable
 private fun SettingsContent(
     state: MainState,
     adult: nl.streamfix.data.local.AdultState,
@@ -289,6 +307,7 @@ private fun SettingsContent(
     onHideAdult: () -> Unit,
     onSetTvMode: (String) -> Unit,
     onAddProvider: () -> Unit,
+    onOpenConnectionTest: () -> Unit,
     onLogout: () -> Unit,
 ) {
     Column(
@@ -296,49 +315,105 @@ private fun SettingsContent(
             .fillMaxWidth()
             .verticalScroll(rememberScrollState()),
     ) {
-        Text("Actieve provider", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = state.account?.displayName ?: "Onbekend",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-
-        state.accountInfo?.let { info ->
-            Spacer(Modifier.height(8.dp))
-            info.status?.let { Text("Status: $it", style = MaterialTheme.typography.bodyMedium) }
-            formatXtreamExpiry(info.expirationDate)?.let {
-                Text("Vervaldatum: $it", style = MaterialTheme.typography.bodyMedium)
+        SettingsCard("Account") {
+            Text(
+                text = state.account?.displayName ?: "Onbekend",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            state.accountInfo?.let { info ->
+                val parts = listOfNotNull(
+                    info.status?.let { "Status: $it" },
+                    formatXtreamExpiry(info.expirationDate)
+                        ?.let { "Verloopt: $it" },
+                    info.maxConnections?.let { "Max: $it" },
+                )
+                if (parts.isNotEmpty()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = parts.joinToString("  -  "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            info.maxConnections?.let {
-                Text("Max verbindingen: $it", style = MaterialTheme.typography.bodyMedium)
+
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Providers",
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Spacer(Modifier.height(4.dp))
+            state.accounts.forEach { acc ->
+                val isActive = acc.id == state.account?.id
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !isActive) {
+                            onSwitchProvider(acc.id)
+                        }
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(
+                        selected = isActive,
+                        onClick = { if (!isActive) onSwitchProvider(acc.id) },
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = acc.displayName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = { onRemoveProvider(acc.id) },
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = "Provider verwijderen",
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onAddProvider,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Provider toevoegen")
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onOpenConnectionTest,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Verbinding testen")
             }
         }
 
-        (state.account as? Account.Xtream)?.let { xt ->
-            Spacer(Modifier.height(16.dp))
-            Text("Stream Format", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(4.dp))
-            val formats = listOf(
-                "auto" to "Automatisch",
-                "ts" to "MPEGTS (.ts)",
-                "m3u8" to "HLS (.m3u8)",
-            )
-            formats.forEach { (value, label) ->
-                val isSelected = xt.streamFormat == value
+        Spacer(Modifier.height(8.dp))
+        SettingsCard("Weergave") {
+            listOf(
+                "auto" to "Automatisch (aanbevolen)",
+                "tv" to "Tv (afstandsbediening)",
+                "phone" to "Telefoon of tablet",
+            ).forEach { (value, label) ->
+                val isSelected = tvMode == value
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(enabled = !isSelected) {
-                            onSetStreamFormat(value)
+                            onSetTvMode(value)
                         }
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(
                         selected = isSelected,
-                        onClick = {
-                            if (!isSelected) onSetStreamFormat(value)
-                        },
+                        onClick = { if (!isSelected) onSetTvMode(value) },
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(Modifier.width(12.dp))
@@ -350,85 +425,51 @@ private fun SettingsContent(
             }
         }
 
-        Spacer(Modifier.height(16.dp))
-        Text("Weergave", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(4.dp))
-        listOf(
-            "auto" to "Automatisch (aanbevolen)",
-            "tv" to "Tv (afstandsbediening)",
-            "phone" to "Telefoon of tablet",
-        ).forEach { (value, label) ->
-            val isSelected = tvMode == value
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = !isSelected) { onSetTvMode(value) }
-                    .padding(vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                RadioButton(
-                    selected = isSelected,
-                    onClick = { if (!isSelected) onSetTvMode(value) },
-                    modifier = Modifier.size(20.dp),
+        (state.account as? Account.Xtream)?.let { xt ->
+            Spacer(Modifier.height(12.dp))
+            SettingsCard("Stream Format") {
+                val formats = listOf(
+                    "auto" to "Automatisch",
+                    "ts" to "MPEGTS (.ts)",
+                    "m3u8" to "HLS (.m3u8)",
                 )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-        Text("Providers", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(4.dp))
-        state.accounts.forEach { acc ->
-            val isActive = acc.id == state.account?.id
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = !isActive) { onSwitchProvider(acc.id) }
-                    .padding(vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                RadioButton(
-                    selected = isActive,
-                    onClick = { if (!isActive) onSwitchProvider(acc.id) },
-                    modifier = Modifier.size(20.dp),
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = acc.displayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(
-                    onClick = { onRemoveProvider(acc.id) },
-                    modifier = Modifier.size(36.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = "Provider verwijderen",
-                        modifier = Modifier.size(20.dp),
-                    )
+                formats.forEach { (value, label) ->
+                    val isSelected = xt.streamFormat == value
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !isSelected) {
+                                onSetStreamFormat(value)
+                            }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = {
+                                if (!isSelected) onSetStreamFormat(value)
+                            },
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
                 }
             }
         }
 
         Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = onAddProvider, modifier = Modifier.fillMaxWidth()) {
-            Text("Provider toevoegen")
+        SettingsCard("Volwassen content") {
+            AdultContentSection(
+                adult = adult,
+                onSetAdultPin = onSetAdultPin,
+                onUnlockAdult = onUnlockAdult,
+                onHideAdult = onHideAdult,
+            )
         }
-
-        Spacer(Modifier.height(16.dp))
-        Text("Volwassen content", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(4.dp))
-        AdultContentSection(
-            adult = adult,
-            onSetAdultPin = onSetAdultPin,
-            onUnlockAdult = onUnlockAdult,
-            onHideAdult = onHideAdult,
-        )
 
         Spacer(Modifier.height(16.dp))
         Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {

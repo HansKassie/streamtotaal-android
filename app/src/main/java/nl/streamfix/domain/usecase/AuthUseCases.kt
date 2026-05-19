@@ -67,3 +67,10 @@ class LogoutUseCase @Inject constructor(
 ) {
     suspend operator fun invoke() = repository.logout()
 }
+
+class VerifyActiveAccountUseCase @Inject constructor(
+    private val repository: AuthRepository,
+) {
+    suspend operator fun invoke(): AppResult<Unit> =
+        repository.verifyActiveAccount()
+}

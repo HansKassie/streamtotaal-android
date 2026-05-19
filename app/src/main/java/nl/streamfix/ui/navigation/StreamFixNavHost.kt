@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import nl.streamfix.ui.screens.catchup.CatchupChannelScreen
+import nl.streamfix.ui.screens.connectiontest.ConnectionTestScreen
 import nl.streamfix.ui.screens.nowontv.NowOnTvScreen
 import nl.streamfix.ui.screens.search.SearchScreen
 import nl.streamfix.ui.screens.login.XtreamLoginScreen
@@ -89,6 +90,9 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
                 },
                 onOpenSearch = { navController.navigate(Routes.SEARCH) },
                 onOpenNowOnTv = { navController.navigate(Routes.NOW_ON_TV) },
+                onOpenConnectionTest = {
+                    navController.navigate(Routes.CONNECTION_TEST)
+                },
                 deviceIsTv = deviceIsTv,
             )
         }
@@ -100,6 +104,10 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
                     navController.navigate(Routes.player(categoryId, channelId))
                 },
             )
+        }
+
+        composable(Routes.CONNECTION_TEST) {
+            ConnectionTestScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.SEARCH) {

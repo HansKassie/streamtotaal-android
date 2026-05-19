@@ -7,6 +7,7 @@ object Routes {
 
     const val SEARCH = "search"
     const val NOW_ON_TV = "nowontv"
+    const val CONNECTION_TEST = "connectiontest"
 
     const val PLAYER = "player"
     const val PLAYER_ARG_CATEGORY = "cat"

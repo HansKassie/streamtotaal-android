@@ -35,6 +35,13 @@ interface AuthRepository {
     /** Optionele account-info uit player_api.php, of null als ophalen faalt. */
     suspend fun getAccountInfo(): AccountInfo?
 
+    /**
+     * Test het actieve account live tegen de provider (server bereikbaar,
+     * inlog geldig, abonnement actief). Success = in orde; Failure bevat de
+     * reden (verlopen, onbereikbaar, foute inlog, ...).
+     */
+    suspend fun verifyActiveAccount(): AppResult<Unit>
+
     /** Wist alle credentials en lokale gegevens (briefing: logout wist alles). */
     suspend fun logout()
 }
