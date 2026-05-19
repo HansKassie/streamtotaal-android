@@ -1,8 +1,8 @@
 {
-  "versionCode": 8,
-  "versionName": "1.0.7",
+  "versionCode": 9,
+  "versionName": "1.0.8",
   "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-  "releaseNotes": "Nieuw: volledige ondersteuning voor Android TV en Google TV. De app herkent automatisch een tv en past de bediening aan op de afstandsbediening: navigeren met de pijltjes, in live tv wisselen van kanaal met links en rechts, en een opgeruimd beeld dat tijdens het kijken vanzelf verdwijnt.",
+  "releaseNotes": "Nieuw op tv: een volledige programmagids (EPG) met tijdlijn en markering van wat nu speelt, een live-voorbeeld van het kanaal terwijl je door de lijst bladert, de gids openen met de gele toets van de afstandsbediening, en een strakkere, compactere tv-weergave.",
   "minSupportedVersionCode": 1,
   "forceUpdate": false
 }
