@@ -211,7 +211,7 @@ fun PlayerScreen(
                     }
                 }
             },
-            update = { it.player = cast.current },
+            update = { if (it.player !== cast.current) it.player = cast.current },
         )
 
         if (!isTv || chromeVisible) Row(

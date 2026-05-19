@@ -47,6 +47,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -68,6 +69,7 @@ import kotlinx.coroutines.delay
 import nl.streamfix.BuildConfig
 import nl.streamfix.domain.model.Account
 import nl.streamfix.ui.formatXtreamExpiry
+import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.screens.catchup.CatchupScreen
 import nl.streamfix.ui.screens.favorites.FavoritesScreen
 import nl.streamfix.ui.screens.history.HistoryScreen
@@ -186,6 +188,7 @@ fun MainScreen(
         }
     }
 
+    CompositionLocalProvider(LocalIsTv provides isTv) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -251,6 +254,7 @@ fun MainScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
             ) { tabContent() }
         }
+    }
     }
 }
 
