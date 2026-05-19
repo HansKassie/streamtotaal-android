@@ -2,8 +2,6 @@ package nl.streamfix.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,32 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class AppSettingsStore @Inject constructor(
     @ApplicationContext context: Context,
 ) {
-    private val prefs: SharedPreferences = createPrefs(context)
-
-    private fun createEncrypted(context: Context): SharedPreferences {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        return EncryptedSharedPreferences.create(
-            context,
-            PREFS_FILE,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
-    }
-
-    private fun createPrefs(context: Context): SharedPreferences =
-        try {
-            createEncrypted(context)
-        } catch (e: Exception) {
-            runCatching { context.deleteSharedPreferences(PREFS_FILE) }
-            try {
-                createEncrypted(context)
-            } catch (e2: Exception) {
-                context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
-            }
-        }
+    private val prefs: SharedPreferences = createSecurePrefs(context, PREFS_FILE)
 
     private val _adultState = MutableStateFlow(readAdultState())
     val adultState: StateFlow<AdultState> = _adultState.asStateFlow()
@@ -116,3 +89,6 @@ data class AdultState(
     val hidden: Boolean,
     val unlocked: Boolean,
 )
+
+/** True = volwassen content moet nu gefilterd worden. */
+val AdultState.filterActive: Boolean get() = hidden && !unlocked

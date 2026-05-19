@@ -4,12 +4,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import nl.streamfix.data.local.AdultContent
 import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.data.local.SecureCredentialStore
+import nl.streamfix.data.local.filterActive
 import nl.streamfix.data.local.db.PlaybackDao
 import nl.streamfix.data.local.db.PlaybackProgressEntity
 import nl.streamfix.domain.model.HistoryItem
@@ -69,10 +71,13 @@ class PlaybackRepositoryImpl @Inject constructor(
             if (account == null) {
                 flowOf(emptyList())
             } else {
-                dao.observeHistory(account.id).map { rows ->
+                combine(
+                    dao.observeHistory(account.id),
+                    appSettings.adultState,
+                ) { rows, adult ->
                     rows
                         .filterNot {
-                            appSettings.adultFilterActive() &&
+                            adult.filterActive &&
                                 AdultContent.isAdult(it.title)
                         }
                         .map {

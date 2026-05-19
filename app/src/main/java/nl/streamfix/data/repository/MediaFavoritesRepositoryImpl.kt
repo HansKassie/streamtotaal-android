@@ -4,12 +4,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import nl.streamfix.data.local.AdultContent
 import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.data.local.SecureCredentialStore
+import nl.streamfix.data.local.filterActive
 import nl.streamfix.data.local.db.FavoriteMediaDao
 import nl.streamfix.data.local.db.FavoriteMediaEntity
 import nl.streamfix.domain.model.SeriesItem
@@ -26,9 +28,8 @@ class MediaFavoritesRepositoryImpl @Inject constructor(
     private val appSettings: AppSettingsStore,
 ) : MediaFavoritesRepository {
 
-    private fun List<FavoriteMediaEntity>.dropAdult() = filterNot {
-        appSettings.adultFilterActive() && AdultContent.isAdult(it.name)
-    }
+    private fun List<FavoriteMediaEntity>.dropAdult(filterActive: Boolean) =
+        filterNot { filterActive && AdultContent.isAdult(it.name) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeVodFavorites(): Flow<List<VodItem>> =
@@ -36,8 +37,11 @@ class MediaFavoritesRepositoryImpl @Inject constructor(
             if (account == null) {
                 flowOf(emptyList())
             } else {
-                dao.observe(account.id, TYPE_VOD).map { rows ->
-                    rows.dropAdult().map {
+                combine(
+                    dao.observe(account.id, TYPE_VOD),
+                    appSettings.adultState,
+                ) { rows, adult ->
+                    rows.dropAdult(adult.filterActive).map {
                         VodItem(
                             id = it.mediaId,
                             name = it.name,
@@ -56,8 +60,11 @@ class MediaFavoritesRepositoryImpl @Inject constructor(
             if (account == null) {
                 flowOf(emptyList())
             } else {
-                dao.observe(account.id, TYPE_SERIES).map { rows ->
-                    rows.dropAdult().map {
+                combine(
+                    dao.observe(account.id, TYPE_SERIES),
+                    appSettings.adultState,
+                ) { rows, adult ->
+                    rows.dropAdult(adult.filterActive).map {
                         SeriesItem(
                             id = it.mediaId,
                             name = it.name,
