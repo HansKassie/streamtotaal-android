@@ -17,7 +17,12 @@ class UpdateRepositoryImpl @Inject constructor(
         return runCatching {
             val m = api.getUpdateManifest(UPDATE_MANIFEST_URL)
             val remote = m.versionCodeValue ?: return null
-            val apk = m.apkUrl?.takeIf { it.isNotBlank() } ?: return null
+            val apk = m.apkUrl
+                ?.takeIf { it.isNotBlank() }
+                ?.takeIf {
+                    it.startsWith("https://") &&
+                        android.net.Uri.parse(it).host == UPDATE_HOST
+                } ?: return null
             if (remote <= BuildConfig.VERSION_CODE) return null
             val mandatory = m.forceUpdateValue ||
                 (m.minSupportedValue?.let { BuildConfig.VERSION_CODE < it } ?: false)
@@ -34,6 +39,7 @@ class UpdateRepositoryImpl @Inject constructor(
     private companion object {
         // version.json in de Cloudflare R2-bucket. Vervang het object om
         // een update uit te rollen. Leeg maken = updatecheck uit.
+        const val UPDATE_HOST = "updates.smarttv-solutions.xyz"
         const val UPDATE_MANIFEST_URL =
             "https://updates.smarttv-solutions.xyz/version.json"
     }

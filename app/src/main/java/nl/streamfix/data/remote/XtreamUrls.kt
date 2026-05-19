@@ -9,13 +9,16 @@ import java.util.Locale
 object XtreamUrls {
 
     /**
-     * Altijd http://; een ingevoerd schema wordt genegeerd. Een door de
-     * klant ingevoerde poort blijft behouden (panels op :8080 e.d.).
+     * Behoudt een expliciet ingevoerd https://; anders default http://
+     * (geen schema of http:// = http). Ingevoerde poort blijft behouden.
      */
     fun normalizeServerUrl(input: String): String {
+        val trimmed = input.trim()
+        val isHttps = trimmed.startsWith("https://", ignoreCase = true)
         val withoutScheme =
-            input.trim().replace(Regex("(?i)^[a-z][a-z0-9+.-]*://"), "")
-        return "http://" + withoutScheme.trimEnd('/')
+            trimmed.replace(Regex("(?i)^[a-z][a-z0-9+.-]*://"), "")
+        val scheme = if (isHttps) "https://" else "http://"
+        return scheme + withoutScheme.trimEnd('/')
     }
 
     fun encode(value: String): String =
