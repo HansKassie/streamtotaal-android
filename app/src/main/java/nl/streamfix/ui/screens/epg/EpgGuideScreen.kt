@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -29,28 +30,34 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.screens.live.FAVORITES_ID
 import nl.streamfix.ui.tvFocusable
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 private val CHANNEL_COL = 132.dp
-private val ROW_HEIGHT = 64.dp
+private val ROW_HEIGHT = 50.dp
 private val PX_PER_MIN = 3.dp
 private const val WINDOW_HOURS = 6
 
@@ -66,15 +73,26 @@ fun EpgGuideScreen(
     val isTv = LocalIsTv.current
     val cat = viewModel.categoryId.ifBlank { FAVORITES_ID }
 
-    val now = remember { System.currentTimeMillis() }
+    val openNow = remember { System.currentTimeMillis() }
+    var nowMs by remember { mutableStateOf(openNow) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000L)
+            nowMs = System.currentTimeMillis()
+        }
+    }
     val half = 30L * 60_000L
-    val windowStart = remember(now) { (now / half) * half - half }
-    val windowEnd = remember(now) { windowStart + WINDOW_HOURS * 3_600_000L }
+    val windowStart = remember(openNow) { (openNow / half) * half - half }
+    val windowEnd = remember(openNow) {
+        windowStart + WINDOW_HOURS * 3_600_000L
+    }
     val totalWidth = PX_PER_MIN * (WINDOW_HOURS * 60).toFloat()
     val hourFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     fun msToDp(ms: Long): Dp = PX_PER_MIN * ((ms - windowStart) / 60_000f)
 
     val firstFocus = remember { FocusRequester() }
+    var focusedProg by remember { mutableStateOf<EpgProgramme?>(null) }
+    var focusedChannelName by remember { mutableStateOf("") }
     LaunchedEffect(isTv, state.channels.isNotEmpty()) {
         if (!isTv || state.channels.isEmpty()) return@LaunchedEffect
         withFrameNanos {}
@@ -125,7 +143,15 @@ fun EpgGuideScreen(
 
                 else -> {
                     val timeScroll = rememberScrollState()
+                    val density = LocalDensity.current
 
+                    Column(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
                     Row {
                         Spacer(Modifier.width(CHANNEL_COL))
                         Box(
@@ -176,7 +202,7 @@ fun EpgGuideScreen(
                                     AsyncImage(
                                         model = ch.logoUrl,
                                         contentDescription = null,
-                                        modifier = Modifier.size(36.dp),
+                                        modifier = Modifier.size(32.dp),
                                     )
                                     Spacer(Modifier.width(8.dp))
                                     Text(
@@ -205,6 +231,17 @@ fun EpgGuideScreen(
                                                 .offset(x = 4.dp)
                                                 .padding(top = 8.dp),
                                         )
+                                    } else if (progs.isEmpty()) {
+                                        Text(
+                                            text = "Geen gids",
+                                            style = MaterialTheme.typography
+                                                .bodySmall,
+                                            color = MaterialTheme.colorScheme
+                                                .onSurfaceVariant,
+                                            modifier = Modifier
+                                                .offset(x = 4.dp)
+                                                .padding(top = 8.dp),
+                                        )
                                     } else {
                                         progs.filter {
                                             it.endMs > windowStart &&
@@ -216,14 +253,21 @@ fun EpgGuideScreen(
                                                 .coerceAtMost(windowEnd)
                                             val w = (PX_PER_MIN *
                                                 ((e - s) / 60_000f))
-                                            val isNowP = now >= p.startMs &&
-                                                now < p.endMs
+                                            val isNowP = nowMs >= p.startMs &&
+                                                nowMs < p.endMs
                                             Box(
                                                 modifier = Modifier
                                                     .offset(x = msToDp(s))
                                                     .width(w)
                                                     .fillMaxHeight()
                                                     .padding(2.dp)
+                                                    .onFocusChanged {
+                                                        if (it.isFocused) {
+                                                            focusedProg = p
+                                                            focusedChannelName =
+                                                                ch.name
+                                                        }
+                                                    }
                                                     .tvFocusable()
                                                     .clickable {
                                                         onOpenChannel(
@@ -261,6 +305,53 @@ fun EpgGuideScreen(
                             }
                             Spacer(Modifier.height(2.dp))
                         }
+                    }
+                    }
+                    val nowX = CHANNEL_COL + msToDp(nowMs) -
+                        with(density) { timeScroll.value.toDp() }
+                    if (nowX >= CHANNEL_COL) {
+                        Box(
+                            modifier = Modifier
+                                .offset(x = nowX)
+                                .width(2.dp)
+                                .fillMaxHeight()
+                                .background(MaterialTheme.colorScheme.primary),
+                        )
+                    }
+                    }
+                    focusedProg?.let { p ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surface)
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                        ) {
+                            Text(
+                                text = hourFmt.format(Date(p.startMs)) +
+                                    " - " + hourFmt.format(Date(p.endMs)) +
+                                    "  -  " + focusedChannelName,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme
+                                    .onSurfaceVariant,
+                            )
+                            Text(
+                                text = p.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (p.description.isNotBlank()) {
+                                Text(
+                                    text = p.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme
+                                        .onSurfaceVariant,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
                     }
                 }
             }

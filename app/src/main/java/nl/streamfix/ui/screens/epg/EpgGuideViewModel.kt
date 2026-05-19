@@ -76,9 +76,8 @@ class EpgGuideViewModel @Inject constructor(
         if (!epgRequested.add(channelId)) return
         viewModelScope.launch {
             val r = getEpgTable(channelId)
-            if (r is AppResult.Success && r.data.isNotEmpty()) {
-                _epg.update { it + (channelId to r.data) }
-            }
+            val data = if (r is AppResult.Success) r.data else emptyList()
+            _epg.update { it + (channelId to data) }
         }
     }
 }
