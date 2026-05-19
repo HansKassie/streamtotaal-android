@@ -28,6 +28,7 @@ data class PlayerUiState(
     val hasNext: Boolean = false,
     val channels: List<LiveChannel> = emptyList(),
     val currentChannelId: String? = null,
+    val hasLast: Boolean = false,
 )
 
 @HiltViewModel
@@ -48,6 +49,7 @@ class PlayerViewModel @Inject constructor(
 
     private var channels: List<LiveChannel> = emptyList()
     private var index: Int = 0
+    private var previousIndex: Int = -1
 
     private val _state = MutableStateFlow(PlayerUiState())
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
@@ -88,28 +90,37 @@ class PlayerViewModel @Inject constructor(
                 hasNext = index < channels.lastIndex,
                 channels = channels,
                 currentChannelId = channel.id,
+                hasLast = previousIndex in channels.indices &&
+                    previousIndex != index,
             )
         }
     }
 
-    fun selectChannel(id: String) {
-        val i = channels.indexOfFirst { it.id == id }
-        if (i >= 0 && i != index) {
-            index = i
+    private fun setIndex(newIndex: Int) {
+        if (newIndex in channels.indices && newIndex != index) {
+            previousIndex = index
+            index = newIndex
             emitCurrent()
         }
+    }
+
+    fun selectChannel(id: String) {
+        setIndex(channels.indexOfFirst { it.id == id })
     }
 
     fun next() {
-        if (index < channels.lastIndex) {
-            index++
-            emitCurrent()
-        }
+        setIndex(index + 1)
     }
 
     fun previous() {
-        if (index > 0) {
-            index--
+        setIndex(index - 1)
+    }
+
+    fun lastChannel() {
+        if (previousIndex in channels.indices && previousIndex != index) {
+            val current = index
+            index = previousIndex
+            previousIndex = current
             emitCurrent()
         }
     }

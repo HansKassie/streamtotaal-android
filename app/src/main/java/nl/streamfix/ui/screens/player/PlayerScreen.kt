@@ -186,6 +186,13 @@ fun PlayerScreen(
                             onOpenGuide(viewModel.guideCategoryId)
                             return@onPreviewKeyEvent true
                         }
+                        if (ekc ==
+                            android.view.KeyEvent.KEYCODE_LAST_CHANNEL
+                        ) {
+                            viewModel.lastChannel()
+                            zapTick++
+                            return@onPreviewKeyEvent true
+                        }
                         when (e.key) {
                             Key.DirectionRight -> {
                                 if (state.hasNext) viewModel.next()
@@ -332,7 +339,7 @@ fun PlayerScreen(
                 val idx = state.channels
                     .indexOfFirst { it.id == state.currentChannelId }
                     .takeIf { it >= 0 } ?: 0
-                listState.scrollToItem(idx)
+                listState.scrollToItem(if (state.hasLast) idx + 1 else idx)
                 withFrameNanos {}
                 runCatching { currentFocus.requestFocus() }
             }
@@ -347,6 +354,26 @@ fun PlayerScreen(
                     state = listState,
                     modifier = Modifier.fillMaxSize().padding(8.dp),
                 ) {
+                    if (state.hasLast) {
+                        item(key = "__last__") {
+                            Text(
+                                text = "↩  Vorige zender",
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .tvFocusable()
+                                    .clickable {
+                                        viewModel.lastChannel()
+                                        channelListOpen = false
+                                    }
+                                    .padding(
+                                        horizontal = 12.dp,
+                                        vertical = 10.dp,
+                                    ),
+                            )
+                        }
+                    }
                     items(state.channels, key = { it.id }) { ch ->
                         val isCurrent = ch.id == state.currentChannelId
                         Text(
