@@ -93,10 +93,26 @@ fun EpgGuideScreen(
     val firstFocus = remember { FocusRequester() }
     var focusedProg by remember { mutableStateOf<EpgProgramme?>(null) }
     var focusedChannelName by remember { mutableStateOf("") }
+    val nowFocus = remember { FocusRequester() }
+    var didNowFocus by remember { mutableStateOf(false) }
     LaunchedEffect(isTv, state.channels.isNotEmpty()) {
         if (!isTv || state.channels.isEmpty()) return@LaunchedEffect
         withFrameNanos {}
         runCatching { firstFocus.requestFocus() }
+    }
+
+    val firstChannelId = state.channels.firstOrNull()?.id
+    LaunchedEffect(isTv, firstChannelId, epgMap[firstChannelId]) {
+        if (!isTv || didNowFocus) return@LaunchedEffect
+        val id = firstChannelId ?: return@LaunchedEffect
+        val progs = epgMap[id] ?: return@LaunchedEffect
+        withFrameNanos {}
+        val hasNow = progs.any { nowMs >= it.startMs && nowMs < it.endMs }
+        runCatching {
+            if (hasNow) nowFocus.requestFocus()
+            else firstFocus.requestFocus()
+        }
+        didNowFocus = true
     }
 
     Scaffold(
@@ -261,6 +277,18 @@ fun EpgGuideScreen(
                                                     .width(w)
                                                     .fillMaxHeight()
                                                     .padding(2.dp)
+                                                    .then(
+                                                        if (
+                                                            isFirst && isNowP
+                                                        ) {
+                                                            Modifier
+                                                                .focusRequester(
+                                                                    nowFocus,
+                                                                )
+                                                        } else {
+                                                            Modifier
+                                                        },
+                                                    )
                                                     .onFocusChanged {
                                                         if (it.isFocused) {
                                                             focusedProg = p
