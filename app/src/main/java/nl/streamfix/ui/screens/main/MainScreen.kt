@@ -3,6 +3,7 @@ package nl.streamfix.ui.screens.main
 import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -69,6 +71,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import nl.streamfix.BuildConfig
+import nl.streamfix.R
 import nl.streamfix.domain.model.Account
 import nl.streamfix.ui.formatXtreamExpiry
 import nl.streamfix.ui.LocalIsTv
@@ -79,14 +82,17 @@ import nl.streamfix.ui.screens.live.LiveTvScreen
 import nl.streamfix.ui.screens.series.SeriesScreen
 import nl.streamfix.ui.screens.vod.VodScreen
 
-private enum class Tab(val label: String, val icon: ImageVector) {
-    LiveTv("Live TV", Icons.Filled.LiveTv),
-    Favorites("Fav", Icons.Filled.Star),
-    Movies("Films", Icons.Filled.Movie),
-    Series("Series", Icons.Filled.Tv),
-    Catchup("Gemist", Icons.Filled.Replay),
-    History("Verder", Icons.Filled.History),
-    Settings("Meer", Icons.Filled.Settings),
+private enum class Tab(
+    @StringRes val labelRes: Int,
+    val icon: ImageVector,
+) {
+    LiveTv(R.string.tab_live_tv, Icons.Filled.LiveTv),
+    Favorites(R.string.tab_favorites_short, Icons.Filled.Star),
+    Movies(R.string.tab_movies, Icons.Filled.Movie),
+    Series(R.string.tab_series_short, Icons.Filled.Tv),
+    Catchup(R.string.tab_catchup, Icons.Filled.Replay),
+    History(R.string.tab_history, Icons.Filled.History),
+    Settings(R.string.tab_settings, Icons.Filled.Settings),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,7 +148,7 @@ fun MainScreen(
                 backArmed = true
                 Toast.makeText(
                     context,
-                    "Nogmaals terug om af te sluiten",
+                    context.getString(R.string.main_back_to_exit_toast),
                     Toast.LENGTH_SHORT,
                 ).show()
             }
@@ -189,7 +195,7 @@ fun MainScreen(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                PlaceholderContent(tabs[selected].label)
+                PlaceholderContent(stringResource(tabs[selected].labelRes))
             }
         }
     }
@@ -198,18 +204,20 @@ fun MainScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(tabs[selected].label) },
+                title = { Text(stringResource(tabs[selected].labelRes)) },
                 actions = {
                     IconButton(onClick = onOpenNowOnTv) {
                         Icon(
                             Icons.Filled.Schedule,
-                            contentDescription = "Nu op tv",
+                            contentDescription =
+                                stringResource(R.string.topbar_now_on_tv),
                         )
                     }
                     IconButton(onClick = onOpenSearch) {
                         Icon(
                             Icons.Filled.Search,
-                            contentDescription = "Zoeken",
+                            contentDescription =
+                                stringResource(R.string.topbar_search),
                         )
                     }
                 },
@@ -223,9 +231,15 @@ fun MainScreen(
                             selected = selected == index,
                             onClick = { selected = index },
                             icon = {
-                                Icon(tab.icon, contentDescription = tab.label)
+                                Icon(
+                                    tab.icon,
+                                    contentDescription =
+                                        stringResource(tab.labelRes),
+                                )
                             },
-                            label = { Text(tab.label, maxLines = 1) },
+                            label = {
+                                Text(stringResource(tab.labelRes), maxLines = 1)
+                            },
                         )
                     }
                 }
@@ -242,9 +256,15 @@ fun MainScreen(
                             selected = selected == index,
                             onClick = { selected = index },
                             icon = {
-                                Icon(tab.icon, contentDescription = tab.label)
+                                Icon(
+                                    tab.icon,
+                                    contentDescription =
+                                        stringResource(tab.labelRes),
+                                )
                             },
-                            label = { Text(tab.label, maxLines = 1) },
+                            label = {
+                                Text(stringResource(tab.labelRes), maxLines = 1)
+                            },
                         )
                     }
                 }
@@ -272,7 +292,7 @@ private fun PlaceholderContent(name: String) {
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "$name komt in een volgende fase",
+            text = stringResource(R.string.tab_placeholder_coming_soon, name),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -316,17 +336,23 @@ private fun SettingsContent(
             .fillMaxWidth()
             .verticalScroll(rememberScrollState()),
     ) {
-        SettingsCard("Account") {
+        SettingsCard(stringResource(R.string.settings_account)) {
             Text(
-                text = state.account?.displayName ?: "Onbekend",
+                text = state.account?.displayName
+                    ?: stringResource(R.string.account_unknown),
                 style = MaterialTheme.typography.bodyMedium,
             )
             state.accountInfo?.let { info ->
                 val parts = listOfNotNull(
-                    info.status?.let { "Status: $it" },
-                    formatXtreamExpiry(context, info.expirationDate)
-                        ?.let { "Verloopt: $it" },
-                    info.maxConnections?.let { "Max: $it" },
+                    info.status?.let {
+                        stringResource(R.string.account_status_prefix, it)
+                    },
+                    formatXtreamExpiry(context, info.expirationDate)?.let {
+                        stringResource(R.string.account_expiry_prefix, it)
+                    },
+                    info.maxConnections?.let {
+                        stringResource(R.string.account_max_prefix, it)
+                    },
                 )
                 if (parts.isNotEmpty()) {
                     Spacer(Modifier.height(2.dp))
@@ -340,7 +366,7 @@ private fun SettingsContent(
 
             Spacer(Modifier.height(10.dp))
             Text(
-                "Providers",
+                stringResource(R.string.settings_providers),
                 style = MaterialTheme.typography.titleSmall,
             )
             Spacer(Modifier.height(4.dp))
@@ -372,7 +398,8 @@ private fun SettingsContent(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Delete,
-                            contentDescription = "Provider verwijderen",
+                            contentDescription =
+                                stringResource(R.string.provider_remove_desc),
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -384,23 +411,23 @@ private fun SettingsContent(
                 onClick = onAddProvider,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Provider toevoegen")
+                Text(stringResource(R.string.welcome_add_provider))
             }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
                 onClick = onOpenConnectionTest,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Verbinding testen")
+                Text(stringResource(R.string.settings_connection_test))
             }
         }
 
         Spacer(Modifier.height(8.dp))
-        SettingsCard("Weergave") {
+        SettingsCard(stringResource(R.string.settings_display)) {
             listOf(
-                "auto" to "Automatisch (aanbevolen)",
-                "tv" to "Tv (afstandsbediening)",
-                "phone" to "Telefoon of tablet",
+                "auto" to stringResource(R.string.tv_mode_auto),
+                "tv" to stringResource(R.string.tv_mode_tv),
+                "phone" to stringResource(R.string.tv_mode_phone),
             ).forEach { (value, label) ->
                 val isSelected = tvMode == value
                 Row(
@@ -428,11 +455,11 @@ private fun SettingsContent(
 
         (state.account as? Account.Xtream)?.let { xt ->
             Spacer(Modifier.height(12.dp))
-            SettingsCard("Stream Format") {
+            SettingsCard(stringResource(R.string.settings_stream_format)) {
                 val formats = listOf(
-                    "auto" to "Automatisch",
-                    "ts" to "MPEGTS (.ts)",
-                    "m3u8" to "HLS (.m3u8)",
+                    "auto" to stringResource(R.string.stream_format_auto),
+                    "ts" to stringResource(R.string.stream_format_ts),
+                    "m3u8" to stringResource(R.string.stream_format_m3u8),
                 )
                 formats.forEach { (value, label) ->
                     val isSelected = xt.streamFormat == value
@@ -463,7 +490,7 @@ private fun SettingsContent(
         }
 
         Spacer(Modifier.height(8.dp))
-        SettingsCard("Volwassen content") {
+        SettingsCard(stringResource(R.string.settings_adult_content)) {
             AdultContentSection(
                 adult = adult,
                 onSetAdultPin = onSetAdultPin,
@@ -474,12 +501,12 @@ private fun SettingsContent(
 
         Spacer(Modifier.height(16.dp))
         Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
-            Text("Uitloggen")
+            Text(stringResource(R.string.logout))
         }
 
         Spacer(Modifier.height(24.dp))
         Text(
-            text = "StreamTotaal ${BuildConfig.VERSION_NAME}",
+            text = "${stringResource(R.string.app_name)} ${BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -499,7 +526,7 @@ private fun AdultContentSection(
     when {
         !adult.hasPin -> {
             Text(
-                "Nog geen pincode. Volwassen content is verborgen.",
+                stringResource(R.string.adult_no_pin_yet),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -507,29 +534,32 @@ private fun AdultContentSection(
             OutlinedButton(
                 onClick = { showSet = true },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Pincode instellen") }
+            ) { Text(stringResource(R.string.adult_set_pin)) }
         }
         adult.unlocked -> {
             Text(
-                "Zichtbaar (deze sessie)",
+                stringResource(R.string.adult_visible_session),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
                 onClick = onHideAdult,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Weer verbergen") }
+            ) { Text(stringResource(R.string.adult_hide_again)) }
             TextButton(onClick = { showSet = true }) {
-                Text("Pincode wijzigen")
+                Text(stringResource(R.string.adult_change_pin))
             }
         }
         else -> {
-            Text("Verborgen", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(R.string.adult_hidden),
+                style = MaterialTheme.typography.bodyMedium,
+            )
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
                 onClick = { showEnter = true },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Tonen met pincode") }
+            ) { Text(stringResource(R.string.adult_show_with_pin)) }
             // Bewust geen "Pincode wijzigen" hier: wijzigen kan pas na
             // ontgrendelen, anders omzeilt iemand het slot met een reset.
         }
@@ -537,8 +567,8 @@ private fun AdultContentSection(
 
     if (showSet) {
         PinDialog(
-            title = "Pincode instellen",
-            confirmLabel = "Opslaan",
+            title = stringResource(R.string.adult_set_pin),
+            confirmLabel = stringResource(R.string.pin_save),
             requireConfirm = true,
             onDismiss = { showSet = false },
             validate = { it.length >= 4 },
@@ -550,8 +580,8 @@ private fun AdultContentSection(
     }
     if (showEnter) {
         PinDialog(
-            title = "Pincode invoeren",
-            confirmLabel = "Tonen",
+            title = stringResource(R.string.pin_enter_title),
+            confirmLabel = stringResource(R.string.pin_show),
             requireConfirm = false,
             onDismiss = { showEnter = false },
             validate = { it.isNotEmpty() },
@@ -589,7 +619,7 @@ private fun PinDialog(
                 OutlinedTextField(
                     value = pin,
                     onValueChange = { pin = it.filter { c -> c.isDigit() } },
-                    label = { Text("Pincode") },
+                    label = { Text(stringResource(R.string.pin_field_label)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = numeric,
@@ -601,7 +631,9 @@ private fun PinDialog(
                         onValueChange = {
                             repeat = it.filter { c -> c.isDigit() }
                         },
-                        label = { Text("Herhaal pincode") },
+                        label = {
+                            Text(stringResource(R.string.pin_field_repeat))
+                        },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = numeric,
@@ -614,20 +646,23 @@ private fun PinDialog(
             }
         },
         confirmButton = {
+            val errTooShort = stringResource(R.string.pin_error_too_short)
+            val errNotEqual = stringResource(R.string.pin_error_not_equal)
+            val errIncorrect = stringResource(R.string.pin_error_incorrect)
             TextButton(onClick = {
                 when {
-                    !validate(pin) ->
-                        error = "Pincode is te kort (minimaal 4 cijfers)."
-                    requireConfirm && pin != repeat ->
-                        error = "De pincodes zijn niet gelijk."
+                    !validate(pin) -> error = errTooShort
+                    requireConfirm && pin != repeat -> error = errNotEqual
                     else -> if (!onConfirm(pin)) {
-                        error = "Onjuiste pincode."
+                        error = errIncorrect
                     }
                 }
             }) { Text(confirmLabel) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Annuleren") }
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
         },
     )
 }

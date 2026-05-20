@@ -40,6 +40,60 @@
     <!-- ===== Account-informatie. ===== -->
     <string name="expiry_unlimited">Onbeperkt</string>
 
+    <!-- ===== Tabs en topbar. ===== -->
+    <string name="tab_live_tv">Live TV</string>
+    <string name="tab_favorites_short">Fav</string>
+    <string name="tab_movies">Films</string>
+    <string name="tab_series_short">Series</string>
+    <string name="tab_catchup">Gemist</string>
+    <string name="tab_history">Verder</string>
+    <string name="tab_settings">Meer</string>
+    <string name="topbar_now_on_tv">Nu op tv</string>
+    <string name="topbar_search">Zoeken</string>
+    <string name="main_back_to_exit_toast">Nogmaals terug om af te sluiten</string>
+    <string name="tab_placeholder_coming_soon">%1$s komt in een volgende fase</string>
+
+    <!-- ===== Account-sectie in instellingen. ===== -->
+    <string name="account_unknown">Onbekend</string>
+    <string name="account_status_prefix">Status: %1$s</string>
+    <string name="account_expiry_prefix">Verloopt: %1$s</string>
+    <string name="account_max_prefix">Max: %1$s</string>
+    <string name="settings_providers">Providers</string>
+    <string name="settings_connection_test">Verbinding testen</string>
+
+    <!-- ===== Weergavemodus. ===== -->
+    <string name="settings_display">Weergave</string>
+    <string name="tv_mode_auto">Automatisch (aanbevolen)</string>
+    <string name="tv_mode_tv">Tv (afstandsbediening)</string>
+    <string name="tv_mode_phone">Telefoon of tablet</string>
+
+    <!-- ===== Stream Format. ===== -->
+    <string name="settings_stream_format">Stream Format</string>
+    <string name="stream_format_auto">Automatisch</string>
+    <string name="stream_format_ts">MPEGTS (.ts)</string>
+    <string name="stream_format_m3u8">HLS (.m3u8)</string>
+
+    <!-- ===== Volwassen content + pincode. ===== -->
+    <string name="settings_adult_content">Volwassen content</string>
+    <string name="adult_no_pin_yet">Nog geen pincode. Volwassen content is verborgen.</string>
+    <string name="adult_set_pin">Pincode instellen</string>
+    <string name="adult_visible_session">Zichtbaar (deze sessie)</string>
+    <string name="adult_hide_again">Weer verbergen</string>
+    <string name="adult_change_pin">Pincode wijzigen</string>
+    <string name="adult_hidden">Verborgen</string>
+    <string name="adult_show_with_pin">Tonen met pincode</string>
+    <string name="pin_enter_title">Pincode invoeren</string>
+    <string name="pin_show">Tonen</string>
+    <string name="pin_save">Opslaan</string>
+    <string name="pin_field_label">Pincode</string>
+    <string name="pin_field_repeat">Herhaal pincode</string>
+    <string name="pin_error_too_short">Pincode is te kort (minimaal 4 cijfers).</string>
+    <string name="pin_error_not_equal">De pincodes zijn niet gelijk.</string>
+    <string name="pin_error_incorrect">Onjuiste pincode.</string>
+
+    <string name="logout">Uitloggen</string>
+    <string name="settings_account">Account</string>
+
     <!-- ===== Verbindingstest. ===== -->
     <string name="conn_step_server_login">Server en inlog</string>
     <string name="conn_step_live_tv">Live TV</string>

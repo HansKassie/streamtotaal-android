@@ -40,6 +40,60 @@
     <!-- ===== Account information. ===== -->
     <string name="expiry_unlimited">Unlimited</string>
 
+    <!-- ===== Tabs and top bar. ===== -->
+    <string name="tab_live_tv">Live TV</string>
+    <string name="tab_favorites_short">Fav</string>
+    <string name="tab_movies">Movies</string>
+    <string name="tab_series_short">Series</string>
+    <string name="tab_catchup">Catch-up</string>
+    <string name="tab_history">Continue</string>
+    <string name="tab_settings">More</string>
+    <string name="topbar_now_on_tv">On TV now</string>
+    <string name="topbar_search">Search</string>
+    <string name="main_back_to_exit_toast">Press back again to exit</string>
+    <string name="tab_placeholder_coming_soon">%1$s is coming in a future release</string>
+
+    <!-- ===== Account section in settings. ===== -->
+    <string name="account_unknown">Unknown</string>
+    <string name="account_status_prefix">Status: %1$s</string>
+    <string name="account_expiry_prefix">Expires: %1$s</string>
+    <string name="account_max_prefix">Max: %1$s</string>
+    <string name="settings_providers">Providers</string>
+    <string name="settings_connection_test">Test connection</string>
+
+    <!-- ===== Display mode. ===== -->
+    <string name="settings_display">Display</string>
+    <string name="tv_mode_auto">Automatic (recommended)</string>
+    <string name="tv_mode_tv">TV (remote control)</string>
+    <string name="tv_mode_phone">Phone or tablet</string>
+
+    <!-- ===== Stream format. ===== -->
+    <string name="settings_stream_format">Stream format</string>
+    <string name="stream_format_auto">Automatic</string>
+    <string name="stream_format_ts">MPEGTS (.ts)</string>
+    <string name="stream_format_m3u8">HLS (.m3u8)</string>
+
+    <!-- ===== Adult content + PIN. ===== -->
+    <string name="settings_adult_content">Adult content</string>
+    <string name="adult_no_pin_yet">No PIN set yet. Adult content is hidden.</string>
+    <string name="adult_set_pin">Set PIN</string>
+    <string name="adult_visible_session">Visible (this session)</string>
+    <string name="adult_hide_again">Hide again</string>
+    <string name="adult_change_pin">Change PIN</string>
+    <string name="adult_hidden">Hidden</string>
+    <string name="adult_show_with_pin">Show with PIN</string>
+    <string name="pin_enter_title">Enter PIN</string>
+    <string name="pin_show">Show</string>
+    <string name="pin_save">Save</string>
+    <string name="pin_field_label">PIN</string>
+    <string name="pin_field_repeat">Repeat PIN</string>
+    <string name="pin_error_too_short">PIN is too short (at least 4 digits).</string>
+    <string name="pin_error_not_equal">The PINs do not match.</string>
+    <string name="pin_error_incorrect">Incorrect PIN.</string>
+
+    <string name="logout">Sign out</string>
+    <string name="settings_account">Account</string>
+
     <!-- ===== Connection test. ===== -->
     <string name="conn_step_server_login">Server and login</string>
     <string name="conn_step_live_tv">Live TV</string>
