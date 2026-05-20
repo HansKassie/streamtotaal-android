@@ -82,41 +82,86 @@ fun XtreamLoginScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Top,
         ) {
-            Text(
-                text = "Kies je provider",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(4.dp))
-            var providerMenuOpen by remember { mutableStateOf(false) }
-            Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = { providerMenuOpen = true },
-                    enabled = !state.isLoading && state.providers.isNotEmpty(),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        text = state.selectedProvider?.name ?: "Kies provider",
-                        modifier = Modifier.weight(1f),
-                    )
-                    Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
-                }
-                DropdownMenu(
-                    expanded = providerMenuOpen,
-                    onDismissRequest = { providerMenuOpen = false },
-                ) {
-                    state.providers.forEach { provider ->
+            if (state.providers.isNotEmpty()) {
+                Text(
+                    text = "Kies je provider",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
+                var providerMenuOpen by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { providerMenuOpen = true },
+                        enabled = !state.isLoading,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = when {
+                                state.useCustomProvider -> "Eigen provider"
+                                else -> state.selectedProvider?.name
+                                    ?: "Kies provider"
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+                    }
+                    DropdownMenu(
+                        expanded = providerMenuOpen,
+                        onDismissRequest = { providerMenuOpen = false },
+                    ) {
+                        state.providers.forEach { provider ->
+                            DropdownMenuItem(
+                                text = { Text(provider.name) },
+                                onClick = {
+                                    providerMenuOpen = false
+                                    viewModel.onSelectProvider(provider)
+                                },
+                            )
+                        }
                         DropdownMenuItem(
-                            text = { Text(provider.name) },
+                            text = { Text("+ Eigen provider toevoegen") },
                             onClick = {
                                 providerMenuOpen = false
-                                viewModel.onSelectProvider(provider)
+                                viewModel.onSelectCustomProvider()
                             },
                         )
                     }
                 }
+                Spacer(Modifier.height(16.dp))
             }
-            Spacer(Modifier.height(16.dp))
+
+            if (state.useCustomProvider) {
+                OutlinedTextField(
+                    value = state.customName,
+                    onValueChange = viewModel::onCustomNameChange,
+                    label = { Text("Providernaam") },
+                    singleLine = true,
+                    enabled = !state.isLoading,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) },
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = state.customUrl,
+                    onValueChange = viewModel::onCustomUrlChange,
+                    label = { Text("Server-URL") },
+                    singleLine = true,
+                    enabled = !state.isLoading,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Next,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) },
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(16.dp))
+            }
             OutlinedTextField(
                 value = state.username,
                 onValueChange = viewModel::onUsernameChange,
