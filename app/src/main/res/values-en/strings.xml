@@ -12,6 +12,31 @@
     <string name="err_invalid_url">The URL is invalid. Check for spaces and that the address is correct.</string>
     <string name="err_unknown">Something went wrong. Please try again.</string>
 
+    <!-- ===== Shared. ===== -->
+    <string name="common_back">Back</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="provider_remove_desc">Remove provider</string>
+
+    <!-- ===== Welcome screen. ===== -->
+    <string name="welcome_xtream_hint">Sign in with your Xtream Codes credentials</string>
+    <string name="welcome_sign_in_xtream">Sign in with Xtream Codes</string>
+    <string name="welcome_choose_provider">Choose a provider</string>
+    <string name="welcome_add_provider">Add provider</string>
+
+    <!-- ===== Login screen (Xtream). ===== -->
+    <string name="login_title">Xtream Codes</string>
+    <string name="login_choose_provider_label">Choose your provider</string>
+    <string name="login_choose_provider_placeholder">Choose provider</string>
+    <string name="login_custom_provider">Custom provider</string>
+    <string name="login_add_custom_provider">+ Add custom provider</string>
+    <string name="login_provider_name">Provider name</string>
+    <string name="login_server_url">Server URL</string>
+    <string name="login_username">Username</string>
+    <string name="login_password">Password</string>
+    <string name="login_password_show">Show password</string>
+    <string name="login_password_hide">Hide password</string>
+    <string name="login_submit">Sign in</string>
+
     <!-- ===== Account information. ===== -->
     <string name="expiry_unlimited">Unlimited</string>
 

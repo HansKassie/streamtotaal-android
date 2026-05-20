@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -56,12 +57,12 @@ fun WelcomeScreen(
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_streamfix_logo),
-            contentDescription = "StreamTotaal logo",
+            contentDescription = stringResource(R.string.app_name),
             modifier = Modifier.size(120.dp),
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "StreamTotaal",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -69,7 +70,7 @@ fun WelcomeScreen(
 
         if (state.accounts.isEmpty()) {
             Text(
-                text = "Log in met je Xtream Codes gegevens",
+                text = stringResource(R.string.welcome_xtream_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -79,11 +80,11 @@ fun WelcomeScreen(
                 onClick = onChooseXtream,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Inloggen met Xtream Codes")
+                Text(stringResource(R.string.welcome_sign_in_xtream))
             }
         } else {
             Text(
-                text = "Kies een provider",
+                text = stringResource(R.string.welcome_choose_provider),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -107,7 +108,8 @@ fun WelcomeScreen(
                         IconButton(onClick = { viewModel.onRemoveProvider(acc.id) }) {
                             Icon(
                                 imageVector = Icons.Filled.Delete,
-                                contentDescription = "Provider verwijderen",
+                                contentDescription =
+                                    stringResource(R.string.provider_remove_desc),
                             )
                         }
                     }
@@ -118,7 +120,7 @@ fun WelcomeScreen(
                 onClick = onChooseXtream,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Provider toevoegen")
+                Text(stringResource(R.string.welcome_add_provider))
             }
         }
     }

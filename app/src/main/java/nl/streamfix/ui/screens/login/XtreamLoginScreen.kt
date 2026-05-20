@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import nl.streamfix.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,10 +67,13 @@ fun XtreamLoginScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Xtream Codes") },
+                title = { Text(stringResource(R.string.login_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Terug")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
             )
@@ -84,7 +89,7 @@ fun XtreamLoginScreen(
         ) {
             if (state.providers.isNotEmpty()) {
                 Text(
-                    text = "Kies je provider",
+                    text = stringResource(R.string.login_choose_provider_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -98,9 +103,12 @@ fun XtreamLoginScreen(
                     ) {
                         Text(
                             text = when {
-                                state.useCustomProvider -> "Eigen provider"
+                                state.useCustomProvider ->
+                                    stringResource(R.string.login_custom_provider)
                                 else -> state.selectedProvider?.name
-                                    ?: "Kies provider"
+                                    ?: stringResource(
+                                        R.string.login_choose_provider_placeholder,
+                                    )
                             },
                             modifier = Modifier.weight(1f),
                         )
@@ -120,7 +128,9 @@ fun XtreamLoginScreen(
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("+ Eigen provider toevoegen") },
+                            text = {
+                                Text(stringResource(R.string.login_add_custom_provider))
+                            },
                             onClick = {
                                 providerMenuOpen = false
                                 viewModel.onSelectCustomProvider()
@@ -135,7 +145,7 @@ fun XtreamLoginScreen(
                 OutlinedTextField(
                     value = state.customName,
                     onValueChange = viewModel::onCustomNameChange,
-                    label = { Text("Providernaam") },
+                    label = { Text(stringResource(R.string.login_provider_name)) },
                     singleLine = true,
                     enabled = !state.isLoading,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -148,7 +158,7 @@ fun XtreamLoginScreen(
                 OutlinedTextField(
                     value = state.customUrl,
                     onValueChange = viewModel::onCustomUrlChange,
-                    label = { Text("Server-URL") },
+                    label = { Text(stringResource(R.string.login_server_url)) },
                     singleLine = true,
                     enabled = !state.isLoading,
                     keyboardOptions = KeyboardOptions(
@@ -165,7 +175,7 @@ fun XtreamLoginScreen(
             OutlinedTextField(
                 value = state.username,
                 onValueChange = viewModel::onUsernameChange,
-                label = { Text("Gebruikersnaam") },
+                label = { Text(stringResource(R.string.login_username)) },
                 singleLine = true,
                 enabled = !state.isLoading,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -178,7 +188,7 @@ fun XtreamLoginScreen(
             OutlinedTextField(
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
-                label = { Text("Wachtwoord") },
+                label = { Text(stringResource(R.string.login_password)) },
                 singleLine = true,
                 enabled = !state.isLoading,
                 visualTransformation = if (passwordVisible) {
@@ -194,11 +204,10 @@ fun XtreamLoginScreen(
                             } else {
                                 Icons.Filled.Visibility
                             },
-                            contentDescription = if (passwordVisible) {
-                                "Wachtwoord verbergen"
-                            } else {
-                                "Wachtwoord tonen"
-                            },
+                            contentDescription = stringResource(
+                                if (passwordVisible) R.string.login_password_hide
+                                else R.string.login_password_show,
+                            ),
                         )
                     }
                 },
@@ -236,7 +245,7 @@ fun XtreamLoginScreen(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Inloggen")
+                    Text(stringResource(R.string.login_submit))
                 }
             }
         }

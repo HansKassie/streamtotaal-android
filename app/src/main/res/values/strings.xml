@@ -12,6 +12,31 @@
     <string name="err_invalid_url">De URL is ongeldig. Controleer op spaties en of het webadres klopt.</string>
     <string name="err_unknown">Er ging iets mis. Probeer het opnieuw.</string>
 
+    <!-- ===== Gedeeld. ===== -->
+    <string name="common_back">Terug</string>
+    <string name="common_cancel">Annuleren</string>
+    <string name="provider_remove_desc">Provider verwijderen</string>
+
+    <!-- ===== Welcome-scherm. ===== -->
+    <string name="welcome_xtream_hint">Log in met je Xtream Codes gegevens</string>
+    <string name="welcome_sign_in_xtream">Inloggen met Xtream Codes</string>
+    <string name="welcome_choose_provider">Kies een provider</string>
+    <string name="welcome_add_provider">Provider toevoegen</string>
+
+    <!-- ===== Login-scherm (Xtream). ===== -->
+    <string name="login_title">Xtream Codes</string>
+    <string name="login_choose_provider_label">Kies je provider</string>
+    <string name="login_choose_provider_placeholder">Kies provider</string>
+    <string name="login_custom_provider">Eigen provider</string>
+    <string name="login_add_custom_provider">+ Eigen provider toevoegen</string>
+    <string name="login_provider_name">Providernaam</string>
+    <string name="login_server_url">Server-URL</string>
+    <string name="login_username">Gebruikersnaam</string>
+    <string name="login_password">Wachtwoord</string>
+    <string name="login_password_show">Wachtwoord tonen</string>
+    <string name="login_password_hide">Wachtwoord verbergen</string>
+    <string name="login_submit">Inloggen</string>
+
     <!-- ===== Account-informatie. ===== -->
     <string name="expiry_unlimited">Onbeperkt</string>
 
