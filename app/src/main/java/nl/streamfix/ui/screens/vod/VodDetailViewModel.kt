@@ -3,7 +3,9 @@ package nl.streamfix.ui.screens.vod
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,6 +39,7 @@ class VodDetailViewModel @Inject constructor(
     private val startWatching: StartWatchingUseCase,
     private val isVodFavorite: IsVodFavoriteUseCase,
     private val setVodFavorite: SetVodFavoriteUseCase,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val vodId: String =
@@ -65,7 +68,7 @@ class VodDetailViewModel @Inject constructor(
                     _state.update { it.copy(isLoading = false, detail = r.data) }
                 is AppResult.Failure ->
                     _state.update {
-                        it.copy(isLoading = false, errorMessage = r.error.uiMessage())
+                        it.copy(isLoading = false, errorMessage = r.error.uiMessage(context))
                     }
             }
         }

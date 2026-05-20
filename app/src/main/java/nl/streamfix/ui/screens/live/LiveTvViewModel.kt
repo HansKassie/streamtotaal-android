@@ -2,7 +2,9 @@ package nl.streamfix.ui.screens.live
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +52,7 @@ class LiveTvViewModel @Inject constructor(
     private val getChannelEpg: GetChannelEpgUseCase,
     private val getActiveAccount: GetActiveAccountUseCase,
     private val appSettings: AppSettingsStore,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LiveUiState())
@@ -116,7 +119,7 @@ class LiveTvViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = result.error.uiMessage(),
+                            errorMessage = result.error.uiMessage(context),
                         )
                     }
             }
@@ -140,7 +143,7 @@ class LiveTvViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = result.error.uiMessage(),
+                            errorMessage = result.error.uiMessage(context),
                             channels = emptyList(),
                         )
                     }

@@ -3,7 +3,9 @@ package nl.streamfix.ui.screens.series
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -33,6 +35,7 @@ class SeriesDetailViewModel @Inject constructor(
     private val getDetail: GetSeriesDetailUseCase,
     private val isSeriesFavorite: IsSeriesFavoriteUseCase,
     private val setSeriesFavorite: SetSeriesFavoriteUseCase,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     val seriesId: String =
@@ -67,7 +70,7 @@ class SeriesDetailViewModel @Inject constructor(
                     }
                 is AppResult.Failure ->
                     _state.update {
-                        it.copy(isLoading = false, errorMessage = r.error.uiMessage())
+                        it.copy(isLoading = false, errorMessage = r.error.uiMessage(context))
                     }
             }
         }

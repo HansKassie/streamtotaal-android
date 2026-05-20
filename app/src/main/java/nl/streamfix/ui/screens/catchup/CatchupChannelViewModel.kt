@@ -3,7 +3,9 @@ package nl.streamfix.ui.screens.catchup
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +31,7 @@ class CatchupChannelViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getCatchupEpg: GetCatchupEpgUseCase,
     private val getTimeshiftUrl: GetTimeshiftUrlUseCase,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val channelId: String =
@@ -62,7 +65,7 @@ class CatchupChannelViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = r.error.uiMessage(),
+                            errorMessage = r.error.uiMessage(context),
                         )
                     }
             }

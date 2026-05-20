@@ -1,8 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-      Engelse vertalingen worden per cluster aangevuld terwijl de UI-strings
-      uit Kotlin worden geextraheerd. app_name is een merknaam en wordt
-      bewust niet vertaald.
-    -->
+    <!-- app_name is a brand name and intentionally not translated. -->
+
+    <!-- ===== Error messages (AppError -> uiMessage). ===== -->
+    <string name="err_invalid_credentials">Username or password is incorrect.</string>
+    <string name="err_subscription_expired">Your subscription has expired. Contact your provider.</string>
+    <string name="err_server_unreachable">The server is unreachable. Check the server URL.</string>
+    <string name="err_provider_unavailable">Your provider\'s server is not responding (it may be temporarily offline). Try again later or use a different provider.</string>
+    <string name="err_network_unavailable">No internet connection. Please try again.</string>
+    <string name="err_not_xtream_server">This does not look like a valid Xtream Codes server.</string>
+    <string name="err_invalid_url">The URL is invalid. Check for spaces and that the address is correct.</string>
+    <string name="err_unknown">Something went wrong. Please try again.</string>
+
+    <!-- ===== Account information. ===== -->
+    <string name="expiry_unlimited">Unlimited</string>
+
+    <!-- ===== Connection test. ===== -->
+    <string name="conn_step_server_login">Server and login</string>
+    <string name="conn_step_live_tv">Live TV</string>
+    <string name="conn_step_movies">Movies</string>
+    <string name="conn_step_series">Series</string>
+    <string name="conn_check_subscription_active">Subscription active</string>
+    <string name="conn_check_reachable_no_categories">Reachable, no categories</string>
+    <string name="conn_check_available">Available</string>
 </resources>

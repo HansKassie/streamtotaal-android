@@ -3,7 +3,9 @@ package nl.streamfix.ui.screens.epg
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +29,7 @@ data class ChannelEpgState(
 class ChannelEpgViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getChannelEpg: GetChannelEpgUseCase,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val channelId: String =
@@ -47,7 +50,7 @@ class ChannelEpgViewModel @Inject constructor(
                     _state.update { it.copy(isLoading = false, programmes = r.data) }
                 is AppResult.Failure ->
                     _state.update {
-                        it.copy(isLoading = false, errorMessage = r.error.uiMessage())
+                        it.copy(isLoading = false, errorMessage = r.error.uiMessage(context))
                     }
             }
         }

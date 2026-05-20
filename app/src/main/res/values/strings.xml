@@ -1,4 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">StreamTotaal</string>
+
+    <!-- ===== Foutmeldingen (AppError -> uiMessage). ===== -->
+    <string name="err_invalid_credentials">Gebruikersnaam of wachtwoord klopt niet.</string>
+    <string name="err_subscription_expired">Je abonnement is verlopen. Neem contact op met je provider.</string>
+    <string name="err_server_unreachable">De server is niet bereikbaar. Controleer de server-URL.</string>
+    <string name="err_provider_unavailable">De server van je provider reageert niet (mogelijk tijdelijk offline). Probeer het later opnieuw of gebruik een andere provider.</string>
+    <string name="err_network_unavailable">Geen internetverbinding. Probeer het opnieuw.</string>
+    <string name="err_not_xtream_server">Dit lijkt geen geldige Xtream Codes server.</string>
+    <string name="err_invalid_url">De URL is ongeldig. Controleer op spaties en of het webadres klopt.</string>
+    <string name="err_unknown">Er ging iets mis. Probeer het opnieuw.</string>
+
+    <!-- ===== Account-informatie. ===== -->
+    <string name="expiry_unlimited">Onbeperkt</string>
+
+    <!-- ===== Verbindingstest. ===== -->
+    <string name="conn_step_server_login">Server en inlog</string>
+    <string name="conn_step_live_tv">Live TV</string>
+    <string name="conn_step_movies">Films</string>
+    <string name="conn_step_series">Series</string>
+    <string name="conn_check_subscription_active">Abonnement actief</string>
+    <string name="conn_check_reachable_no_categories">Bereikbaar, geen categorieën</string>
+    <string name="conn_check_available">Beschikbaar</string>
 </resources>

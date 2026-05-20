@@ -1,8 +1,10 @@
 package nl.streamfix.ui.screens.login
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,6 +59,7 @@ data class XtreamLoginState(
 class XtreamLoginViewModel @Inject constructor(
     private val getProviders: GetProvidersUseCase,
     private val loginWithXtream: LoginWithXtreamUseCase,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(XtreamLoginState())
@@ -125,7 +128,7 @@ class XtreamLoginViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = result.error.uiMessage(),
+                            errorMessage = result.error.uiMessage(context),
                         )
                     }
             }

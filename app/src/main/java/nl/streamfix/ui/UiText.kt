@@ -1,8 +1,11 @@
 package nl.streamfix.ui
 
+import android.content.Context
+import androidx.annotation.StringRes
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import nl.streamfix.R
 import nl.streamfix.domain.model.AppError
 
 /**
@@ -10,32 +13,28 @@ import nl.streamfix.domain.model.AppError
  * datum van in de toestel-tijdzone. Leeg/0 = onbeperkt; niet-numeriek
  * (sommige panels sturen al een datumtekst) wordt ongewijzigd getoond.
  */
-fun formatXtreamExpiry(raw: String?): String? {
+fun formatXtreamExpiry(context: Context, raw: String?): String? {
     val value = raw?.trim()
     if (value.isNullOrEmpty()) return null
     val seconds = value.toLongOrNull() ?: return value
-    if (seconds <= 0L) return "Onbeperkt"
+    if (seconds <= 0L) return context.getString(R.string.expiry_unlimited)
     return SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
         .format(Date(seconds * 1000L))
 }
 
-/** Nederlandse, gebruiksvriendelijke foutmeldingen (briefing-criterium). */
-fun AppError.uiMessage(): String = when (this) {
-    AppError.InvalidCredentials ->
-        "Gebruikersnaam of wachtwoord klopt niet."
-    AppError.SubscriptionExpired ->
-        "Je abonnement is verlopen. Neem contact op met je provider."
-    AppError.ServerUnreachable ->
-        "De server is niet bereikbaar. Controleer de server-URL."
-    AppError.ProviderUnavailable ->
-        "De server van je provider reageert niet (mogelijk tijdelijk offline). " +
-            "Probeer het later opnieuw of gebruik een andere provider."
-    AppError.NetworkUnavailable ->
-        "Geen internetverbinding. Probeer het opnieuw."
-    AppError.NotAnXtreamServer ->
-        "Dit lijkt geen geldige Xtream Codes server."
-    AppError.InvalidUrl ->
-        "De URL is ongeldig. Controleer op spaties en of het webadres klopt."
-    AppError.Unknown ->
-        "Er ging iets mis. Probeer het opnieuw."
+/** Gelokaliseerde, gebruiksvriendelijke foutmeldingen. */
+@StringRes
+fun AppError.uiMessageRes(): Int = when (this) {
+    AppError.InvalidCredentials -> R.string.err_invalid_credentials
+    AppError.SubscriptionExpired -> R.string.err_subscription_expired
+    AppError.ServerUnreachable -> R.string.err_server_unreachable
+    AppError.ProviderUnavailable -> R.string.err_provider_unavailable
+    AppError.NetworkUnavailable -> R.string.err_network_unavailable
+    AppError.NotAnXtreamServer -> R.string.err_not_xtream_server
+    AppError.InvalidUrl -> R.string.err_invalid_url
+    AppError.Unknown -> R.string.err_unknown
 }
+
+/** Resolveert de foutmelding in de huidige toestel-locale. */
+fun AppError.uiMessage(context: Context): String =
+    context.getString(uiMessageRes())

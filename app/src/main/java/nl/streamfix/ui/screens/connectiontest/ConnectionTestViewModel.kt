@@ -1,14 +1,17 @@
 package nl.streamfix.ui.screens.connectiontest
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import nl.streamfix.R
 import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
 import nl.streamfix.domain.usecase.GetSeriesCategoriesUseCase
 import nl.streamfix.domain.usecase.GetVodCategoriesUseCase
@@ -25,12 +28,7 @@ data class CheckRow(
 )
 
 data class ConnectionTestUiState(
-    val rows: List<CheckRow> = listOf(
-        CheckRow("Server en inlog"),
-        CheckRow("Live TV"),
-        CheckRow("Films"),
-        CheckRow("Series"),
-    ),
+    val rows: List<CheckRow> = emptyList(),
     val running: Boolean = false,
 )
 
@@ -40,9 +38,10 @@ class ConnectionTestViewModel @Inject constructor(
     private val getLiveCategories: GetLiveCategoriesUseCase,
     private val getVodCategories: GetVodCategoriesUseCase,
     private val getSeriesCategories: GetSeriesCategoriesUseCase,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(ConnectionTestUiState())
+    private val _state = MutableStateFlow(ConnectionTestUiState(rows = initialRows()))
     val state: StateFlow<ConnectionTestUiState> = _state.asStateFlow()
 
     init {
@@ -51,12 +50,13 @@ class ConnectionTestViewModel @Inject constructor(
 
     fun runChecks() {
         if (_state.value.running) return
-        _state.value = ConnectionTestUiState(running = true)
+        _state.value = ConnectionTestUiState(rows = initialRows(), running = true)
         viewModelScope.launch {
             step(0) {
                 when (val r = verifyAccount()) {
-                    is AppResult.Success -> ok("Abonnement actief")
-                    is AppResult.Failure -> fail(r.error.uiMessage())
+                    is AppResult.Success ->
+                        ok(context.getString(R.string.conn_check_subscription_active))
+                    is AppResult.Failure -> fail(r.error.uiMessage(context))
                 }
             }
             step(1) { categoryResult(getLiveCategories()) }
@@ -66,14 +66,24 @@ class ConnectionTestViewModel @Inject constructor(
         }
     }
 
+    private fun initialRows(): List<CheckRow> = listOf(
+        CheckRow(context.getString(R.string.conn_step_server_login)),
+        CheckRow(context.getString(R.string.conn_step_live_tv)),
+        CheckRow(context.getString(R.string.conn_step_movies)),
+        CheckRow(context.getString(R.string.conn_step_series)),
+    )
+
     private fun ok(msg: String) = CheckRow("", CheckState.Ok, msg)
     private fun fail(msg: String) = CheckRow("", CheckState.Failed, msg)
 
     private fun <T> categoryResult(r: AppResult<List<T>>): CheckRow = when (r) {
         is AppResult.Success ->
-            if (r.data.isEmpty()) ok("Bereikbaar, geen categorieën")
-            else ok("Beschikbaar")
-        is AppResult.Failure -> fail(r.error.uiMessage())
+            if (r.data.isEmpty()) {
+                ok(context.getString(R.string.conn_check_reachable_no_categories))
+            } else {
+                ok(context.getString(R.string.conn_check_available))
+            }
+        is AppResult.Failure -> fail(r.error.uiMessage(context))
     }
 
     private suspend fun step(index: Int, block: suspend () -> CheckRow) {

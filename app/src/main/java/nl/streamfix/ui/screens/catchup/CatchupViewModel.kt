@@ -2,7 +2,9 @@ package nl.streamfix.ui.screens.catchup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +52,7 @@ class CatchupViewModel @Inject constructor(
     private val getCategories: GetLiveCategoriesUseCase,
     private val getActiveAccount: GetActiveAccountUseCase,
     private val appSettings: AppSettingsStore,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CatchupUiState())
@@ -104,7 +107,7 @@ class CatchupViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = r.error.uiMessage(),
+                            errorMessage = r.error.uiMessage(context),
                         )
                     }
             }

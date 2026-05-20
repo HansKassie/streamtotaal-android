@@ -310,6 +310,7 @@ private fun SettingsContent(
     onOpenConnectionTest: () -> Unit,
     onLogout: () -> Unit,
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -323,7 +324,7 @@ private fun SettingsContent(
             state.accountInfo?.let { info ->
                 val parts = listOfNotNull(
                     info.status?.let { "Status: $it" },
-                    formatXtreamExpiry(info.expirationDate)
+                    formatXtreamExpiry(context, info.expirationDate)
                         ?.let { "Verloopt: $it" },
                     info.maxConnections?.let { "Max: $it" },
                 )

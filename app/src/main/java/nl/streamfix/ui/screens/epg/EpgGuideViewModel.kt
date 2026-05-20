@@ -3,7 +3,9 @@ package nl.streamfix.ui.screens.epg
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +35,7 @@ class EpgGuideViewModel @Inject constructor(
     private val getChannels: GetLiveChannelsUseCase,
     private val observeFavorites: ObserveFavoritesUseCase,
     private val getEpgTable: GetCatchupEpgUseCase,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     val categoryId: String =
@@ -63,7 +66,7 @@ class EpgGuideViewModel @Inject constructor(
                         _state.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = r.error.uiMessage(),
+                                errorMessage = r.error.uiMessage(context),
                             )
                         }
                 }
