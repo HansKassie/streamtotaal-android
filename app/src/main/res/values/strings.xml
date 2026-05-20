@@ -52,6 +52,26 @@
     <string name="live_programme_guide_desc">Programmagids</string>
     <string name="live_upcoming_prefix">Straks: %1$s</string>
 
+    <!-- ===== Speler. ===== -->
+    <string name="player_track_label_fallback">Spoor %1$d</string>
+    <string name="player_close">Sluiten</string>
+    <string name="player_audio_subtitles">Audio en ondertitels</string>
+    <string name="player_audio_track">Audiospoor</string>
+    <string name="player_no_choice_available">Geen keuze beschikbaar</string>
+    <string name="player_subtitles">Ondertitels</string>
+    <string name="player_subtitles_off">Uit</string>
+    <string name="player_connection_problem">Verbindingsprobleem. We proberen het automatisch opnieuw.</string>
+    <string name="player_retry_now">Nu opnieuw proberen</string>
+    <string name="player_resume_dialog_title">Verder kijken?</string>
+    <string name="player_resume_dialog_body">Je was gebleven bij %1$s.</string>
+    <string name="player_resume_from">Verder vanaf %1$s</string>
+    <string name="player_restart">Vanaf begin</string>
+    <string name="player_prev_channel_desc">Vorig kanaal</string>
+    <string name="player_next_channel_desc">Volgend kanaal</string>
+    <string name="player_overlay_tv_guide">☰  TV-gids</string>
+    <string name="player_overlay_last_channel">↩  Vorige zender</string>
+    <string name="player_next_episode_in">Volgende aflevering over %1$d s</string>
+
     <!-- ===== EPG-gids. ===== -->
     <string name="epg_guide_title">Gids</string>
     <string name="epg_loading">Gids laden...</string>

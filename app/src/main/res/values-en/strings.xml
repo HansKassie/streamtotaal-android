@@ -52,6 +52,26 @@
     <string name="live_programme_guide_desc">Programme guide</string>
     <string name="live_upcoming_prefix">Up next: %1$s</string>
 
+    <!-- ===== Player. ===== -->
+    <string name="player_track_label_fallback">Track %1$d</string>
+    <string name="player_close">Close</string>
+    <string name="player_audio_subtitles">Audio and subtitles</string>
+    <string name="player_audio_track">Audio track</string>
+    <string name="player_no_choice_available">No choice available</string>
+    <string name="player_subtitles">Subtitles</string>
+    <string name="player_subtitles_off">Off</string>
+    <string name="player_connection_problem">Connection problem. Retrying automatically.</string>
+    <string name="player_retry_now">Retry now</string>
+    <string name="player_resume_dialog_title">Continue watching?</string>
+    <string name="player_resume_dialog_body">You stopped at %1$s.</string>
+    <string name="player_resume_from">Continue from %1$s</string>
+    <string name="player_restart">From beginning</string>
+    <string name="player_prev_channel_desc">Previous channel</string>
+    <string name="player_next_channel_desc">Next channel</string>
+    <string name="player_overlay_tv_guide">☰  TV guide</string>
+    <string name="player_overlay_last_channel">↩  Previous channel</string>
+    <string name="player_next_episode_in">Next episode in %1$d s</string>
+
     <!-- ===== EPG guide. ===== -->
     <string name="epg_guide_title">Guide</string>
     <string name="epg_loading">Loading guide...</string>

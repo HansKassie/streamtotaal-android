@@ -24,11 +24,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import nl.streamfix.R
 
 /** ms naar "u:mm:ss" of "mm:ss". */
 fun formatPosition(ms: Long): String {
@@ -65,6 +68,7 @@ private data class TrackOption(
 private fun Tracks.optionsFor(
     player: Player,
     trackType: Int,
+    fallbackLabel: (Int) -> String,
 ): List<TrackOption> {
     val groups = groups.filter { it.type == trackType && it.isSupported }
     val options = mutableListOf<TrackOption>()
@@ -74,7 +78,7 @@ private fun Tracks.optionsFor(
             val format = group.getTrackFormat(i)
             val name = format.label
                 ?: format.language?.uppercase()
-                ?: "Spoor ${options.size + 1}"
+                ?: fallbackLabel(options.size + 1)
             options.add(
                 TrackOption(
                     label = name,
@@ -105,28 +109,39 @@ fun TrackSelectorDialog(
     tracks: Tracks,
     onDismiss: () -> Unit,
 ) {
-    val audio = remember(tracks) { tracks.optionsFor(player, C.TRACK_TYPE_AUDIO) }
-    val subs = remember(tracks) { tracks.optionsFor(player, C.TRACK_TYPE_TEXT) }
+    val context = LocalContext.current
+    val audio = remember(tracks) {
+        tracks.optionsFor(player, C.TRACK_TYPE_AUDIO) { i ->
+            context.getString(R.string.player_track_label_fallback, i)
+        }
+    }
+    val subs = remember(tracks) {
+        tracks.optionsFor(player, C.TRACK_TYPE_TEXT) { i ->
+            context.getString(R.string.player_track_label_fallback, i)
+        }
+    }
     val subsDisabled = player.trackSelectionParameters
         .disabledTrackTypes.contains(C.TRACK_TYPE_TEXT)
 
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Sluiten") }
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.player_close))
+            }
         },
-        title = { Text("Audio en ondertitels") },
+        title = { Text(stringResource(R.string.player_audio_subtitles)) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
             ) {
                 Text(
-                    "Audiospoor",
+                    stringResource(R.string.player_audio_track),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 if (audio.isEmpty()) {
                     Text(
-                        "Geen keuze beschikbaar",
+                        stringResource(R.string.player_no_choice_available),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -139,11 +154,14 @@ fun TrackSelectorDialog(
                 }
 
                 Text(
-                    "Ondertitels",
+                    stringResource(R.string.player_subtitles),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(top = 12.dp),
                 )
-                OptionRow("Uit", selected = subsDisabled || subs.none { it.selected }) {
+                OptionRow(
+                    stringResource(R.string.player_subtitles_off),
+                    selected = subsDisabled || subs.none { it.selected },
+                ) {
                     player.trackSelectionParameters =
                         player.trackSelectionParameters.buildUpon()
                             .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
@@ -193,12 +211,13 @@ fun PlayerErrorOverlay(onRetry: () -> Unit) {
             modifier = Modifier.padding(24.dp),
         ) {
             Text(
-                text = "Verbindingsprobleem. We proberen het automatisch " +
-                    "opnieuw.",
+                text = stringResource(R.string.player_connection_problem),
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
             )
-            Button(onClick = onRetry) { Text("Nu opnieuw proberen") }
+            Button(onClick = onRetry) {
+                Text(stringResource(R.string.player_retry_now))
+            }
         }
     }
 }
@@ -212,17 +231,29 @@ fun ResumeDialog(
 ) {
     AlertDialog(
         onDismissRequest = onResume,
-        title = { Text("Verder kijken?") },
+        title = { Text(stringResource(R.string.player_resume_dialog_title)) },
         text = {
-            Text("Je was gebleven bij ${formatPosition(positionMs)}.")
+            Text(
+                stringResource(
+                    R.string.player_resume_dialog_body,
+                    formatPosition(positionMs),
+                ),
+            )
         },
         confirmButton = {
             TextButton(onClick = onResume) {
-                Text("Verder vanaf ${formatPosition(positionMs)}")
+                Text(
+                    stringResource(
+                        R.string.player_resume_from,
+                        formatPosition(positionMs),
+                    ),
+                )
             }
         },
         dismissButton = {
-            TextButton(onClick = onRestart) { Text("Vanaf begin") }
+            TextButton(onClick = onRestart) {
+                Text(stringResource(R.string.player_restart))
+            }
         },
     )
 }

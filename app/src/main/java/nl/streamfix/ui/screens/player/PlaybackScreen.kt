@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -37,6 +38,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import nl.streamfix.R
 import nl.streamfix.ui.LocalIsTv
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -153,7 +155,7 @@ fun PlaybackScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Terug",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = Color.White,
                 )
             }
@@ -169,7 +171,7 @@ fun PlaybackScreen(
             IconButton(onClick = { showTracks = true }) {
                 Icon(
                     Icons.Filled.Settings,
-                    contentDescription = "Audio en ondertitels",
+                    contentDescription = stringResource(R.string.player_audio_subtitles),
                     tint = Color.White,
                 )
             }

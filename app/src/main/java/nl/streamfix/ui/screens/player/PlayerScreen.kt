@@ -51,6 +51,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -60,6 +61,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import nl.streamfix.R
 import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.tvFocusable
 import kotlin.math.abs
@@ -286,7 +288,7 @@ fun PlayerScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Terug",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = Color.White,
                 )
             }
@@ -319,14 +321,14 @@ fun PlayerScreen(
             IconButton(onClick = viewModel::previous, enabled = state.hasPrevious) {
                 Icon(
                     Icons.Filled.SkipPrevious,
-                    contentDescription = "Vorig kanaal",
+                    contentDescription = stringResource(R.string.player_prev_channel_desc),
                     tint = Color.White,
                 )
             }
             IconButton(onClick = viewModel::next, enabled = state.hasNext) {
                 Icon(
                     Icons.Filled.SkipNext,
-                    contentDescription = "Volgend kanaal",
+                    contentDescription = stringResource(R.string.player_next_channel_desc),
                     tint = Color.White,
                 )
             }
@@ -356,7 +358,7 @@ fun PlayerScreen(
                 ) {
                     item(key = "__guide__") {
                         Text(
-                            text = "☰  TV-gids",
+                            text = stringResource(R.string.player_overlay_tv_guide),
                             color = Color.White,
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier
@@ -375,7 +377,7 @@ fun PlayerScreen(
                     if (state.hasLast) {
                         item(key = "__last__") {
                             Text(
-                                text = "↩  Vorige zender",
+                                text = stringResource(R.string.player_overlay_last_channel),
                                 color = Color.White,
                                 style = MaterialTheme.typography.bodyLarge,
                                 modifier = Modifier
