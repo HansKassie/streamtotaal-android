@@ -37,11 +37,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,12 +58,17 @@ fun SeriesDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.detail?.name ?: "Serie") },
+                title = {
+                    Text(
+                        state.detail?.name
+                            ?: stringResource(R.string.series_title_fallback),
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Terug",
+                            contentDescription = stringResource(R.string.common_back),
                         )
                     }
                 },
@@ -71,11 +78,10 @@ fun SeriesDetailScreen(
                             Icon(
                                 imageVector = if (isFav) Icons.Filled.Favorite
                                 else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFav) {
-                                    "Uit favorieten"
-                                } else {
-                                    "Aan favorieten toevoegen"
-                                },
+                                contentDescription = stringResource(
+                                    if (isFav) R.string.favorite_remove_desc
+                                    else R.string.favorite_add_desc,
+                                ),
                             )
                         }
                     }
@@ -117,10 +123,18 @@ fun SeriesDetailScreen(
                         Column {
                             Text(d.name, style = MaterialTheme.typography.titleLarge)
                             Spacer(Modifier.height(8.dp))
-                            d.year?.let { Text("Jaar: $it") }
-                            d.genre?.let { Text("Genre: $it") }
-                            d.rating?.let { Text("Rating: $it") }
-                            d.director?.let { Text("Regisseur: $it") }
+                            d.year?.let {
+                                Text(stringResource(R.string.series_meta_year_prefix, it))
+                            }
+                            d.genre?.let {
+                                Text(stringResource(R.string.series_meta_genre_prefix, it))
+                            }
+                            d.rating?.let {
+                                Text(stringResource(R.string.series_meta_rating_prefix, it))
+                            }
+                            d.director?.let {
+                                Text(stringResource(R.string.series_meta_director_prefix, it))
+                            }
                         }
                     }
                     d.plot?.let {
@@ -136,7 +150,9 @@ fun SeriesDetailScreen(
                         ) {
                             Text(
                                 text = state.selectedSeason
-                                    ?.let { "Seizoen $it" } ?: "Seizoen",
+                                    ?.let {
+                                        stringResource(R.string.series_season_format, it)
+                                    } ?: stringResource(R.string.series_season_placeholder),
                                 modifier = Modifier.weight(1f),
                             )
                             Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
@@ -147,7 +163,9 @@ fun SeriesDetailScreen(
                         ) {
                             d.seasons.forEach { s ->
                                 DropdownMenuItem(
-                                    text = { Text("Seizoen ${s.number}") },
+                                    text = {
+                                        Text(stringResource(R.string.series_season_format, s.number))
+                                    },
                                     onClick = {
                                         menuOpen = false
                                         viewModel.selectSeason(s.number)
@@ -175,7 +193,10 @@ fun SeriesDetailScreen(
                             Icon(Icons.Filled.PlayArrow, contentDescription = null)
                             Spacer(Modifier.width(12.dp))
                             Text(
-                                text = "${ep.episodeNumber}. ${ep.title}",
+                                text = stringResource(
+                                    R.string.series_episode_format,
+                                    ep.episodeNumber, ep.title,
+                                ),
                                 style = MaterialTheme.typography.bodyLarge,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,

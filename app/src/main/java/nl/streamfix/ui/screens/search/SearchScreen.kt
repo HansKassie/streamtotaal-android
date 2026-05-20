@@ -33,12 +33,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,12 +57,12 @@ fun SearchScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Zoeken") },
+                title = { Text(stringResource(R.string.search_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Terug",
+                            contentDescription = stringResource(R.string.common_back),
                         )
                     }
                 },
@@ -73,7 +75,7 @@ fun SearchScreen(
             OutlinedTextField(
                 value = state.query,
                 onValueChange = viewModel::onQueryChange,
-                label = { Text("Zoek in live, films en series") },
+                label = { Text(stringResource(R.string.search_query_hint)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Search,
@@ -103,7 +105,7 @@ fun SearchScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "Niets gevonden",
+                        stringResource(R.string.search_nothing_found),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -112,7 +114,7 @@ fun SearchScreen(
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (state.live.isNotEmpty()) {
-                    item { SectionHeader("Live TV") }
+                    item { SectionHeader(stringResource(R.string.tab_live_tv)) }
                     items(state.live, key = { "l_${it.id}" }) { ch ->
                         ResultRow(ch.name, ch.logoUrl) {
                             onOpenChannel(ch.categoryId ?: "", ch.id)
@@ -120,13 +122,13 @@ fun SearchScreen(
                     }
                 }
                 if (state.vod.isNotEmpty()) {
-                    item { SectionHeader("Films") }
+                    item { SectionHeader(stringResource(R.string.tab_movies)) }
                     items(state.vod, key = { "v_${it.id}" }) { v ->
                         ResultRow(v.name, v.posterUrl) { onOpenVod(v.id) }
                     }
                 }
                 if (state.series.isNotEmpty()) {
-                    item { SectionHeader("Series") }
+                    item { SectionHeader(stringResource(R.string.tab_series_short)) }
                     items(state.series, key = { "s_${it.id}" }) { s ->
                         ResultRow(s.name, s.posterUrl) { onOpenSeries(s.id) }
                     }

@@ -29,11 +29,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.R
 import nl.streamfix.ui.screens.live.FAVORITES_ID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,12 +51,12 @@ fun NowOnTvScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nu op tv") },
+                title = { Text(stringResource(R.string.nowontv_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Terug",
+                            contentDescription = stringResource(R.string.common_back),
                         )
                     }
                 },
@@ -72,8 +74,7 @@ fun NowOnTvScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    "Nog geen favoriete kanalen. Maak favorieten aan bij " +
-                        "Live TV.",
+                    stringResource(R.string.nowontv_no_favorites),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -110,7 +111,8 @@ fun NowOnTvScreen(
                                 overflow = TextOverflow.Ellipsis,
                             )
                             Text(
-                                text = item.nowTitle ?: "Geen programmagids",
+                                text = item.nowTitle
+                                    ?: stringResource(R.string.nowontv_no_programme_guide),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme
                                     .onSurfaceVariant,

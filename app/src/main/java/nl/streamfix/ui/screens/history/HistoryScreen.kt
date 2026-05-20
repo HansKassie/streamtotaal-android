@@ -30,11 +30,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.R
 import nl.streamfix.domain.model.HistoryItem
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -51,7 +53,7 @@ fun HistoryScreen(
     if (items.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = "Nog niets gekeken",
+                text = stringResource(R.string.history_empty),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -66,7 +68,7 @@ fun HistoryScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Tip: houd een item ingedrukt om te verwijderen",
+                text = stringResource(R.string.history_long_press_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f).padding(start = 8.dp),
@@ -78,7 +80,7 @@ fun HistoryScreen(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(6.dp))
-                Text("Wis alles")
+                Text(stringResource(R.string.history_clear_all))
             }
         }
 
@@ -124,17 +126,17 @@ fun HistoryScreen(
     pendingDelete?.let { item ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text("Uit geschiedenis verwijderen?") },
+            title = { Text(stringResource(R.string.history_remove_dialog_title)) },
             text = { Text(item.title) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.remove(item)
                     pendingDelete = null
-                }) { Text("Verwijderen") }
+                }) { Text(stringResource(R.string.history_remove)) }
             },
             dismissButton = {
                 TextButton(onClick = { pendingDelete = null }) {
-                    Text("Annuleren")
+                    Text(stringResource(R.string.common_cancel))
                 }
             },
         )
@@ -143,17 +145,17 @@ fun HistoryScreen(
     if (showClearAll) {
         AlertDialog(
             onDismissRequest = { showClearAll = false },
-            title = { Text("Hele geschiedenis wissen?") },
-            text = { Text("Je volledige Verder kijken-lijst wordt verwijderd.") },
+            title = { Text(stringResource(R.string.history_clear_all_dialog_title)) },
+            text = { Text(stringResource(R.string.history_clear_all_dialog_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.clearAll()
                     showClearAll = false
-                }) { Text("Wissen") }
+                }) { Text(stringResource(R.string.history_clear_action)) }
             },
             dismissButton = {
                 TextButton(onClick = { showClearAll = false }) {
-                    Text("Annuleren")
+                    Text(stringResource(R.string.common_cancel))
                 }
             },
         )

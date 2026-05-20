@@ -52,6 +52,77 @@
     <string name="live_programme_guide_desc">Programme guide</string>
     <string name="live_upcoming_prefix">Up next: %1$s</string>
 
+    <!-- ===== Search. ===== -->
+    <string name="search_title">Search</string>
+    <string name="search_query_hint">Search live, movies and series</string>
+    <string name="search_nothing_found">Nothing found</string>
+
+    <!-- ===== On TV now. ===== -->
+    <string name="nowontv_title">On TV now</string>
+    <string name="nowontv_no_favorites">No favorite channels yet. Mark favorites in Live TV.</string>
+    <string name="nowontv_no_programme_guide">No programme guide</string>
+
+    <!-- ===== Movies + VOD detail. ===== -->
+    <string name="vod_search_movie">Search movie</string>
+    <string name="vod_no_movies">No movies</string>
+    <string name="vod_title_fallback">Movie</string>
+    <string name="vod_meta_year">Year</string>
+    <string name="vod_meta_genre">Genre</string>
+    <string name="vod_meta_rating">Rating</string>
+    <string name="vod_meta_duration">Duration</string>
+    <string name="vod_meta_director">Director</string>
+    <string name="vod_meta_cast">Cast</string>
+    <string name="vod_play">Play</string>
+    <string name="vod_meta_label_format">%1$s:</string>
+
+    <!-- ===== Series + series detail. ===== -->
+    <string name="series_search_series">Search series</string>
+    <string name="series_no_series">No series</string>
+    <string name="series_title_fallback">Series</string>
+    <string name="series_season_placeholder">Season</string>
+    <string name="series_season_format">Season %1$d</string>
+    <string name="series_episode_format">%1$d. %2$s</string>
+    <string name="series_meta_year_prefix">Year: %1$s</string>
+    <string name="series_meta_genre_prefix">Genre: %1$s</string>
+    <string name="series_meta_rating_prefix">Rating: %1$s</string>
+    <string name="series_meta_director_prefix">Director: %1$s</string>
+
+    <!-- ===== Favorites (detail button + list). ===== -->
+    <string name="favorite_remove_desc">Remove from favorites</string>
+    <string name="favorite_add_desc">Add to favorites</string>
+
+    <!-- ===== History ("Continue watching"). ===== -->
+    <string name="history_empty">Nothing watched yet</string>
+    <string name="history_long_press_hint">Tip: long press an item to remove it</string>
+    <string name="history_clear_all">Clear all</string>
+    <string name="history_remove_dialog_title">Remove from history?</string>
+    <string name="history_remove">Remove</string>
+    <string name="history_clear_all_dialog_title">Clear all history?</string>
+    <string name="history_clear_all_dialog_body">Your entire Continue list will be deleted.</string>
+    <string name="history_clear_action">Clear</string>
+
+    <!-- ===== Favorites tab. ===== -->
+    <string name="favorites_empty_hint">No favorites yet. Open Live TV and tap the star on a channel to keep it here.</string>
+
+    <!-- ===== Catch-up. ===== -->
+    <string name="catchup_no_channels_with_archive">No channels with catch-up</string>
+    <string name="catchup_archive_days_format">%1$dd</string>
+    <string name="catchup_channel_title_fallback">Catch-up</string>
+    <string name="catchup_no_programmes">No catch-up programmes available</string>
+
+    <!-- ===== Connection test screen. ===== -->
+    <string name="connection_test_intro">Checks whether your provider is reachable, your login is valid and the sections are available.</string>
+    <string name="connection_test_running">Testing...</string>
+    <string name="connection_test_retry">Test again</string>
+
+    <!-- ===== Update dialog (sideload). ===== -->
+    <string name="update_dialog_title_format">Update available (%1$s)</string>
+    <string name="update_downloading">Downloading the update...</string>
+    <string name="update_failed">The update failed. Check your internet connection and try again.</string>
+    <string name="update_now">Update now</string>
+    <string name="update_retry">Try again</string>
+    <string name="update_later">Later</string>
+
     <!-- ===== Player. ===== -->
     <string name="player_track_label_fallback">Track %1$d</string>
     <string name="player_close">Close</string>

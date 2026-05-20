@@ -27,10 +27,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import nl.streamfix.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -50,13 +52,17 @@ fun CatchupChannelScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(state.channelName.ifBlank { "Terugkijken" })
+                    Text(
+                        state.channelName.ifBlank {
+                            stringResource(R.string.catchup_channel_title_fallback)
+                        },
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Terug",
+                            contentDescription = stringResource(R.string.common_back),
                         )
                     }
                 },
@@ -75,7 +81,7 @@ fun CatchupChannelScreen(
             ) {
                 Text(
                     text = state.errorMessage
-                        ?: "Geen terugkijk-programma's beschikbaar",
+                        ?: stringResource(R.string.catchup_no_programmes),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

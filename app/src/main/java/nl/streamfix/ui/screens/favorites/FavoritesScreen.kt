@@ -27,11 +27,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.R
 import nl.streamfix.domain.model.LiveChannel
 import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.screens.live.FAVORITES_ID
@@ -58,8 +60,7 @@ fun FavoritesScreen(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "Nog geen favorieten. Open Live TV en tik op de " +
-                    "ster bij een kanaal om het hier te bewaren.",
+                text = stringResource(R.string.favorites_empty_hint),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -114,7 +115,7 @@ private fun FavoriteRow(
         IconButton(onClick = onRemove) {
             Icon(
                 imageVector = Icons.Filled.Star,
-                contentDescription = "Verwijder favoriet",
+                contentDescription = stringResource(R.string.live_remove_favorite_desc),
             )
         }
     }

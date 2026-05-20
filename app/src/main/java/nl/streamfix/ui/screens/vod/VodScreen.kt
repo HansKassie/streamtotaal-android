@@ -41,6 +41,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.R
 
 @Composable
 fun VodScreen(
@@ -74,7 +76,7 @@ fun VodScreen(
         if (!isTv) OutlinedTextField(
             value = state.query,
             onValueChange = viewModel::onQueryChange,
-            label = { Text("Zoek film") },
+            label = { Text(stringResource(R.string.vod_search_movie)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -88,8 +90,9 @@ fun VodScreen(
         )
 
         var menuOpen by remember { mutableStateOf(false) }
+        val placeholder = stringResource(R.string.live_category_placeholder)
         val selectedLabel = state.categories
-            .find { it.id == state.selectedCategoryId }?.name ?: "Categorie"
+            .find { it.id == state.selectedCategoryId }?.name ?: placeholder
 
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
             OutlinedButton(
@@ -142,7 +145,12 @@ fun VodScreen(
             state.visibleItems.isEmpty() -> Box(
                 Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
-            ) { Text("Geen films", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            ) {
+                Text(
+                    stringResource(R.string.vod_no_movies),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             else -> LazyVerticalGrid(
                 columns = GridCells.Adaptive(if (isTv) 140.dp else 110.dp),

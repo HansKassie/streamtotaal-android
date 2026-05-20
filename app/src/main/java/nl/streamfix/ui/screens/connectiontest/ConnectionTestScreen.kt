@@ -27,9 +27,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import nl.streamfix.R
 import nl.streamfix.ui.tvFocusable
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,12 +45,12 @@ fun ConnectionTestScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Verbinding testen") },
+                title = { Text(stringResource(R.string.settings_connection_test)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Terug",
+                            contentDescription = stringResource(R.string.common_back),
                         )
                     }
                 },
@@ -62,8 +64,7 @@ fun ConnectionTestScreen(
                 .padding(16.dp),
         ) {
             Text(
-                text = "Controleert of je provider bereikbaar is, je inlog " +
-                    "geldig is en de onderdelen beschikbaar zijn.",
+                text = stringResource(R.string.connection_test_intro),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -131,7 +132,12 @@ fun ConnectionTestScreen(
                     .fillMaxWidth()
                     .tvFocusable(),
             ) {
-                Text(if (state.running) "Bezig met testen..." else "Opnieuw testen")
+                Text(
+                    stringResource(
+                        if (state.running) R.string.connection_test_running
+                        else R.string.connection_test_retry,
+                    ),
+                )
             }
         }
     }

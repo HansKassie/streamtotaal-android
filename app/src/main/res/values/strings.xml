@@ -52,6 +52,77 @@
     <string name="live_programme_guide_desc">Programmagids</string>
     <string name="live_upcoming_prefix">Straks: %1$s</string>
 
+    <!-- ===== Zoeken. ===== -->
+    <string name="search_title">Zoeken</string>
+    <string name="search_query_hint">Zoek in live, films en series</string>
+    <string name="search_nothing_found">Niets gevonden</string>
+
+    <!-- ===== Nu op tv. ===== -->
+    <string name="nowontv_title">Nu op tv</string>
+    <string name="nowontv_no_favorites">Nog geen favoriete kanalen. Maak favorieten aan bij Live TV.</string>
+    <string name="nowontv_no_programme_guide">Geen programmagids</string>
+
+    <!-- ===== Films + VOD-detail. ===== -->
+    <string name="vod_search_movie">Zoek film</string>
+    <string name="vod_no_movies">Geen films</string>
+    <string name="vod_title_fallback">Film</string>
+    <string name="vod_meta_year">Jaar</string>
+    <string name="vod_meta_genre">Genre</string>
+    <string name="vod_meta_rating">Rating</string>
+    <string name="vod_meta_duration">Duur</string>
+    <string name="vod_meta_director">Regisseur</string>
+    <string name="vod_meta_cast">Cast</string>
+    <string name="vod_play">Afspelen</string>
+    <string name="vod_meta_label_format">%1$s:</string>
+
+    <!-- ===== Series + series-detail. ===== -->
+    <string name="series_search_series">Zoek serie</string>
+    <string name="series_no_series">Geen series</string>
+    <string name="series_title_fallback">Serie</string>
+    <string name="series_season_placeholder">Seizoen</string>
+    <string name="series_season_format">Seizoen %1$d</string>
+    <string name="series_episode_format">%1$d. %2$s</string>
+    <string name="series_meta_year_prefix">Jaar: %1$s</string>
+    <string name="series_meta_genre_prefix">Genre: %1$s</string>
+    <string name="series_meta_rating_prefix">Rating: %1$s</string>
+    <string name="series_meta_director_prefix">Regisseur: %1$s</string>
+
+    <!-- ===== Favorieten (detail-knop + lijst). ===== -->
+    <string name="favorite_remove_desc">Uit favorieten</string>
+    <string name="favorite_add_desc">Aan favorieten toevoegen</string>
+
+    <!-- ===== Geschiedenis ("Verder kijken"). ===== -->
+    <string name="history_empty">Nog niets gekeken</string>
+    <string name="history_long_press_hint">Tip: houd een item ingedrukt om te verwijderen</string>
+    <string name="history_clear_all">Wis alles</string>
+    <string name="history_remove_dialog_title">Uit geschiedenis verwijderen?</string>
+    <string name="history_remove">Verwijderen</string>
+    <string name="history_clear_all_dialog_title">Hele geschiedenis wissen?</string>
+    <string name="history_clear_all_dialog_body">Je volledige Verder kijken-lijst wordt verwijderd.</string>
+    <string name="history_clear_action">Wissen</string>
+
+    <!-- ===== Favorieten-tabblad. ===== -->
+    <string name="favorites_empty_hint">Nog geen favorieten. Open Live TV en tik op de ster bij een kanaal om het hier te bewaren.</string>
+
+    <!-- ===== Terugkijken (catchup). ===== -->
+    <string name="catchup_no_channels_with_archive">Geen kanalen met terugkijken</string>
+    <string name="catchup_archive_days_format">%1$dd</string>
+    <string name="catchup_channel_title_fallback">Terugkijken</string>
+    <string name="catchup_no_programmes">Geen terugkijk-programma\'s beschikbaar</string>
+
+    <!-- ===== Verbindingstest-scherm. ===== -->
+    <string name="connection_test_intro">Controleert of je provider bereikbaar is, je inlog geldig is en de onderdelen beschikbaar zijn.</string>
+    <string name="connection_test_running">Bezig met testen...</string>
+    <string name="connection_test_retry">Opnieuw testen</string>
+
+    <!-- ===== Update-dialoog (sideload). ===== -->
+    <string name="update_dialog_title_format">Update beschikbaar (%1$s)</string>
+    <string name="update_downloading">Bezig met downloaden van de update...</string>
+    <string name="update_failed">De update is mislukt. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="update_now">Nu updaten</string>
+    <string name="update_retry">Opnieuw proberen</string>
+    <string name="update_later">Later</string>
+
     <!-- ===== Speler. ===== -->
     <string name="player_track_label_fallback">Spoor %1$d</string>
     <string name="player_close">Sluiten</string>

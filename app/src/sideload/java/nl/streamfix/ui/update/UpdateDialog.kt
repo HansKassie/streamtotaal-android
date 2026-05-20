@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import nl.streamfix.R
 import nl.streamfix.domain.model.UpdateInfo
 
 private enum class Phase { Idle, Downloading, Failed }
@@ -23,10 +25,8 @@ fun UpdateDialog(
 
     val body = when (phase) {
         Phase.Idle -> update.releaseNotes
-        Phase.Downloading -> "Bezig met downloaden van de update..."
-        Phase.Failed ->
-            "De update is mislukt. Controleer je internetverbinding " +
-                "en probeer het opnieuw."
+        Phase.Downloading -> stringResource(R.string.update_downloading)
+        Phase.Failed -> stringResource(R.string.update_failed)
     }
 
     fun start() {
@@ -40,23 +40,31 @@ fun UpdateDialog(
         onDismissRequest = {
             if (!update.mandatory && phase != Phase.Downloading) onDismiss()
         },
-        title = { Text("Update beschikbaar (${update.versionName})") },
+        title = {
+            Text(
+                stringResource(R.string.update_dialog_title_format, update.versionName),
+            )
+        },
         text = { Text(body) },
         confirmButton = {
             when (phase) {
                 Phase.Downloading -> {}
                 Phase.Failed -> TextButton(onClick = { start() }) {
-                    Text("Opnieuw proberen")
+                    Text(stringResource(R.string.update_retry))
                 }
                 Phase.Idle -> TextButton(onClick = { start() }) {
-                    Text("Nu updaten")
+                    Text(stringResource(R.string.update_now))
                 }
             }
         },
         dismissButton = if (update.mandatory || phase == Phase.Downloading) {
             null
         } else {
-            { TextButton(onClick = onDismiss) { Text("Later") } }
+            {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.update_later))
+                }
+            }
         },
     )
 }

@@ -31,10 +31,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,12 +51,17 @@ fun VodDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.detail?.name ?: "Film") },
+                title = {
+                    Text(
+                        state.detail?.name
+                            ?: stringResource(R.string.vod_title_fallback),
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Terug",
+                            contentDescription = stringResource(R.string.common_back),
                         )
                     }
                 },
@@ -64,11 +71,10 @@ fun VodDetailScreen(
                             Icon(
                                 imageVector = if (isFav) Icons.Filled.Favorite
                                 else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFav) {
-                                    "Uit favorieten"
-                                } else {
-                                    "Aan favorieten toevoegen"
-                                },
+                                contentDescription = stringResource(
+                                    if (isFav) R.string.favorite_remove_desc
+                                    else R.string.favorite_add_desc,
+                                ),
                             )
                         }
                     }
@@ -111,16 +117,16 @@ fun VodDetailScreen(
                         Column {
                             Text(d.name, style = MaterialTheme.typography.titleLarge)
                             Spacer(Modifier.height(8.dp))
-                            d.year?.let { Meta("Jaar", it) }
-                            d.genre?.let { Meta("Genre", it) }
-                            d.rating?.let { Meta("Rating", it) }
-                            d.duration?.let { Meta("Duur", it) }
-                            d.director?.let { Meta("Regisseur", it) }
+                            d.year?.let { Meta(stringResource(R.string.vod_meta_year), it) }
+                            d.genre?.let { Meta(stringResource(R.string.vod_meta_genre), it) }
+                            d.rating?.let { Meta(stringResource(R.string.vod_meta_rating), it) }
+                            d.duration?.let { Meta(stringResource(R.string.vod_meta_duration), it) }
+                            d.director?.let { Meta(stringResource(R.string.vod_meta_director), it) }
                         }
                     }
                     d.cast?.let {
                         Spacer(Modifier.height(12.dp))
-                        Meta("Cast", it)
+                        Meta(stringResource(R.string.vod_meta_cast), it)
                     }
                     d.plot?.let {
                         Spacer(Modifier.height(12.dp))
@@ -137,7 +143,7 @@ fun VodDetailScreen(
                     ) {
                         Icon(Icons.Filled.PlayArrow, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Afspelen")
+                        Text(stringResource(R.string.vod_play))
                     }
                 }
             }
@@ -149,7 +155,7 @@ fun VodDetailScreen(
 private fun Meta(label: String, value: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            "$label:",
+            stringResource(R.string.vod_meta_label_format, label),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
