@@ -43,13 +43,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.R
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.screens.live.FAVORITES_ID
@@ -124,12 +126,12 @@ fun EpgGuideScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Gids") },
+                title = { Text(stringResource(R.string.epg_guide_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Terug",
+                            contentDescription = stringResource(R.string.common_back),
                         )
                     }
                 },
@@ -138,7 +140,7 @@ fun EpgGuideScreen(
                         onClick = {
                             scope.launch { timeScroll.animateScrollTo(0) }
                         },
-                    ) { Text("Nu") }
+                    ) { Text(stringResource(R.string.common_now)) }
                 },
             )
         },
@@ -165,7 +167,7 @@ fun EpgGuideScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "Geen zenders",
+                        text = stringResource(R.string.epg_no_channels),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -250,7 +252,7 @@ fun EpgGuideScreen(
                                     val progs = epgMap[ch.id]
                                     if (progs == null) {
                                         Text(
-                                            text = "Gids laden...",
+                                            text = stringResource(R.string.epg_loading),
                                             style = MaterialTheme.typography
                                                 .bodySmall,
                                             color = MaterialTheme.colorScheme
@@ -261,7 +263,7 @@ fun EpgGuideScreen(
                                         )
                                     } else if (progs.isEmpty()) {
                                         Text(
-                                            text = "Geen gids",
+                                            text = stringResource(R.string.epg_no_guide),
                                             style = MaterialTheme.typography
                                                 .bodySmall,
                                             color = MaterialTheme.colorScheme
@@ -367,10 +369,14 @@ fun EpgGuideScreen(
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                         ) {
                             val status = when {
-                                nowMs >= p.startMs && nowMs < p.endMs -> "Nu"
-                                p.startMs > nowMs -> "Straks"
-                                else -> "Eerder"
+                                nowMs >= p.startMs && nowMs < p.endMs ->
+                                    stringResource(R.string.common_now)
+                                p.startMs > nowMs ->
+                                    stringResource(R.string.epg_status_upcoming)
+                                else ->
+                                    stringResource(R.string.epg_status_earlier)
                             }
+                            val statusNowLabel = stringResource(R.string.common_now)
                             Text(
                                 text = status + "  -  " +
                                     hourFmt.format(Date(p.startMs)) +
@@ -386,7 +392,7 @@ fun EpgGuideScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            if (status == "Nu" && p.endMs > p.startMs) {
+                            if (status == statusNowLabel && p.endMs > p.startMs) {
                                 Spacer(Modifier.height(6.dp))
                                 LinearProgressIndicator(
                                     progress = {

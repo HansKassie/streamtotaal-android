@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import nl.streamfix.R
 import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.VodItem
@@ -84,8 +85,12 @@ class VodViewModel @Inject constructor(
         viewModelScope.launch {
             when (val r = getCategories()) {
                 is AppResult.Success -> {
-                    val cats =
-                        listOf(LiveCategory(FAVORITES_ID, "Favorieten")) + r.data
+                    val cats = listOf(
+                        LiveCategory(
+                            FAVORITES_ID,
+                            context.getString(R.string.common_favorites),
+                        ),
+                    ) + r.data
                     _state.update { it.copy(isLoading = false, categories = cats) }
                     selectCategory(r.data.firstOrNull()?.id ?: FAVORITES_ID)
                 }

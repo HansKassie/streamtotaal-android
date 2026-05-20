@@ -40,6 +40,27 @@
     <!-- ===== Account information. ===== -->
     <string name="expiry_unlimited">Unlimited</string>
 
+    <!-- ===== Live TV screen. ===== -->
+    <string name="common_favorites">Favorites</string>
+    <string name="common_now">Now</string>
+    <string name="live_search_channel">Search channel</string>
+    <string name="live_category_placeholder">Category</string>
+    <string name="live_tv_guide_button">TV guide - yellow button</string>
+    <string name="live_no_channels">No channels</string>
+    <string name="live_add_favorite_desc">Add to favorites</string>
+    <string name="live_remove_favorite_desc">Remove from favorites</string>
+    <string name="live_programme_guide_desc">Programme guide</string>
+    <string name="live_upcoming_prefix">Up next: %1$s</string>
+
+    <!-- ===== EPG guide. ===== -->
+    <string name="epg_guide_title">Guide</string>
+    <string name="epg_loading">Loading guide...</string>
+    <string name="epg_no_guide">No guide</string>
+    <string name="epg_no_channels">No channels</string>
+    <string name="epg_status_upcoming">Up next</string>
+    <string name="epg_status_earlier">Earlier</string>
+    <string name="epg_no_programme_guide">No programme guide available</string>
+
     <!-- ===== Tabs and top bar. ===== -->
     <string name="tab_live_tv">Live TV</string>
     <string name="tab_favorites_short">Fav</string>

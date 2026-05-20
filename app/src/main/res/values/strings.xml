@@ -40,6 +40,27 @@
     <!-- ===== Account-informatie. ===== -->
     <string name="expiry_unlimited">Onbeperkt</string>
 
+    <!-- ===== Live TV-scherm. ===== -->
+    <string name="common_favorites">Favorieten</string>
+    <string name="common_now">Nu</string>
+    <string name="live_search_channel">Zoek kanaal</string>
+    <string name="live_category_placeholder">Categorie</string>
+    <string name="live_tv_guide_button">TV-gids - gele toets</string>
+    <string name="live_no_channels">Geen kanalen</string>
+    <string name="live_add_favorite_desc">Maak favoriet</string>
+    <string name="live_remove_favorite_desc">Verwijder favoriet</string>
+    <string name="live_programme_guide_desc">Programmagids</string>
+    <string name="live_upcoming_prefix">Straks: %1$s</string>
+
+    <!-- ===== EPG-gids. ===== -->
+    <string name="epg_guide_title">Gids</string>
+    <string name="epg_loading">Gids laden...</string>
+    <string name="epg_no_guide">Geen gids</string>
+    <string name="epg_no_channels">Geen zenders</string>
+    <string name="epg_status_upcoming">Straks</string>
+    <string name="epg_status_earlier">Eerder</string>
+    <string name="epg_no_programme_guide">Geen programmagids beschikbaar</string>
+
     <!-- ===== Tabs en topbar. ===== -->
     <string name="tab_live_tv">Live TV</string>
     <string name="tab_favorites_short">Fav</string>

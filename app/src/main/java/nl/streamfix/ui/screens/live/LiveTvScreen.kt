@@ -56,12 +56,14 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import nl.streamfix.R
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveChannel
 import kotlinx.coroutines.delay
@@ -131,7 +133,7 @@ fun LiveTvScreen(
         if (!LocalIsTv.current) OutlinedTextField(
             value = state.query,
             onValueChange = viewModel::onQueryChange,
-            label = { Text("Zoek kanaal") },
+            label = { Text(stringResource(R.string.live_search_channel)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -145,11 +147,13 @@ fun LiveTvScreen(
         )
 
         var menuOpen by remember { mutableStateOf(false) }
+        val favoritesLabel = stringResource(R.string.common_favorites)
+        val categoryPlaceholder = stringResource(R.string.live_category_placeholder)
         val selectedLabel = when (state.selectedCategoryId) {
-            FAVORITES_ID -> "Favorieten"
-            null -> "Categorie"
+            FAVORITES_ID -> favoritesLabel
+            null -> categoryPlaceholder
             else -> state.categories.find { it.id == state.selectedCategoryId }
-                ?.name ?: "Categorie"
+                ?.name ?: categoryPlaceholder
         }
 
         val categoryButton: @Composable () -> Unit = {
@@ -175,7 +179,7 @@ fun LiveTvScreen(
                     onDismissRequest = { menuOpen = false },
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Favorieten") },
+                        text = { Text(stringResource(R.string.common_favorites)) },
                         onClick = {
                             menuOpen = false
                             viewModel.selectCategory(FAVORITES_ID)
@@ -205,7 +209,7 @@ fun LiveTvScreen(
                         onOpenGuide(state.selectedCategoryId ?: FAVORITES_ID)
                     },
                     modifier = Modifier.padding(start = 8.dp),
-                ) { Text("TV-gids - gele toets") }
+                ) { Text(stringResource(R.string.live_tv_guide_button)) }
             }
         } else {
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -238,7 +242,7 @@ fun LiveTvScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "Geen kanalen",
+                    text = stringResource(R.string.live_no_channels),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -380,7 +384,9 @@ private fun ChannelRow(
                 }
                 if (next != null) {
                     Text(
-                        text = "Straks: ${next.title}",
+                        text = stringResource(
+                            R.string.live_upcoming_prefix, next.title,
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -390,14 +396,19 @@ private fun ChannelRow(
             }
         }
         IconButton(onClick = onInfo) {
-            Icon(Icons.Filled.Info, contentDescription = "Programmagids")
+            Icon(
+                Icons.Filled.Info,
+                contentDescription = stringResource(R.string.live_programme_guide_desc),
+            )
         }
         IconButton(onClick = onToggleFavorite) {
             Icon(
                 imageVector = if (isFavorite) Icons.Filled.Star
                 else Icons.Outlined.StarBorder,
-                contentDescription = if (isFavorite) "Verwijder favoriet"
-                else "Maak favoriet",
+                contentDescription = stringResource(
+                    if (isFavorite) R.string.live_remove_favorite_desc
+                    else R.string.live_add_favorite_desc,
+                ),
             )
         }
     }
