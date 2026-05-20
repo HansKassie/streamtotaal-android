@@ -1,8 +1,8 @@
 {
-  "versionCode": 9,
-  "versionName": "1.0.8",
+  "versionCode": 10,
+  "versionName": "1.0.9",
   "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-  "releaseNotes": "Nieuw op tv: een volledige programmagids (EPG) met tijdlijn en markering van wat nu speelt, een live-voorbeeld van het kanaal terwijl je door de lijst bladert, de gids openen met de gele toets van de afstandsbediening, en een strakkere, compactere tv-weergave.",
+  "releaseNotes": "Kies je startscherm: Live TV, Favorieten of Verder kijken. De TV-gids is nu ook bereikbaar zonder gele toets via de zenderlijst-overlay in de speler. Minder bufferen bij korte hapertjes. Update-installatie netter: zichtbare voortgang en een herstel-knop als de download mislukt. Plus stabiliteitsverbeteringen onder de motorkap.",
   "minSupportedVersionCode": 1,
   "forceUpdate": false
 }
