@@ -12,29 +12,16 @@ class ProviderRepositoryImpl @Inject constructor(
 ) : ProviderRepository {
 
     override suspend fun getProviders(): List<Provider> {
-        if (REMOTE_CATALOG_URL.isNotBlank()) {
+        val remoteUrl = ProviderCatalog.REMOTE_CATALOG_URL
+        if (remoteUrl.isNotBlank()) {
             runCatching {
-                api.getProviderCatalog(REMOTE_CATALOG_URL).mapNotNull { dto ->
+                api.getProviderCatalog(remoteUrl).mapNotNull { dto ->
                     val name = dto.name?.takeIf { it.isNotBlank() }
                     val url = dto.url?.takeIf { it.isNotBlank() }
                     if (name != null && url != null) Provider(name, url) else null
                 }
             }.getOrNull()?.takeIf { it.isNotEmpty() }?.let { return it }
         }
-        return BUNDLED
-    }
-
-    private companion object {
-        // Vul dit later met een door jou gehoste JSON-URL
-        // ([{"name":"...","url":"..."}, ...]) om providers te wijzigen
-        // zonder app-update. Leeg = alleen de ingebouwde lijst.
-        const val REMOTE_CATALOG_URL = ""
-
-        val BUNDLED = listOf(
-            Provider("PROMAX", "http://line.smarttelevision.xyz"),
-            Provider("DIAMOND", "http://kassiee.clear-ocean.link"),
-            Provider("NETTV", "http://sales.vivotv.vip"),
-            Provider("TIVIONE", "http://line.tivi-ott.net"),
-        )
+        return ProviderCatalog.BUNDLED
     }
 }
