@@ -57,7 +57,7 @@ import nl.streamfix.R
 @Composable
 fun rememberStreamFixExoPlayer(): ExoPlayer {
     val context = LocalContext.current
-    return remember {
+    return remember(context) {
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
                 /* minBufferMs = */ 30_000,
