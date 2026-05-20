@@ -139,9 +139,6 @@ dependencies {
     ksp(libs.room.compiler)
     implementation(libs.androidx.security.crypto)
 
-    // Achtergrondtaken (EPG-refresh, Fase 3)
-    implementation(libs.androidx.work.runtime.ktx)
-
     // Video player
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
