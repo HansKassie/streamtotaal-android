@@ -64,6 +64,25 @@ android {
         }
     }
 
+    // Twee distributiekanalen vanuit een gedeelde codebase.
+    // - sideload  = bestaande klanten via R2 + in-app updater + preset-providers.
+    // - playstore = Google Play; geen self-updater (verboden door beleid),
+    //               geen preset-providers, gebruiker tikt zelf een URL in.
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("sideload") {
+            dimension = "distribution"
+            buildConfigField("boolean", "HAS_UPDATER", "true")
+            buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "true")
+        }
+        create("playstore") {
+            dimension = "distribution"
+            applicationIdSuffix = ".playstore"
+            buildConfigField("boolean", "HAS_UPDATER", "false")
+            buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "false")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
