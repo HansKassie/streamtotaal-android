@@ -60,7 +60,7 @@ fun EpisodePlayerScreen(
     val scope = rememberCoroutineScope()
     var chromeVisible by remember { mutableStateOf(false) }
 
-    val player = remember { ExoPlayer.Builder(context).build() }
+    val player = rememberStreamFixExoPlayer()
     var countdown by remember { mutableStateOf<Int?>(null) }
     var retryAttempt by remember { mutableIntStateOf(0) }
     var retryJob by remember { mutableStateOf<Job?>(null) }

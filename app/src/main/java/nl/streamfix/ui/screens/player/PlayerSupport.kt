@@ -31,7 +31,51 @@ import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import nl.streamfix.R
+
+/**
+ * Gedeelde ExoPlayer-factory voor live/VOD/series-spelers met een ruimere
+ * LoadControl. Helpt korte netwerk-/provider-dips opvangen voordat ze
+ * zichtbaar worden als rebuffer-spinner. NIET bedoeld om structureel te
+ * lage provider-throughput te maskeren.
+ *
+ * Afwegingen t.o.v. Media3-defaults (50s/50s/2.5s/5s):
+ *  - minBuffer 30s laat zappen sneller herstarten met buffer.
+ *  - maxBuffer 90s absorbeert dips; ~150-200 MB RAM-piek op HD-bitrates.
+ *  - bufferForPlayback 2.5s houdt eerste-frame-snelheid identiek.
+ *  - rebuffer-restart 7.5s geeft net iets meer vulling om niet meteen
+ *    weer te haperen na een hiccup.
+ *  - HTTP read-timeout 15s voorkomt dat trage IPTV-panels meteen falen.
+ */
+@OptIn(UnstableApi::class)
+@Composable
+fun rememberStreamFixExoPlayer(): ExoPlayer {
+    val context = LocalContext.current
+    return remember {
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                /* minBufferMs = */ 30_000,
+                /* maxBufferMs = */ 90_000,
+                /* bufferForPlaybackMs = */ 2_500,
+                /* bufferForPlaybackAfterRebufferMs = */ 7_500,
+            )
+            .build()
+        val httpFactory = DefaultHttpDataSource.Factory()
+            .setReadTimeoutMs(15_000)
+        val dataSourceFactory = DefaultDataSource.Factory(context, httpFactory)
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+        ExoPlayer.Builder(context)
+            .setLoadControl(loadControl)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .build()
+    }
+}
 
 /** ms naar "u:mm:ss" of "mm:ss". */
 fun formatPosition(ms: Long): String {
