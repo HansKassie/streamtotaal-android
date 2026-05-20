@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import nl.streamfix.ui.LocalIsTv
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import nl.streamfix.ui.RootState
@@ -26,8 +25,7 @@ import nl.streamfix.ui.StartupLoadingScreen
 import nl.streamfix.ui.navigation.StreamFixNavHost
 import nl.streamfix.ui.screens.player.PlayerActive
 import nl.streamfix.ui.theme.StreamFixTheme
-import nl.streamfix.ui.update.UpdateDialog
-import nl.streamfix.ui.update.UpdateViewModel
+import nl.streamfix.ui.update.UpdaterGate
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
@@ -56,20 +54,7 @@ class MainActivity : FragmentActivity() {
                         )
                     }
 
-                    if (state != RootState.Loading) {
-                        val updateVm: UpdateViewModel = hiltViewModel()
-                        val update by updateVm.update.collectAsStateWithLifecycle()
-                        val dismissed by updateVm.dismissed
-                            .collectAsStateWithLifecycle()
-                        update?.let {
-                            if (!dismissed) {
-                                UpdateDialog(
-                                    update = it,
-                                    onDismiss = updateVm::dismiss,
-                                )
-                            }
-                        }
-                    }
+                    if (state != RootState.Loading) UpdaterGate()
                 }
                 }
             }
