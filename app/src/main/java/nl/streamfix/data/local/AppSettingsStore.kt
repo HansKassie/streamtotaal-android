@@ -9,6 +9,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/** Geldige waarden voor het voorkeurs-startscherm. */
+const val STARTUP_TAB_LIVE = "live_tv"
+const val STARTUP_TAB_FAVORITES = "favorites"
+const val STARTUP_TAB_HISTORY = "history"
+
+private val VALID_STARTUP_TABS = setOf(
+    STARTUP_TAB_LIVE,
+    STARTUP_TAB_FAVORITES,
+    STARTUP_TAB_HISTORY,
+)
+
 /**
  * Kleine versleutelde app-instellingen los van de credentials. Nu alleen
  * de pincode + zichtbaarheid van volwassen content. Sessie-ontgrendeling
@@ -31,6 +42,21 @@ class AppSettingsStore @Inject constructor(
     fun setTvMode(mode: String) {
         prefs.edit().putString(KEY_TV_MODE, mode).apply()
         _tvMode.value = mode
+    }
+
+    private val _startupTab = MutableStateFlow(readStartupTab())
+    /** Tab waarop de hoofdscherm bij koude start opent. */
+    val startupTab: StateFlow<String> = _startupTab.asStateFlow()
+
+    private fun readStartupTab(): String {
+        val raw = prefs.getString(KEY_STARTUP_TAB, null)
+        return if (raw in VALID_STARTUP_TABS) raw!! else STARTUP_TAB_LIVE
+    }
+
+    fun setStartupTab(value: String) {
+        val safe = if (value in VALID_STARTUP_TABS) value else STARTUP_TAB_LIVE
+        prefs.edit().putString(KEY_STARTUP_TAB, safe).apply()
+        _startupTab.value = safe
     }
 
     private var sessionUnlocked = false
@@ -81,6 +107,7 @@ class AppSettingsStore @Inject constructor(
         const val KEY_PIN = "adult_pin"
         const val KEY_HIDDEN = "adult_hidden"
         const val KEY_TV_MODE = "tv_mode"
+        const val KEY_STARTUP_TAB = "startup_tab"
     }
 }
 

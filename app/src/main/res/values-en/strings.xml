@@ -179,6 +179,10 @@
     <string name="tv_mode_tv">TV (remote control)</string>
     <string name="tv_mode_phone">Phone or tablet</string>
 
+    <!-- ===== Startup screen choice. ===== -->
+    <string name="settings_startup_screen">Startup screen</string>
+    <string name="startup_tab_history">Continue watching</string>
+
     <!-- ===== Stream format. ===== -->
     <string name="settings_stream_format">Stream format</string>
     <string name="stream_format_auto">Automatic</string>

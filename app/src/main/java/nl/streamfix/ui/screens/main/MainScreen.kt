@@ -72,6 +72,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import nl.streamfix.BuildConfig
 import nl.streamfix.R
+import nl.streamfix.data.local.STARTUP_TAB_FAVORITES
+import nl.streamfix.data.local.STARTUP_TAB_HISTORY
+import nl.streamfix.data.local.STARTUP_TAB_LIVE
 import nl.streamfix.domain.model.Account
 import nl.streamfix.ui.formatXtreamExpiry
 import nl.streamfix.ui.LocalIsTv
@@ -118,12 +121,23 @@ fun MainScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val adultState by viewModel.adultState.collectAsStateWithLifecycle()
     val tvMode by viewModel.tvMode.collectAsStateWithLifecycle()
+    val startupTab by viewModel.startupTab.collectAsStateWithLifecycle()
     val isTv = when (tvMode) {
         "tv" -> true
         "phone" -> false
         else -> deviceIsTv
     }
-    var selected by rememberSaveable { mutableIntStateOf(0) }
+    // Alleen de initiele waarde uitlezen; daarna respecteert rememberSaveable
+    // de keuze van de gebruiker tijdens de sessie.
+    val initialTabIndex = remember {
+        val entries = Tab.entries
+        when (viewModel.startupTab.value) {
+            STARTUP_TAB_FAVORITES -> entries.indexOf(Tab.Favorites)
+            STARTUP_TAB_HISTORY -> entries.indexOf(Tab.History)
+            else -> 0
+        }
+    }
+    var selected by rememberSaveable { mutableIntStateOf(initialTabIndex) }
     val context = LocalContext.current
     var backArmed by remember { mutableStateOf(false) }
 
@@ -179,6 +193,7 @@ fun MainScreen(
                     state = state,
                     adult = adultState,
                     tvMode = tvMode,
+                    startupTab = startupTab,
                     onSwitchProvider = viewModel::onSwitchProvider,
                     onRemoveProvider = viewModel::onRemoveProvider,
                     onSetStreamFormat = viewModel::onSetStreamFormat,
@@ -186,6 +201,7 @@ fun MainScreen(
                     onUnlockAdult = viewModel::onUnlockAdult,
                     onHideAdult = viewModel::onHideAdult,
                     onSetTvMode = viewModel::onSetTvMode,
+                    onSetStartupTab = viewModel::onSetStartupTab,
                     onAddProvider = onAddProvider,
                     onOpenConnectionTest = onOpenConnectionTest,
                     onLogout = viewModel::onLogout,
@@ -319,6 +335,7 @@ private fun SettingsContent(
     state: MainState,
     adult: nl.streamfix.data.local.AdultState,
     tvMode: String,
+    startupTab: String,
     onSwitchProvider: (String) -> Unit,
     onRemoveProvider: (String) -> Unit,
     onSetStreamFormat: (String) -> Unit,
@@ -326,6 +343,7 @@ private fun SettingsContent(
     onUnlockAdult: (String) -> Boolean,
     onHideAdult: () -> Unit,
     onSetTvMode: (String) -> Unit,
+    onSetStartupTab: (String) -> Unit,
     onAddProvider: () -> Unit,
     onOpenConnectionTest: () -> Unit,
     onLogout: () -> Unit,
@@ -442,6 +460,37 @@ private fun SettingsContent(
                     RadioButton(
                         selected = isSelected,
                         onClick = { if (!isSelected) onSetTvMode(value) },
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        SettingsCard(stringResource(R.string.settings_startup_screen)) {
+            listOf(
+                STARTUP_TAB_LIVE to stringResource(R.string.tab_live_tv),
+                STARTUP_TAB_FAVORITES to stringResource(R.string.common_favorites),
+                STARTUP_TAB_HISTORY to stringResource(R.string.startup_tab_history),
+            ).forEach { (value, label) ->
+                val isSelected = startupTab == value
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !isSelected) {
+                            onSetStartupTab(value)
+                        }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = { if (!isSelected) onSetStartupTab(value) },
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(Modifier.width(12.dp))

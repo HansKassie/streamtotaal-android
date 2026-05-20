@@ -49,6 +49,10 @@ class MainViewModel @Inject constructor(
 
     fun onSetTvMode(mode: String) = appSettings.setTvMode(mode)
 
+    val startupTab: StateFlow<String> = appSettings.startupTab
+
+    fun onSetStartupTab(value: String) = appSettings.setStartupTab(value)
+
     fun onSetAdultPin(pin: String) = appSettings.setPin(pin)
 
     /** True bij juiste pincode (sessie ontgrendeld). */

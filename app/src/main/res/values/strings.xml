@@ -179,6 +179,10 @@
     <string name="tv_mode_tv">Tv (afstandsbediening)</string>
     <string name="tv_mode_phone">Telefoon of tablet</string>
 
+    <!-- ===== Startscherm-keuze. ===== -->
+    <string name="settings_startup_screen">Startscherm</string>
+    <string name="startup_tab_history">Verder kijken</string>
+
     <!-- ===== Stream Format. ===== -->
     <string name="settings_stream_format">Stream Format</string>
     <string name="stream_format_auto">Automatisch</string>
