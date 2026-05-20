@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Engelse vertalingen worden per cluster aangevuld terwijl de UI-strings
+      uit Kotlin worden geextraheerd. app_name is een merknaam en wordt
+      bewust niet vertaald.
+    -->
+</resources>

@@ -32,6 +32,11 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+
+        // Beperk de meegeleverde locales: Nederlands (default in values/)
+        // en Engels (values-en/). Voorkomt half-vertaalde Material/Compose-
+        // strings in andere talen en houdt de APK klein.
+        resourceConfigurations += listOf("nl", "en")
     }
 
     signingConfigs {
