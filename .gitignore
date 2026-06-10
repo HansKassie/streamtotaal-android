@@ -30,3 +30,10 @@ sentry.properties
 *.log
 build_log.txt
 build_release_log.txt
+
+# Test- en release-artefacten in de repo-root (gaan naar R2, niet naar git)
+/test*.apk
+/streamtotaal.apk
+
+# Klantdocumentatie, bewust buiten git
+/StreamTotaal-Klantgids.txt
