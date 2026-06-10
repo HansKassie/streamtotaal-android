@@ -19,5 +19,8 @@ sealed interface Account {
         // Door de gebruiker gekozen live-formaat: "auto" volgt liveExtension,
         // anders "ts" of "m3u8" als harde override.
         val streamFormat: String = "auto",
+        // False alleen als het panel expliciet formaten opgeeft ZONDER m3u8;
+        // casten (vereist HLS) wordt dan niet aangeboden.
+        val supportsHls: Boolean = true,
     ) : Account
 }

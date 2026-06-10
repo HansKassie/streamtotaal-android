@@ -298,7 +298,9 @@ fun PlayerScreen(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
-            if (cast.castAvailable) {
+            // Verberg de cast-knop als de provider geen HLS levert
+            // (castStreamUrl is dan null); rauwe .ts kan de ontvanger niet.
+            if (cast.castAvailable && state.castStreamUrl != null) {
                 CastButton()
             }
         }

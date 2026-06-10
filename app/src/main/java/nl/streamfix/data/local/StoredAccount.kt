@@ -18,6 +18,8 @@ data class StoredAccount(
     val password: String? = null,
     val liveExtension: String = "ts",
     val streamFormat: String = "auto",
+    // Default true zodat bestaande opslag zich ongewijzigd gedraagt.
+    val supportsHls: Boolean = true,
 )
 
 @Serializable
@@ -36,6 +38,7 @@ fun StoredAccount.toDomain(): Account? {
             password = password ?: return null,
             liveExtension = liveExtension,
             streamFormat = streamFormat,
+            supportsHls = supportsHls,
         )
 
         else -> null
@@ -52,5 +55,6 @@ fun Account.toStored(): StoredAccount = when (this) {
         password = password,
         liveExtension = liveExtension,
         streamFormat = streamFormat,
+        supportsHls = supportsHls,
     )
 }

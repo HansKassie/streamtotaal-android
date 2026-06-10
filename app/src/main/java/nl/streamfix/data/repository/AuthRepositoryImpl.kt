@@ -55,6 +55,9 @@ class AuthRepositoryImpl @Inject constructor(
                     username = username,
                     password = password,
                     liveExtension = ext,
+                    // Geen opgave van formaten = aannemen dat HLS kan (de
+                    // meeste panels serveren m3u8 ook zonder het te melden).
+                    supportsHls = formats.isEmpty() || "m3u8" in formats,
                 )
                 store.saveAndActivate(account)
                 AppResult.Success(account)
