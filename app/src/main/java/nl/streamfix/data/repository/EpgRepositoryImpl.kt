@@ -24,7 +24,20 @@ class EpgRepositoryImpl @Inject constructor(
     private val json: Json,
 ) : EpgRepository {
 
+    @Volatile
+    private var pruned = false
+
+    /** Eenmaal per proces: rijen ouder dan 48 uur opruimen (TTL is max 3u). */
+    private suspend fun pruneOnce() {
+        if (pruned) return
+        pruned = true
+        runCatching {
+            dao.prune(System.currentTimeMillis() - PRUNE_AGE_MS)
+        }
+    }
+
     override suspend fun getEpg(streamId: String): AppResult<List<EpgProgramme>> {
+        pruneOnce()
         val acc = store.currentActiveAccount() as? Account.Xtream
             ?: return AppResult.Failure(AppError.Unknown)
 
@@ -62,6 +75,7 @@ class EpgRepositoryImpl @Inject constructor(
     override suspend fun getEpgTable(
         streamId: String,
     ): AppResult<List<EpgProgramme>> {
+        pruneOnce()
         val acc = store.currentActiveAccount() as? Account.Xtream
             ?: return AppResult.Failure(AppError.Unknown)
 
@@ -112,5 +126,6 @@ class EpgRepositoryImpl @Inject constructor(
     private companion object {
         const val TTL_MS = 3 * 60 * 60 * 1000L // 3 uur
         const val TABLE_TTL_MS = 60 * 60 * 1000L // 1 uur (catch-up-tabel)
+        const val PRUNE_AGE_MS = 48 * 60 * 60 * 1000L // 48 uur
     }
 }

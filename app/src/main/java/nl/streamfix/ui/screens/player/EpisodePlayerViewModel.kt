@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,10 +73,15 @@ class EpisodePlayerViewModel @Inject constructor(
         }
     }
 
+    private var emitJob: Job? = null
+
     private fun emitCurrent() {
         val ep = episodes.getOrNull(index) ?: return
         val mediaId = "ep:${ep.id}"
-        viewModelScope.launch {
+        // Vorige emit annuleren: snel meermaals next() mag geen verouderde
+        // aflevering over de nieuwste heen laten emitten.
+        emitJob?.cancel()
+        emitJob = viewModelScope.launch {
             val pos = getResumePosition(mediaId)
             startWatching(
                 HistoryItem(

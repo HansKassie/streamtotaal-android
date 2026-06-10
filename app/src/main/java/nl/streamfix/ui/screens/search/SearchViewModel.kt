@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -105,9 +107,13 @@ class SearchViewModel @Inject constructor(
     private suspend fun ensureLoaded() {
         if (loaded) return
         _state.update { it.copy(isLoading = true) }
-        val liveR = getChannels(null)
-        val vodR = getAllVod()
-        val seriesR = getAllSeries()
+        // Drie bronnen parallel: scheelt merkbaar op de eerste zoekslag.
+        val (liveR, vodR, seriesR) = coroutineScope {
+            val l = async { getChannels(null) }
+            val v = async { getAllVod() }
+            val s = async { getAllSeries() }
+            Triple(l.await(), v.await(), s.await())
+        }
         (liveR as? AppResult.Success)?.let { allLive = it.data }
         (vodR as? AppResult.Success)?.let { allVod = it.data }
         (seriesR as? AppResult.Success)?.let { allSeries = it.data }

@@ -16,4 +16,8 @@ interface EpgDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: EpgCacheEntity)
+
+    /** Ruimt verlopen cache-rijen op zodat de tabel niet blijft groeien. */
+    @Query("DELETE FROM epg_cache WHERE fetchedAt < :cutoff")
+    suspend fun prune(cutoff: Long)
 }

@@ -4,12 +4,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import nl.streamfix.data.local.AdultContent
 import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.data.local.SecureCredentialStore
+import nl.streamfix.data.local.filterActive
 import nl.streamfix.data.local.db.FavoriteChannelEntity
 import nl.streamfix.data.local.db.FavoriteDao
 import nl.streamfix.data.remote.XtreamLiveService
@@ -60,12 +61,24 @@ class LiveRepositoryImpl @Inject constructor(
         )
     }
 
+    // Sessie-cache per account: categorienamen wijzigen zelden, dus de
+    // extra categories()-call (Zoeken/Gemist met filter aan) hoeft niet
+    // bij elke aanroep. Benigne race: hooguit een dubbele fetch.
+    @Volatile
+    private var adultIdsCache: Pair<String, Set<String>>? = null
+
     private suspend fun adultCategoryIds(acc: Account.Xtream): Set<String> {
+        adultIdsCache?.let { (accountId, ids) ->
+            if (accountId == acc.id) return ids
+        }
         val c = liveService.categories(acc.serverUrl, acc.username, acc.password)
         return if (c is AppResult.Success) {
-            c.data.filter { AdultContent.isAdult(it.name) }
+            val ids = c.data.filter { AdultContent.isAdult(it.name) }
                 .map { it.id }.toSet()
+            adultIdsCache = acc.id to ids
+            ids
         } else {
+            // Fout niet cachen; volgende aanroep probeert opnieuw.
             emptySet()
         }
     }
@@ -76,11 +89,13 @@ class LiveRepositoryImpl @Inject constructor(
             if (account == null) {
                 flowOf(emptyList())
             } else {
-                favoriteDao.observe(account.id).map { list ->
+                combine(
+                    favoriteDao.observe(account.id),
+                    appSettings.adultState,
+                ) { list, adult ->
                     list
                         .filterNot {
-                            appSettings.adultFilterActive() &&
-                                AdultContent.isAdult(it.name)
+                            adult.filterActive && AdultContent.isAdult(it.name)
                         }
                         .map {
                             LiveChannel(
@@ -126,7 +141,10 @@ class LiveRepositoryImpl @Inject constructor(
 
     override fun streamUrlForCast(channelId: String): String? {
         val acc = activeXtream() ?: return null
-        // Chromecast-ontvanger kan geen rauwe .ts; forceer HLS.
+        // Chromecast-ontvanger kan geen rauwe .ts; forceer HLS. Panels die
+        // expliciet geen m3u8 leveren: null, zodat de UI de cast-knop
+        // verbergt i.p.v. een stil zwart scherm op de ontvanger.
+        if (!acc.supportsHls) return null
         return XtreamUrls.liveStream(
             acc.serverUrl, acc.username, acc.password, channelId,
             extension = "m3u8",
