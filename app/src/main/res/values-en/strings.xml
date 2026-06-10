@@ -41,6 +41,7 @@
     <string name="expiry_unlimited">Unlimited</string>
 
     <!-- ===== Live TV screen. ===== -->
+    <string name="live_channel_fallback">Channel %1$s</string>
     <string name="common_favorites">Favorites</string>
     <string name="common_now">Now</string>
     <string name="live_search_channel">Search channel</string>

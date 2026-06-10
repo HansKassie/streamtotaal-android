@@ -1,14 +1,18 @@
 package nl.streamfix.data.remote
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nl.streamfix.R
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
 import nl.streamfix.domain.util.AppResult
 
 class XtreamLiveService @Inject constructor(
     private val api: XtreamApi,
+    @ApplicationContext private val context: Context,
 ) {
     suspend fun categories(
         serverUrl: String,
@@ -43,9 +47,11 @@ class XtreamLiveService @Inject constructor(
             )
             val result = api.getLiveStreams(url).mapNotNull { dto ->
                 val id = dto.streamIdValue ?: return@mapNotNull null
+                val fallback =
+                    context.getString(R.string.live_channel_fallback, id)
                 LiveChannel(
                     id = id,
-                    name = dto.name?.ifBlank { "Kanaal $id" } ?: "Kanaal $id",
+                    name = dto.name?.ifBlank { fallback } ?: fallback,
                     logoUrl = dto.streamIcon?.takeIf { it.isNotBlank() },
                     categoryId = dto.categoryId ?: categoryId,
                     epgChannelId = dto.epgChannelId?.takeIf { it.isNotBlank() },

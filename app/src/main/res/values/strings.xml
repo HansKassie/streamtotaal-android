@@ -41,6 +41,7 @@
     <string name="expiry_unlimited">Onbeperkt</string>
 
     <!-- ===== Live TV-scherm. ===== -->
+    <string name="live_channel_fallback">Kanaal %1$s</string>
     <string name="common_favorites">Favorieten</string>
     <string name="common_now">Nu</string>
     <string name="live_search_channel">Zoek kanaal</string>

@@ -45,7 +45,9 @@ fun CatchupChannelScreen(
     viewModel: CatchupChannelViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val dayFmt = remember { SimpleDateFormat("EEEE d MMMM", Locale("nl")) }
+    val dayFmt = remember {
+        SimpleDateFormat("EEEE d MMMM", Locale.getDefault())
+    }
     val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
     Scaffold(
