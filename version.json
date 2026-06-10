@@ -1,8 +1,8 @@
 {
-  "versionCode": 10,
-  "versionName": "1.0.9",
+  "versionCode": 11,
+  "versionName": "1.0.10",
   "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-  "releaseNotes": "Kies je startscherm: Live TV, Favorieten of Verder kijken. De TV-gids is nu ook bereikbaar zonder gele toets via de zenderlijst-overlay in de speler. Minder bufferen bij korte hapertjes. Update-installatie netter: zichtbare voortgang en een herstel-knop als de download mislukt. Plus stabiliteitsverbeteringen onder de motorkap.",
+  "releaseNotes": "Stabiliteits- en prestatieverbeteringen: sneller zoeken, zuiniger geheugengebruik op tv-boxen, kleine verbeteringen in de gids en het casten, en automatische opschoning van oude gidsgegevens.",
   "minSupportedVersionCode": 1,
   "forceUpdate": false
 }
