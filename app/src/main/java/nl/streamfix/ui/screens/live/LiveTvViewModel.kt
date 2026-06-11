@@ -20,7 +20,6 @@ import nl.streamfix.domain.usecase.GetActiveAccountUseCase
 import nl.streamfix.domain.usecase.GetChannelEpgUseCase
 import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
-import nl.streamfix.domain.usecase.GetStreamUrlUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
 import nl.streamfix.domain.usecase.SetFavoriteUseCase
 import nl.streamfix.domain.util.AppResult
@@ -48,7 +47,6 @@ class LiveTvViewModel @Inject constructor(
     private val getChannels: GetLiveChannelsUseCase,
     private val observeFavorites: ObserveFavoritesUseCase,
     private val setFavorite: SetFavoriteUseCase,
-    private val getStreamUrl: GetStreamUrlUseCase,
     private val getChannelEpg: GetChannelEpgUseCase,
     private val getActiveAccount: GetActiveAccountUseCase,
     private val appSettings: AppSettingsStore,
@@ -172,6 +170,4 @@ class LiveTvViewModel @Inject constructor(
         val isFav = _state.value.favoriteIds.contains(channel.id)
         viewModelScope.launch { setFavorite(channel, !isFav) }
     }
-
-    fun streamUrlFor(channelId: String): String? = getStreamUrl(channelId)
 }

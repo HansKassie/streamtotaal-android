@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -67,6 +66,9 @@ import nl.streamfix.R
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveChannel
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun LiveTvScreen(
@@ -101,16 +103,6 @@ fun LiveTvScreen(
     }
 
     var focusedChannel by remember { mutableStateOf<LiveChannel?>(null) }
-    var previewUrl by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(focusedChannel?.id, isTv) {
-        if (!isTv) {
-            previewUrl = null
-            return@LaunchedEffect
-        }
-        val ch = focusedChannel ?: return@LaunchedEffect
-        delay(700)
-        previewUrl = viewModel.streamUrlFor(ch.id)
-    }
 
     Column(
         modifier = Modifier
@@ -280,30 +272,157 @@ fun LiveTvScreen(
         if (isTv) {
             Row(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.weight(1f)) { channelList() }
-                Column(
+                EpgInfoPanel(
+                    channel = focusedChannel,
+                    programmes = focusedChannel?.id?.let { epgMap[it] },
                     modifier = Modifier
                         .width(360.dp)
                         .padding(end = 24.dp, top = 4.dp, bottom = 16.dp),
-                ) {
-                    LivePreviewPlayer(
-                        streamUrl = previewUrl,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16f / 9f),
+                )
+            }
+        } else {
+            channelList()
+        }
+    }
+}
+
+/**
+ * Rechterpaneel op tv: programma-informatie van het kanaal met focus.
+ * Leest mee uit dezelfde EPG-cache als de lijstrijen, dus geen extra
+ * netwerkcalls en (anders dan het oude live-voorbeeldvenster) geen
+ * extra stream-verbinding richting de provider tijdens het bladeren.
+ */
+@Composable
+private fun EpgInfoPanel(
+    channel: LiveChannel?,
+    programmes: List<EpgProgramme>?,
+    modifier: Modifier = Modifier,
+) {
+    var nowMs by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000L)
+            nowMs = System.currentTimeMillis()
+        }
+    }
+    val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+
+    Column(modifier = modifier) {
+        if (channel == null) return@Column
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AsyncImage(
+                model = channel.logoUrl,
+                contentDescription = null,
+                modifier = Modifier.size(44.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = channel.name,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+
+        when {
+            programmes == null -> Text(
+                text = stringResource(R.string.epg_loading),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            programmes.isEmpty() -> Text(
+                text = stringResource(R.string.epg_no_guide),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            else -> {
+                val current = programmes.firstOrNull {
+                    nowMs in it.startMs until it.endMs
+                }
+                val upcoming = programmes
+                    .filter { it.startMs > nowMs }
+                    .sortedBy { it.startMs }
+                    .take(4)
+
+                if (current != null) {
+                    Text(
+                        text = stringResource(R.string.common_now) +
+                            "  -  " +
+                            timeFmt.format(Date(current.startMs)) +
+                            " - " + timeFmt.format(Date(current.endMs)),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
                     )
-                    focusedChannel?.let { fc ->
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = current.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (current.endMs > current.startMs) {
+                        Spacer(Modifier.height(6.dp))
+                        LinearProgressIndicator(
+                            progress = {
+                                ((nowMs - current.startMs).toFloat() /
+                                    (current.endMs - current.startMs))
+                                    .coerceIn(0f, 1f)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (current.description.isNotBlank()) {
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = fc.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
+                            text = current.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 6,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
+
+                if (current == null && upcoming.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.epg_no_guide),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                if (upcoming.isNotEmpty()) {
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = stringResource(R.string.epg_status_upcoming),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    upcoming.forEach { p ->
+                        Row {
+                            Text(
+                                text = timeFmt.format(Date(p.startMs)),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme
+                                    .onSurfaceVariant,
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                text = p.title,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Spacer(Modifier.height(3.dp))
+                    }
+                }
             }
-        } else {
-            channelList()
         }
     }
 }
