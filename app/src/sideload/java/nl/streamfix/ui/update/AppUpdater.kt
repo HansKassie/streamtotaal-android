@@ -68,8 +68,10 @@ object AppUpdater {
                     val ok = downloadSucceeded(dm, id) &&
                         checksumOk(ctx, expectedSha256)
                     Handler(Looper.getMainLooper()).post {
-                        if (ok) install(ctx)
-                        onResult(ok)
+                        // Pas geslaagd als de installer ook echt opent;
+                        // anders blijft de dialog in de retry-staat.
+                        val installed = ok && install(ctx)
+                        onResult(installed)
                         pending.finish()
                     }
                 }.start()
@@ -119,19 +121,22 @@ object AppUpdater {
             }
         }.getOrDefault(false)
 
-    private fun install(context: Context) {
+    /** True als de Android-installer daadwerkelijk is geopend. */
+    private fun install(context: Context): Boolean {
         val file = File(context.getExternalFilesDir(null), SUBPATH)
-        if (!file.exists()) return
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            file,
-        )
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/vnd.android.package-archive")
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        runCatching { context.startActivity(intent) }
+        if (!file.exists()) return false
+        return runCatching {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file,
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(intent)
+        }.isSuccess
     }
 }

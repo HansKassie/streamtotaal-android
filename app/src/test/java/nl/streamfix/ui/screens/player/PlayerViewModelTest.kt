@@ -156,6 +156,17 @@ class PlayerViewModelTest {
     }
 
     @Test
+    fun legeCategorieGeeftLoadFailed() = runTest(dispatcher) {
+        val vm = viewModel(
+            startChannelId = "c1",
+            repo = FakeLiveRepository(emptyList()),
+        )
+        advanceUntilIdle()
+        assertTrue(vm.state.value.loadFailed)
+        assertEquals(null, vm.state.value.streamUrl)
+    }
+
+    @Test
     fun bekekenKanaalWordtOnthouden() = runTest(dispatcher) {
         val repo = FakeLiveRepository(sample)
         val vm = viewModel(startChannelId = "c1", repo = repo)

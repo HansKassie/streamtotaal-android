@@ -132,6 +132,7 @@
     <string name="player_subtitles">Subtitles</string>
     <string name="player_subtitles_off">Off</string>
     <string name="player_connection_problem">Connection problem. Retrying automatically.</string>
+    <string name="player_channel_unavailable">This channel is no longer available. Go back and pick another channel.</string>
     <string name="player_retry_now">Retry now</string>
     <string name="player_resume_dialog_title">Continue watching?</string>
     <string name="player_resume_dialog_body">You stopped at %1$s.</string>

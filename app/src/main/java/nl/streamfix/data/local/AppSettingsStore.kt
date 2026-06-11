@@ -61,19 +61,24 @@ class AppSettingsStore @Inject constructor(
         _startupTab.value = safe
     }
 
-    /** Laatst bekeken live-kanaal, accountgebonden opgeslagen. */
+    /**
+     * Laatst bekeken live-kanaal, met een eigen sleutel per account zodat
+     * elke provider zijn eigen laatste zender onthoudt (wisselen naar
+     * provider B wist de onthouden zender van provider A niet).
+     */
     fun setLastChannel(accountId: String, categoryId: String, channelId: String) {
         prefs.edit()
-            .putString(KEY_LAST_CHANNEL, "$accountId|$categoryId|$channelId")
+            .putString(KEY_LAST_CHANNEL_PREFIX + accountId, "$categoryId|$channelId")
             .apply()
     }
 
     /** (categoryId, channelId) of null als er voor dit account niets is. */
     fun lastChannel(accountId: String): Pair<String, String>? {
-        val raw = prefs.getString(KEY_LAST_CHANNEL, null) ?: return null
+        val raw = prefs.getString(KEY_LAST_CHANNEL_PREFIX + accountId, null)
+            ?: return null
         val parts = raw.split('|')
-        if (parts.size != 3 || parts[0] != accountId) return null
-        return parts[1] to parts[2]
+        if (parts.size != 2) return null
+        return parts[0] to parts[1]
     }
 
     private var sessionUnlocked = false
@@ -148,7 +153,7 @@ class AppSettingsStore @Inject constructor(
         const val KEY_HIDDEN = "adult_hidden"
         const val KEY_TV_MODE = "tv_mode"
         const val KEY_STARTUP_TAB = "startup_tab"
-        const val KEY_LAST_CHANNEL = "last_channel"
+        const val KEY_LAST_CHANNEL_PREFIX = "last_channel_"
         const val MAX_UNLOCK_ATTEMPTS = 5
         const val UNLOCK_LOCKOUT_MS = 30_000L
     }

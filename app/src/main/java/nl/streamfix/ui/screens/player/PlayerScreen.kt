@@ -315,6 +315,22 @@ fun PlayerScreen(
             })
         }
 
+        if (state.loadFailed) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.8f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(R.string.player_channel_unavailable),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(24.dp),
+                )
+            }
+        }
+
         if (!isTv) Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)

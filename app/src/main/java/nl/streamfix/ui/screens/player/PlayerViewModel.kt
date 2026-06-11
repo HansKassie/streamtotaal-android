@@ -30,6 +30,8 @@ data class PlayerUiState(
     val channels: List<LiveChannel> = emptyList(),
     val currentChannelId: String? = null,
     val hasLast: Boolean = false,
+    /** True als de kanalenlijst leeg bleef (categorie weg/onbereikbaar). */
+    val loadFailed: Boolean = false,
 )
 
 @HiltViewModel
@@ -59,6 +61,16 @@ class PlayerViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             channels = loadChannels()
+            if (channels.isEmpty()) {
+                // Categorie verdwenen of onbereikbaar: nette melding
+                // i.p.v. een zwart scherm dat eeuwig buffert.
+                _state.update { it.copy(loadFailed = true) }
+                return@launch
+            }
+            // Bewuste tv-conventie: bestaat het (opgeslagen) startkanaal
+            // niet meer, dan speelt het eerste kanaal van de categorie,
+            // zoals een echte tv; de zendernaam is bij binnenkomst in
+            // beeld, dus geen stille verrassing.
             index = channels.indexOfFirst { it.id == startChannelId }
                 .takeIf { it >= 0 } ?: 0
             emitCurrent()
