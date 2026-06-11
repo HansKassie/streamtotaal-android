@@ -59,8 +59,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -108,7 +113,7 @@ private enum class Tab(
     Settings(R.string.tab_settings, Icons.Filled.Settings),
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun MainScreen(
     onLoggedOut: () -> Unit,
@@ -324,11 +329,25 @@ fun MainScreen(
             Row(
                 modifier = Modifier.fillMaxSize().padding(padding),
             ) {
-                NavigationRail {
+                // Links-drukken vanuit de inhoud hoort terug te komen op het
+                // ACTIEVE tabblad. Standaard kiest focus-search het rail-item
+                // dat geometrisch het dichtstbij is (onderin Meer beland je
+                // dan op Films/Gemist). De onEnter-redirect dwingt af dat
+                // binnenkomen van de rail altijd op de actieve tab landt;
+                // omhoog/omlaag binnen de rail blijft gewoon werken.
+                val railFocus = remember { List(tabs.size) { FocusRequester() } }
+                NavigationRail(
+                    modifier = Modifier
+                        .focusProperties {
+                            enter = { railFocus[selected] }
+                        }
+                        .focusGroup(),
+                ) {
                     tabs.forEachIndexed { index, tab ->
                         NavigationRailItem(
                             selected = selected == index,
                             onClick = { selected = index },
+                            modifier = Modifier.focusRequester(railFocus[index]),
                             icon = {
                                 Icon(
                                     tab.icon,
