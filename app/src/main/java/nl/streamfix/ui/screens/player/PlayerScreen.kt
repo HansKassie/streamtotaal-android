@@ -108,6 +108,7 @@ fun PlayerScreen(
     var retryJob by remember { mutableStateOf<Job?>(null) }
     var showError by remember { mutableStateOf(false) }
     val cast = rememberCastController(player)
+    PauseLocalWhenBackgrounded(cast, isLive = true)
 
     // Markeer dat we in de speler zitten zodat MainActivity PiP kan starten.
     DisposableEffect(Unit) {

@@ -64,6 +64,7 @@ fun PlaybackScreen(
     var pendingResumeMs by remember { mutableStateOf<Long?>(null) }
     val tracks = rememberTracks(player)
     val cast = rememberCastController(player)
+    PauseLocalWhenBackgrounded(cast, isLive = false)
 
     DisposableEffect(Unit) {
         PlayerActive.inPlayer = true

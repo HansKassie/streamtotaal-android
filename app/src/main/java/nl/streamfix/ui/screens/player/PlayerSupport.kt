@@ -25,8 +25,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
@@ -74,6 +77,36 @@ fun rememberStreamFixExoPlayer(): ExoPlayer {
             .setLoadControl(loadControl)
             .setMediaSourceFactory(mediaSourceFactory)
             .build()
+    }
+}
+
+/**
+ * Pauzeert de lokale speler zodra de app naar de achtergrond gaat en hervat
+ * bij terugkeer. Zonder dit blijft het geluid van een zender onzichtbaar
+ * doorlopen op tv's zonder Picture-in-Picture (en telt de stream mee voor
+ * de verbindingslimiet van de provider). In zichtbare PiP komt er geen
+ * ON_STOP, dus daar speelt het beeld bewust door; casten loopt altijd door
+ * (de ontvanger speelt, niet de lokale speler).
+ */
+@Composable
+fun PauseLocalWhenBackgrounded(cast: CastController, isLive: Boolean) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, cast) {
+        var pausedInBackground = false
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP ->
+                    if (cast.pauseLocal()) pausedInBackground = true
+                Lifecycle.Event.ON_START ->
+                    if (pausedInBackground) {
+                        pausedInBackground = false
+                        cast.resumeLocal(isLive)
+                    }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 }
 

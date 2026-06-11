@@ -90,6 +90,11 @@ import nl.streamfix.ui.screens.live.LiveTvScreen
 import nl.streamfix.ui.screens.series.SeriesScreen
 import nl.streamfix.ui.screens.vod.VodScreen
 
+/** Procesbreed: auto-open "laatste zender" maximaal een keer per start. */
+private object StartupAutoOpen {
+    var handled = false
+}
+
 private enum class Tab(
     @StringRes val labelRes: Int,
     val icon: ImageVector,
@@ -146,13 +151,14 @@ fun MainScreen(
     val context = LocalContext.current
     var backArmed by remember { mutableStateOf(false) }
 
-    // "Start met laatste zender": eenmalig per koude start direct de speler
-    // openen. rememberSaveable voorkomt herhalen na terugkeren uit de speler
-    // of na procesherstel; zonder onthouden kanaal blijft het bij Live TV.
-    var autoOpenedLast by rememberSaveable { mutableStateOf(false) }
+    // "Start met laatste zender": eenmalig per processtart direct de speler
+    // openen. Bewust een procesbrede vlag en geen rememberSaveable: saved
+    // state kan op tv-boxen een door het systeem gekilde app overleven,
+    // waardoor de auto-open na zo'n herstart ten onrechte werd overgeslagen.
+    // Terugkeren uit de speler binnen dezelfde sessie vuurt nooit opnieuw.
     LaunchedEffect(Unit) {
-        if (!autoOpenedLast) {
-            autoOpenedLast = true
+        if (!StartupAutoOpen.handled) {
+            StartupAutoOpen.handled = true
             if (viewModel.startupTab.value == STARTUP_TAB_LAST) {
                 viewModel.startupChannel()?.let { (cat, ch) ->
                     onOpenChannel(cat, ch)

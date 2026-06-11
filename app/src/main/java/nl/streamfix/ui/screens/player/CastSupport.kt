@@ -160,6 +160,25 @@ class CastController(
         }
     }
 
+    /** Pauzeert alleen de lokale speler; true als er echt gepauzeerd is. */
+    fun pauseLocal(): Boolean {
+        if (current === exo && exo.playWhenReady) {
+            exo.playWhenReady = false
+            return true
+        }
+        return false
+    }
+
+    /** Hervat de lokale speler; live springt eerst terug naar de live-rand. */
+    fun resumeLocal(isLive: Boolean) {
+        if (current !== exo) return
+        if (isLive) {
+            exo.seekToDefaultPosition()
+            exo.prepare()
+        }
+        exo.playWhenReady = true
+    }
+
     val positionMs: Long get() = current.currentPosition
 
     fun release() {
