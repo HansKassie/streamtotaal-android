@@ -46,7 +46,6 @@
     <string name="common_now">Now</string>
     <string name="live_search_channel">Search channel</string>
     <string name="live_category_placeholder">Category</string>
-    <string name="live_tv_guide_button">TV guide - yellow button</string>
     <string name="live_no_channels">No channels</string>
     <string name="live_add_favorite_desc">Add to favorites</string>
     <string name="live_remove_favorite_desc">Remove from favorites</string>

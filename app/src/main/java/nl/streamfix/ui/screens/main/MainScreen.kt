@@ -193,6 +193,9 @@ fun MainScreen(
                 onOpenChannel = onOpenChannel,
                 onOpenChannelEpg = onOpenChannelEpg,
                 onOpenGuide = onOpenGuide,
+                providers = state.accounts.map { it.id to it.displayName },
+                activeProviderId = state.account?.id,
+                onSwitchProvider = viewModel::onSwitchProvider,
             )
             Tab.Favorites -> FavoritesScreen(onOpenChannel = onOpenChannel)
             Tab.Movies -> VodScreen(onOpenVod = onOpenVod)

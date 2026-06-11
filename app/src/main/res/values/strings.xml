@@ -46,7 +46,6 @@
     <string name="common_now">Nu</string>
     <string name="live_search_channel">Zoek kanaal</string>
     <string name="live_category_placeholder">Categorie</string>
-    <string name="live_tv_guide_button">TV-gids - gele toets</string>
     <string name="live_no_channels">Geen kanalen</string>
     <string name="live_add_favorite_desc">Maak favoriet</string>
     <string name="live_remove_favorite_desc">Verwijder favoriet</string>

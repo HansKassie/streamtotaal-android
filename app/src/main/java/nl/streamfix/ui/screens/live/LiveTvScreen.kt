@@ -32,7 +32,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -75,6 +74,11 @@ fun LiveTvScreen(
     onOpenChannel: (categoryId: String, channelId: String) -> Unit,
     onOpenChannelEpg: (channelId: String, channelName: String) -> Unit,
     onOpenGuide: (categoryId: String) -> Unit,
+    // (id, weergavenaam) van alle opgeslagen providers; bij 2+ verschijnt
+    // op tv een provider-switch naast de categorie-knop.
+    providers: List<Pair<String, String>> = emptyList(),
+    activeProviderId: String? = null,
+    onSwitchProvider: (String) -> Unit = {},
     viewModel: LiveTvViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -196,12 +200,44 @@ fun LiveTvScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 categoryButton()
-                TextButton(
-                    onClick = {
-                        onOpenGuide(state.selectedCategoryId ?: FAVORITES_ID)
-                    },
-                    modifier = Modifier.padding(start = 8.dp),
-                ) { Text(stringResource(R.string.live_tv_guide_button)) }
+                // Provider-switch: alleen zinvol met meerdere abonnementen.
+                // De gids blijft bereikbaar via de gele/Gids-toets en via
+                // het TV-gids-item in de zenderlijst-overlay van de speler.
+                if (providers.size > 1) {
+                    var provMenuOpen by remember { mutableStateOf(false) }
+                    Box(modifier = Modifier.padding(start = 8.dp)) {
+                        OutlinedButton(onClick = { provMenuOpen = true }) {
+                            Text(
+                                text = providers
+                                    .firstOrNull { it.first == activeProviderId }
+                                    ?.second.orEmpty(),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.widthIn(max = 220.dp),
+                            )
+                            Icon(
+                                Icons.Filled.ArrowDropDown,
+                                contentDescription = null,
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = provMenuOpen,
+                            onDismissRequest = { provMenuOpen = false },
+                        ) {
+                            providers.forEach { (id, name) ->
+                                DropdownMenuItem(
+                                    text = { Text(name) },
+                                    onClick = {
+                                        provMenuOpen = false
+                                        if (id != activeProviderId) {
+                                            onSwitchProvider(id)
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
             }
         } else {
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
