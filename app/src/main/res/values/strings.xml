@@ -207,6 +207,7 @@
     <string name="pin_error_too_short">Pincode is te kort (minimaal 4 cijfers).</string>
     <string name="pin_error_not_equal">De pincodes zijn niet gelijk.</string>
     <string name="pin_error_incorrect">Onjuiste pincode.</string>
+    <string name="pin_error_locked">Te veel foute pogingen. Wacht %1$d seconden en probeer opnieuw.</string>
 
     <string name="logout">Uitloggen</string>
     <string name="settings_account">Account</string>

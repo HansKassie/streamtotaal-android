@@ -264,6 +264,7 @@ fun MainScreen(
                     onSetStreamFormat = viewModel::onSetStreamFormat,
                     onSetAdultPin = viewModel::onSetAdultPin,
                     onUnlockAdult = viewModel::onUnlockAdult,
+                    unlockWaitSeconds = viewModel::onUnlockWaitSeconds,
                     onHideAdult = viewModel::onHideAdult,
                     onSetTvMode = viewModel::onSetTvMode,
                     onSetStartupTab = viewModel::onSetStartupTab,
@@ -420,6 +421,7 @@ private fun SettingsContent(
     onSetStreamFormat: (String) -> Unit,
     onSetAdultPin: (String) -> Unit,
     onUnlockAdult: (String) -> Boolean,
+    unlockWaitSeconds: () -> Int,
     onHideAdult: () -> Unit,
     onSetTvMode: (String) -> Unit,
     onSetStartupTab: (String) -> Unit,
@@ -519,37 +521,8 @@ private fun SettingsContent(
             }
         }
 
-        Spacer(Modifier.height(8.dp))
-        SettingsCard(stringResource(R.string.settings_display)) {
-            listOf(
-                "auto" to stringResource(R.string.tv_mode_auto),
-                "tv" to stringResource(R.string.tv_mode_tv),
-                "phone" to stringResource(R.string.tv_mode_phone),
-            ).forEach { (value, label) ->
-                val isSelected = tvMode == value
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isSelected) {
-                            onSetTvMode(value)
-                        }
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(
-                        selected = isSelected,
-                        onClick = { if (!isSelected) onSetTvMode(value) },
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-            }
-        }
-
+        // Startscherm boven Weergave: de instelling die klanten het eerst
+        // zoeken, en zo is direct zichtbaar dat de pagina verder scrolt.
         Spacer(Modifier.height(8.dp))
         SettingsCard(stringResource(R.string.settings_startup_screen)) {
             listOf(
@@ -571,6 +544,37 @@ private fun SettingsContent(
                     RadioButton(
                         selected = isSelected,
                         onClick = { if (!isSelected) onSetStartupTab(value) },
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        SettingsCard(stringResource(R.string.settings_display)) {
+            listOf(
+                "auto" to stringResource(R.string.tv_mode_auto),
+                "tv" to stringResource(R.string.tv_mode_tv),
+                "phone" to stringResource(R.string.tv_mode_phone),
+            ).forEach { (value, label) ->
+                val isSelected = tvMode == value
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !isSelected) {
+                            onSetTvMode(value)
+                        }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = { if (!isSelected) onSetTvMode(value) },
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(Modifier.width(12.dp))
@@ -624,6 +628,7 @@ private fun SettingsContent(
                 adult = adult,
                 onSetAdultPin = onSetAdultPin,
                 onUnlockAdult = onUnlockAdult,
+                unlockWaitSeconds = unlockWaitSeconds,
                 onHideAdult = onHideAdult,
             )
         }
@@ -639,6 +644,9 @@ private fun SettingsContent(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        // Ademruimte onderaan: maakt op tv duidelijk dat de pagina hier
+        // echt eindigt (en niet op de schermrand wordt afgekapt).
+        Spacer(Modifier.height(32.dp))
     }
 }
 
@@ -647,6 +655,7 @@ private fun AdultContentSection(
     adult: nl.streamfix.data.local.AdultState,
     onSetAdultPin: (String) -> Unit,
     onUnlockAdult: (String) -> Boolean,
+    unlockWaitSeconds: () -> Int,
     onHideAdult: () -> Unit,
 ) {
     var showSet by remember { mutableStateOf(false) }
@@ -708,12 +717,21 @@ private fun AdultContentSection(
         }
     }
     if (showEnter) {
+        val context = LocalContext.current
         PinDialog(
             title = stringResource(R.string.pin_enter_title),
             confirmLabel = stringResource(R.string.pin_show),
             requireConfirm = false,
             onDismiss = { showEnter = false },
             validate = { it.isNotEmpty() },
+            failMessage = {
+                val wait = unlockWaitSeconds()
+                if (wait > 0) {
+                    context.getString(R.string.pin_error_locked, wait)
+                } else {
+                    context.getString(R.string.pin_error_incorrect)
+                }
+            },
         ) { pin ->
             val ok = onUnlockAdult(pin)
             if (ok) showEnter = false
@@ -733,6 +751,9 @@ private fun PinDialog(
     requireConfirm: Boolean,
     onDismiss: () -> Unit,
     validate: (String) -> Boolean,
+    // Optionele dynamische foutmelding bij een afgewezen pincode
+    // (bijv. cooldown-wachttijd); null = standaard "Onjuiste pincode."
+    failMessage: (() -> String)? = null,
     onConfirm: (String) -> Boolean,
 ) {
     var pin by remember { mutableStateOf("") }
@@ -783,7 +804,7 @@ private fun PinDialog(
                     !validate(pin) -> error = errTooShort
                     requireConfirm && pin != repeat -> error = errNotEqual
                     else -> if (!onConfirm(pin)) {
-                        error = errIncorrect
+                        error = failMessage?.invoke() ?: errIncorrect
                     }
                 }
             }) { Text(confirmLabel) }

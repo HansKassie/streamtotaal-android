@@ -207,6 +207,7 @@
     <string name="pin_error_too_short">PIN is too short (at least 4 digits).</string>
     <string name="pin_error_not_equal">The PINs do not match.</string>
     <string name="pin_error_incorrect">Incorrect PIN.</string>
+    <string name="pin_error_locked">Too many wrong attempts. Wait %1$d seconds and try again.</string>
 
     <string name="logout">Sign out</string>
     <string name="settings_account">Account</string>
