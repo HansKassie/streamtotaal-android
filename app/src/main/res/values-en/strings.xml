@@ -183,6 +183,7 @@
     <!-- ===== Startup screen choice. ===== -->
     <string name="settings_startup_screen">Startup screen</string>
     <string name="startup_tab_history">Continue watching</string>
+    <string name="startup_tab_last">Last channel (play immediately)</string>
 
     <!-- ===== Stream format. ===== -->
     <string name="settings_stream_format">Stream format</string>

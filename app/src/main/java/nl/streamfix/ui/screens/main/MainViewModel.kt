@@ -16,6 +16,7 @@ import nl.streamfix.domain.model.AccountInfo
 import nl.streamfix.domain.usecase.GetAccountInfoUseCase
 import nl.streamfix.domain.usecase.GetAccountsUseCase
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
+import nl.streamfix.domain.usecase.GetLastWatchedChannelUseCase
 import nl.streamfix.domain.usecase.LogoutUseCase
 import nl.streamfix.domain.usecase.RemoveAccountUseCase
 import nl.streamfix.domain.usecase.SetStreamFormatUseCase
@@ -38,6 +39,7 @@ class MainViewModel @Inject constructor(
     private val setStreamFormat: SetStreamFormatUseCase,
     private val logout: LogoutUseCase,
     private val appSettings: AppSettingsStore,
+    private val getLastWatched: GetLastWatchedChannelUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MainState())
@@ -52,6 +54,9 @@ class MainViewModel @Inject constructor(
     val startupTab: StateFlow<String> = appSettings.startupTab
 
     fun onSetStartupTab(value: String) = appSettings.setStartupTab(value)
+
+    /** (categoryId, channelId) voor "start met laatste zender", of null. */
+    fun startupChannel(): Pair<String, String>? = getLastWatched()
 
     fun onSetAdultPin(pin: String) = appSettings.setPin(pin)
 

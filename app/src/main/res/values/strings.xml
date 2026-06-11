@@ -183,6 +183,7 @@
     <!-- ===== Startscherm-keuze. ===== -->
     <string name="settings_startup_screen">Startscherm</string>
     <string name="startup_tab_history">Verder kijken</string>
+    <string name="startup_tab_last">Laatste zender (direct afspelen)</string>
 
     <!-- ===== Stream Format. ===== -->
     <string name="settings_stream_format">Stream Format</string>

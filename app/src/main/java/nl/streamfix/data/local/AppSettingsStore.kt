@@ -13,11 +13,13 @@ import kotlinx.coroutines.flow.asStateFlow
 const val STARTUP_TAB_LIVE = "live_tv"
 const val STARTUP_TAB_FAVORITES = "favorites"
 const val STARTUP_TAB_HISTORY = "history"
+const val STARTUP_TAB_LAST = "last_channel"
 
 private val VALID_STARTUP_TABS = setOf(
     STARTUP_TAB_LIVE,
     STARTUP_TAB_FAVORITES,
     STARTUP_TAB_HISTORY,
+    STARTUP_TAB_LAST,
 )
 
 /**
@@ -57,6 +59,21 @@ class AppSettingsStore @Inject constructor(
         val safe = if (value in VALID_STARTUP_TABS) value else STARTUP_TAB_LIVE
         prefs.edit().putString(KEY_STARTUP_TAB, safe).apply()
         _startupTab.value = safe
+    }
+
+    /** Laatst bekeken live-kanaal, accountgebonden opgeslagen. */
+    fun setLastChannel(accountId: String, categoryId: String, channelId: String) {
+        prefs.edit()
+            .putString(KEY_LAST_CHANNEL, "$accountId|$categoryId|$channelId")
+            .apply()
+    }
+
+    /** (categoryId, channelId) of null als er voor dit account niets is. */
+    fun lastChannel(accountId: String): Pair<String, String>? {
+        val raw = prefs.getString(KEY_LAST_CHANNEL, null) ?: return null
+        val parts = raw.split('|')
+        if (parts.size != 3 || parts[0] != accountId) return null
+        return parts[1] to parts[2]
     }
 
     private var sessionUnlocked = false
@@ -108,6 +125,7 @@ class AppSettingsStore @Inject constructor(
         const val KEY_HIDDEN = "adult_hidden"
         const val KEY_TV_MODE = "tv_mode"
         const val KEY_STARTUP_TAB = "startup_tab"
+        const val KEY_LAST_CHANNEL = "last_channel"
     }
 }
 

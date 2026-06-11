@@ -16,6 +16,7 @@ import nl.streamfix.domain.usecase.GetLiveCastUrlUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
 import nl.streamfix.domain.usecase.GetStreamUrlUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
+import nl.streamfix.domain.usecase.RememberLastChannelUseCase
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.ui.navigation.Routes
 import nl.streamfix.ui.screens.live.FAVORITES_ID
@@ -38,6 +39,7 @@ class PlayerViewModel @Inject constructor(
     private val observeFavorites: ObserveFavoritesUseCase,
     private val getStreamUrl: GetStreamUrlUseCase,
     private val getCastUrl: GetLiveCastUrlUseCase,
+    private val rememberLast: RememberLastChannelUseCase,
 ) : ViewModel() {
 
     private val categoryId: String =
@@ -81,6 +83,9 @@ class PlayerViewModel @Inject constructor(
             _state.update { it.copy(streamUrl = null) }
             return
         }
+        // Voor "start met laatste zender"; volwassen kanalen worden in de
+        // repository overgeslagen.
+        rememberLast(categoryId, channel)
         _state.update {
             it.copy(
                 title = channel.name,

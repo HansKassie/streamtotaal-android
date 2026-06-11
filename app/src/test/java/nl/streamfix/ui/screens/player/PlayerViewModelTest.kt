@@ -17,6 +17,7 @@ import nl.streamfix.domain.usecase.GetLiveCastUrlUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
 import nl.streamfix.domain.usecase.GetStreamUrlUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
+import nl.streamfix.domain.usecase.RememberLastChannelUseCase
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.ui.navigation.Routes
 import org.junit.After
@@ -56,6 +57,14 @@ private class FakeLiveRepository(
         startMs: Long,
         durationMin: Int,
     ): String? = null
+
+    var remembered: Pair<String, String>? = null
+
+    override fun rememberLastChannel(categoryId: String, channel: LiveChannel) {
+        remembered = categoryId to channel.id
+    }
+
+    override fun lastWatchedChannel(): Pair<String, String>? = remembered
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -81,9 +90,8 @@ class PlayerViewModelTest {
 
     private fun viewModel(
         startChannelId: String = "",
-        channels: List<LiveChannel> = sample,
+        repo: FakeLiveRepository = FakeLiveRepository(sample),
     ): PlayerViewModel {
-        val repo = FakeLiveRepository(channels)
         val handle = SavedStateHandle(
             mapOf(
                 Routes.PLAYER_ARG_CATEGORY to "cat1",
@@ -96,6 +104,7 @@ class PlayerViewModelTest {
             observeFavorites = ObserveFavoritesUseCase(repo),
             getStreamUrl = GetStreamUrlUseCase(repo),
             getCastUrl = GetLiveCastUrlUseCase(repo),
+            rememberLast = RememberLastChannelUseCase(repo),
         )
     }
 
@@ -144,6 +153,17 @@ class PlayerViewModelTest {
         advanceUntilIdle()
         vm.selectChannel("c3")
         assertEquals("c3", vm.state.value.currentChannelId)
+    }
+
+    @Test
+    fun bekekenKanaalWordtOnthouden() = runTest(dispatcher) {
+        val repo = FakeLiveRepository(sample)
+        val vm = viewModel(startChannelId = "c1", repo = repo)
+        advanceUntilIdle()
+        assertEquals("cat1" to "c1", repo.remembered)
+
+        vm.next()
+        assertEquals("cat1" to "c2", repo.remembered)
     }
 
     @Test

@@ -164,4 +164,18 @@ class LiveRepositoryImpl @Inject constructor(
             extension = "ts",
         )
     }
+
+    override fun rememberLastChannel(categoryId: String, channel: LiveChannel) {
+        val acc = activeXtream() ?: return
+        // Volwassen kanalen niet onthouden: automatisch afspelen bij start
+        // zou anders het PIN-slot omzeilen (sessie-ontgrendeling vervalt
+        // bij afsluiten).
+        if (AdultContent.isAdult(channel.name)) return
+        appSettings.setLastChannel(acc.id, categoryId, channel.id)
+    }
+
+    override fun lastWatchedChannel(): Pair<String, String>? {
+        val acc = activeXtream() ?: return null
+        return appSettings.lastChannel(acc.id)
+    }
 }

@@ -29,4 +29,10 @@ interface LiveRepository {
         startMs: Long,
         durationMin: Int,
     ): String?
+
+    /** Onthoudt het laatst bekeken live-kanaal (start met laatste zender). */
+    fun rememberLastChannel(categoryId: String, channel: LiveChannel)
+
+    /** (categoryId, channelId) van het laatst bekeken kanaal, of null. */
+    fun lastWatchedChannel(): Pair<String, String>?
 }

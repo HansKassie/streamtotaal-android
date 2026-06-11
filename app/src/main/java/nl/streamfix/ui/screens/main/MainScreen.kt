@@ -74,6 +74,7 @@ import nl.streamfix.BuildConfig
 import nl.streamfix.R
 import nl.streamfix.data.local.STARTUP_TAB_FAVORITES
 import nl.streamfix.data.local.STARTUP_TAB_HISTORY
+import nl.streamfix.data.local.STARTUP_TAB_LAST
 import nl.streamfix.data.local.STARTUP_TAB_LIVE
 import nl.streamfix.domain.model.Account
 import nl.streamfix.ui.formatXtreamExpiry
@@ -140,6 +141,21 @@ fun MainScreen(
     var selected by rememberSaveable { mutableIntStateOf(initialTabIndex) }
     val context = LocalContext.current
     var backArmed by remember { mutableStateOf(false) }
+
+    // "Start met laatste zender": eenmalig per koude start direct de speler
+    // openen. rememberSaveable voorkomt herhalen na terugkeren uit de speler
+    // of na procesherstel; zonder onthouden kanaal blijft het bij Live TV.
+    var autoOpenedLast by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!autoOpenedLast) {
+            autoOpenedLast = true
+            if (viewModel.startupTab.value == STARTUP_TAB_LAST) {
+                viewModel.startupChannel()?.let { (cat, ch) ->
+                    onOpenChannel(cat, ch)
+                }
+            }
+        }
+    }
 
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLoggedOut()
@@ -477,6 +493,7 @@ private fun SettingsContent(
                 STARTUP_TAB_LIVE to stringResource(R.string.tab_live_tv),
                 STARTUP_TAB_FAVORITES to stringResource(R.string.common_favorites),
                 STARTUP_TAB_HISTORY to stringResource(R.string.startup_tab_history),
+                STARTUP_TAB_LAST to stringResource(R.string.startup_tab_last),
             ).forEach { (value, label) ->
                 val isSelected = startupTab == value
                 Row(

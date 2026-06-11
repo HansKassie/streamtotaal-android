@@ -57,3 +57,18 @@ class GetTimeshiftUrlUseCase @Inject constructor(
         durationMin: Int,
     ): String? = repository.timeshiftUrl(channelId, startMs, durationMin)
 }
+
+class RememberLastChannelUseCase @Inject constructor(
+    private val repository: LiveRepository,
+) {
+    operator fun invoke(categoryId: String, channel: LiveChannel) =
+        repository.rememberLastChannel(categoryId, channel)
+}
+
+class GetLastWatchedChannelUseCase @Inject constructor(
+    private val repository: LiveRepository,
+) {
+    /** (categoryId, channelId) of null. */
+    operator fun invoke(): Pair<String, String>? =
+        repository.lastWatchedChannel()
+}
