@@ -51,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -68,6 +69,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import nl.streamfix.BuildConfig
@@ -155,6 +159,35 @@ fun MainScreen(
                 }
             }
         }
+    }
+
+    // Op tv verlaat je de app meestal met Home; dat is een hervatting, geen
+    // koude start. Daarom ook openen bij terugkeer uit de achtergrond. We
+    // luisteren op de Activity-lifecycle en NIET op de nav-entry: die stopt
+    // ook bij navigeren naar de speler en zou bij elke terugkeer opnieuw
+    // openen. Zat de kijker nog in de speler bij het weggaan, dan is dit
+    // scherm niet gecomposed en herstelt Android de speler zelf.
+    DisposableEffect(Unit) {
+        val lifecycle = (context as? LifecycleOwner)?.lifecycle
+        var leftApp = false
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> leftApp = true
+                Lifecycle.Event.ON_START -> {
+                    if (leftApp) {
+                        leftApp = false
+                        if (viewModel.startupTab.value == STARTUP_TAB_LAST) {
+                            viewModel.startupChannel()?.let { (cat, ch) ->
+                                onOpenChannel(cat, ch)
+                            }
+                        }
+                    }
+                }
+                else -> Unit
+            }
+        }
+        lifecycle?.addObserver(observer)
+        onDispose { lifecycle?.removeObserver(observer) }
     }
 
     LaunchedEffect(state.loggedOut) {
