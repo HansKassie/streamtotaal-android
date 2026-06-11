@@ -6,9 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.File
+import java.security.MessageDigest
 
 /** Downloadt de update-APK en start de Android-installer. */
 object AppUpdater {
@@ -17,6 +20,8 @@ object AppUpdater {
 
     /**
      * Downloadt de update-APK en start bij succes de installer.
+     * [expectedSha256] (hex, optioneel) wordt na de download tegen het
+     * bestand geverifieerd; mismatch = mislukt, geen installatie.
      * [onResult] wordt op de main-thread aangeroepen: true = download
      * geslaagd en installer gestart, false = mislukt (geen install
      * geprobeerd, zodat de UI een nette fout/retry kan tonen).
@@ -24,6 +29,7 @@ object AppUpdater {
     fun downloadAndInstall(
         context: Context,
         apkUrl: String,
+        expectedSha256: String? = null,
         onResult: (Boolean) -> Unit = {},
     ) {
         val dm = context.getSystemService(Context.DOWNLOAD_SERVICE)
@@ -55,17 +61,48 @@ object AppUpdater {
                 )
                 if (done != id) return
                 runCatching { ctx.unregisterReceiver(this) }
-                val ok = downloadSucceeded(dm, id)
-                if (ok) install(ctx)
-                onResult(ok)
+                // Hashen van ~9 MB hoort niet op de main-thread; goAsync
+                // houdt de receiver levend tot het resultaat er is.
+                val pending = goAsync()
+                Thread {
+                    val ok = downloadSucceeded(dm, id) &&
+                        checksumOk(ctx, expectedSha256)
+                    Handler(Looper.getMainLooper()).post {
+                        if (ok) install(ctx)
+                        onResult(ok)
+                        pending.finish()
+                    }
+                }.start()
             }
         }
         ContextCompat.registerReceiver(
             context.applicationContext,
             receiver,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            ContextCompat.RECEIVER_EXPORTED,
+            // Systeembroadcasts komen ook bij NOT_EXPORTED gewoon aan;
+            // andere apps kunnen deze receiver dan niet bereiken.
+            ContextCompat.RECEIVER_NOT_EXPORTED,
         )
+    }
+
+    /** True als er geen hash is meegegeven of het bestand exact klopt. */
+    private fun checksumOk(context: Context, expected: String?): Boolean {
+        if (expected.isNullOrBlank()) return true
+        return runCatching {
+            val file = File(context.getExternalFilesDir(null), SUBPATH)
+            val digest = MessageDigest.getInstance("SHA-256")
+            file.inputStream().use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) break
+                    digest.update(buffer, 0, read)
+                }
+            }
+            digest.digest()
+                .joinToString("") { "%02x".format(it) }
+                .equals(expected.trim(), ignoreCase = true)
+        }.getOrDefault(false)
     }
 
     private fun downloadSucceeded(dm: DownloadManager, id: Long): Boolean =

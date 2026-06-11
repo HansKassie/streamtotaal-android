@@ -14,6 +14,8 @@ data class UpdateManifestDto(
     @SerialName("releaseNotes") val releaseNotes: String? = null,
     @SerialName("minSupportedVersionCode") val minSupported: JsonElement? = null,
     @SerialName("forceUpdate") val forceUpdate: JsonElement? = null,
+    /** Optionele SHA-256 (hex) van de APK; ontbreken = geen verificatie. */
+    @SerialName("sha256") val sha256: String? = null,
 ) {
     val versionCodeValue: Int?
         get() = versionCode?.jsonPrimitive?.contentOrNull?.toIntOrNull()

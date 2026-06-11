@@ -63,6 +63,9 @@ class MainViewModel @Inject constructor(
     /** True bij juiste pincode (sessie ontgrendeld). */
     fun onUnlockAdult(pin: String): Boolean = appSettings.unlock(pin)
 
+    /** Resterende cooldown in seconden na te veel foute pincodes. */
+    fun onUnlockWaitSeconds(): Int = appSettings.unlockRetryWaitSeconds()
+
     fun onHideAdult() = appSettings.hideAgain()
 
     init {

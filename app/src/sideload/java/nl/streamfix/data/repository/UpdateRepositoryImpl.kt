@@ -32,6 +32,10 @@ class UpdateRepositoryImpl @Inject constructor(
                 releaseNotes = m.releaseNotes?.takeIf { it.isNotBlank() }
                     ?: "Nieuwe versie beschikbaar.",
                 mandatory = mandatory,
+                // Alleen een geldig 64-teken hex-veld doorgeven; een typfout
+                // in version.json mag de update niet onmogelijk maken.
+                sha256 = m.sha256?.trim()
+                    ?.takeIf { it.matches(Regex("(?i)[0-9a-f]{64}")) },
             )
         }.getOrNull()
     }

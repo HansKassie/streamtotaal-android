@@ -104,10 +104,33 @@ class AppSettingsStore @Inject constructor(
         emit()
     }
 
+    // Brute-force-rem: na te veel foute pogingen even wachten. In geheugen
+    // (vervalt bij herstart); het dreigingsmodel is een kind met de
+    // afstandsbediening, geen aanvaller met adb.
+    private var failedUnlockAttempts = 0
+    private var unlockLockedUntilMs = 0L
+
+    /** Resterende wachttijd in seconden na te veel foute pogingen (0 = vrij). */
+    fun unlockRetryWaitSeconds(): Int {
+        val left = unlockLockedUntilMs - System.currentTimeMillis()
+        return if (left > 0) ((left + 999) / 1000).toInt() else 0
+    }
+
     /** Ontgrendelt voor deze sessie als de pincode klopt. */
     fun unlock(pin: String): Boolean {
+        if (unlockRetryWaitSeconds() > 0) return false
         val saved = prefs.getString(KEY_PIN, null)
-        if (saved.isNullOrBlank() || saved != pin) return false
+        if (saved.isNullOrBlank() || saved != pin) {
+            failedUnlockAttempts++
+            if (failedUnlockAttempts >= MAX_UNLOCK_ATTEMPTS) {
+                failedUnlockAttempts = 0
+                unlockLockedUntilMs =
+                    System.currentTimeMillis() + UNLOCK_LOCKOUT_MS
+            }
+            return false
+        }
+        failedUnlockAttempts = 0
+        unlockLockedUntilMs = 0L
         sessionUnlocked = true
         emit()
         return true
@@ -126,6 +149,8 @@ class AppSettingsStore @Inject constructor(
         const val KEY_TV_MODE = "tv_mode"
         const val KEY_STARTUP_TAB = "startup_tab"
         const val KEY_LAST_CHANNEL = "last_channel"
+        const val MAX_UNLOCK_ATTEMPTS = 5
+        const val UNLOCK_LOCKOUT_MS = 30_000L
     }
 }
 

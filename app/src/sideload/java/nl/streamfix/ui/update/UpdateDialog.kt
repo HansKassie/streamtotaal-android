@@ -31,7 +31,11 @@ fun UpdateDialog(
 
     fun start() {
         phase = Phase.Downloading
-        AppUpdater.downloadAndInstall(context, update.apkUrl) { ok ->
+        AppUpdater.downloadAndInstall(
+            context,
+            update.apkUrl,
+            update.sha256,
+        ) { ok ->
             if (ok) onDismiss() else phase = Phase.Failed
         }
     }

@@ -5,4 +5,6 @@ data class UpdateInfo(
     val apkUrl: String,
     val releaseNotes: String,
     val mandatory: Boolean,
+    /** SHA-256 (hex) van de APK om de download te verifieren, of null. */
+    val sha256: String? = null,
 )
