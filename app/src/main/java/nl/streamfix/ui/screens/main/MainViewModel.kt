@@ -1,9 +1,13 @@
 package nl.streamfix.ui.screens.main
 
+import android.content.Context
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import nl.streamfix.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,6 +44,7 @@ class MainViewModel @Inject constructor(
     private val logout: LogoutUseCase,
     private val appSettings: AppSettingsStore,
     private val getLastWatched: GetLastWatchedChannelUseCase,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MainState())
@@ -87,9 +92,18 @@ class MainViewModel @Inject constructor(
     }
 
     fun onSwitchProvider(id: String) {
+        // Naam voor de wissel-bevestiging uit de huidige lijst halen.
+        val name = _state.value.accounts.firstOrNull { it.id == id }?.displayName
         viewModelScope.launch {
             switchAccount(id)
             reload()
+            if (name != null) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.provider_switched_toast, name),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
         }
     }
 

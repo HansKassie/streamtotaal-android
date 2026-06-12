@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -73,6 +74,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -290,6 +292,20 @@ fun MainScreen(
             TopAppBar(
                 title = { Text(stringResource(tabs[selected].labelRes)) },
                 actions = {
+                    // Bij meerdere abonnementen: altijd zichtbaar welk
+                    // abonnement actief is, op elk tabblad.
+                    if (state.accounts.size > 1) {
+                        Text(
+                            text = state.account?.displayName.orEmpty(),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .widthIn(max = 200.dp)
+                                .padding(end = 8.dp),
+                        )
+                    }
                     IconButton(onClick = onOpenNowOnTv) {
                         Icon(
                             Icons.Filled.Schedule,

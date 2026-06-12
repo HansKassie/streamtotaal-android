@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
@@ -207,6 +208,14 @@ fun LiveTvScreen(
                     var provMenuOpen by remember { mutableStateOf(false) }
                     Box(modifier = Modifier.padding(start = 8.dp)) {
                         OutlinedButton(onClick = { provMenuOpen = true }) {
+                            // Account-icoon: onderscheidt deze knop in een
+                            // oogopslag van de categorie-knop ernaast.
+                            Icon(
+                                Icons.Filled.AccountCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(6.dp))
                             Text(
                                 text = providers
                                     .firstOrNull { it.first == activeProviderId }
