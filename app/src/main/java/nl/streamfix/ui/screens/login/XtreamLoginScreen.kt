@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nl.streamfix.R
+import nl.streamfix.ui.dpadExitField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -152,7 +153,9 @@ fun XtreamLoginScreen(
                     keyboardActions = KeyboardActions(
                         onNext = { focusManager.moveFocus(FocusDirection.Down) },
                     ),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .dpadExitField(focusManager)
+                        .fillMaxWidth(),
                 )
                 Spacer(Modifier.height(16.dp))
                 OutlinedTextField(
@@ -168,7 +171,9 @@ fun XtreamLoginScreen(
                     keyboardActions = KeyboardActions(
                         onNext = { focusManager.moveFocus(FocusDirection.Down) },
                     ),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .dpadExitField(focusManager)
+                        .fillMaxWidth(),
                 )
                 Spacer(Modifier.height(16.dp))
             }
@@ -182,7 +187,9 @@ fun XtreamLoginScreen(
                 keyboardActions = KeyboardActions(
                     onNext = { focusManager.moveFocus(FocusDirection.Down) },
                 ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .dpadExitField(focusManager)
+                    .fillMaxWidth(),
             )
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(
@@ -221,7 +228,9 @@ fun XtreamLoginScreen(
                         if (state.canSubmit) viewModel.submit()
                     },
                 ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .dpadExitField(focusManager)
+                    .fillMaxWidth(),
             )
 
             state.errorMessage?.let { message ->

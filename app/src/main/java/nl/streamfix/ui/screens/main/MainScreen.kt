@@ -68,6 +68,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -86,6 +87,7 @@ import nl.streamfix.data.local.STARTUP_TAB_HISTORY
 import nl.streamfix.data.local.STARTUP_TAB_LAST
 import nl.streamfix.data.local.STARTUP_TAB_LIVE
 import nl.streamfix.domain.model.Account
+import nl.streamfix.ui.dpadExitField
 import nl.streamfix.ui.formatXtreamExpiry
 import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.screens.catchup.CatchupScreen
@@ -760,6 +762,7 @@ private fun PinDialog(
     var repeat by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     val numeric = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+    val focusManager = LocalFocusManager.current
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -773,6 +776,7 @@ private fun PinDialog(
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = numeric,
+                    modifier = Modifier.dpadExitField(focusManager),
                 )
                 if (requireConfirm) {
                     Spacer(Modifier.height(8.dp))
@@ -787,6 +791,7 @@ private fun PinDialog(
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = numeric,
+                        modifier = Modifier.dpadExitField(focusManager),
                     )
                 }
                 error?.let {
