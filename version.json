@@ -1,8 +1,9 @@
 {
-  "versionCode": 11,
-  "versionName": "1.0.10",
+  "versionCode": 12,
+  "versionName": "1.0.11",
   "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-  "releaseNotes": "Stabiliteits- en prestatieverbeteringen: sneller zoeken, zuiniger geheugengebruik op tv-boxen, kleine verbeteringen in de gids en het casten, en automatische opschoning van oude gidsgegevens.",
+  "sha256": "65291796c10322f3a15ba26f893e5811ff9d2ab62ff9662d6ab7a2b68f0e432a",
+  "releaseNotes": "Nieuw op tv: kies bij meerdere abonnementen direct bovenin Live TV van provider, met de actieve provider altijd in beeld. Naast de zenderlijst zie je nu de programma-informatie van de gekozen zender. Kies onder Meer > Startscherm waarmee de app opent, inclusief 'Laatste zender' om meteen verder te kijken. Verder: vlottere bediening met de afstandsbediening, minder bufferen en stabiliteitsverbeteringen.",
   "minSupportedVersionCode": 1,
   "forceUpdate": false
 }
