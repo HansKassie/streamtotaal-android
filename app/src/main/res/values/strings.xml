@@ -27,8 +27,8 @@
     <string name="login_title">Xtream Codes</string>
     <string name="login_choose_provider_label">Kies je provider</string>
     <string name="login_choose_provider_placeholder">Kies provider</string>
-    <string name="login_custom_provider">Eigen provider</string>
-    <string name="login_add_custom_provider">+ Eigen provider toevoegen</string>
+    <string name="login_custom_provider">Overige</string>
+    <string name="login_add_custom_provider">Overige</string>
     <string name="login_provider_name">Providernaam</string>
     <string name="login_server_url">Server-URL</string>
     <string name="login_username">Gebruikersnaam</string>
