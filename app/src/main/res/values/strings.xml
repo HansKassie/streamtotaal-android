@@ -118,6 +118,7 @@
     <!-- ===== Update-dialoog (sideload). ===== -->
     <string name="update_dialog_title_format">Update beschikbaar (%1$s)</string>
     <string name="update_downloading">Bezig met downloaden van de update...</string>
+    <string name="update_downloading_progress">Bezig met downloaden van de update... %1$d%%</string>
     <string name="update_failed">De update is mislukt. Controleer je internetverbinding en probeer het opnieuw.</string>
     <string name="update_now">Nu updaten</string>
     <string name="update_retry">Opnieuw proberen</string>
@@ -132,6 +133,7 @@
     <string name="player_subtitles">Ondertitels</string>
     <string name="player_subtitles_off">Uit</string>
     <string name="player_connection_problem">Verbindingsprobleem. We proberen het automatisch opnieuw.</string>
+    <string name="player_channel_load_failed">Kan de zenderlijst niet laden. Controleer je verbinding en probeer opnieuw.</string>
     <string name="player_channel_unavailable">Deze zender is niet meer beschikbaar. Ga terug en kies een andere zender.</string>
     <string name="player_retry_now">Nu opnieuw proberen</string>
     <string name="player_resume_dialog_title">Verder kijken?</string>

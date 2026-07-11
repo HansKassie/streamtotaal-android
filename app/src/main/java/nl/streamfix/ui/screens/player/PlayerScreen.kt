@@ -315,7 +315,14 @@ fun PlayerScreen(
             })
         }
 
-        if (state.loadFailed) {
+        if (state.channelLoadFailed) {
+            PlayerErrorOverlay(
+                messageRes = R.string.player_channel_load_failed,
+                onRetry = viewModel::retryLoad,
+            )
+        }
+
+        if (state.channelUnavailable) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

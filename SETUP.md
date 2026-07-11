@@ -131,11 +131,13 @@ Eenmalig (Cloudflare-dashboard):
 
 Per nieuwe versie uitrollen:
 1. Verhoog `versionCode` (en `versionName`) in `app/build.gradle.kts`.
-2. Bouw de gesigneerde release-APK, hernoem naar `streamtotaal.apk`.
-3. Upload in de R2-bucket (Objects > Upload) `streamtotaal.apk` en het
-   bijgewerkte `version.json` (overschrijf de bestaande objecten;
-   zelfde `versionCode`/`versionName` als de APK, nieuwe `releaseNotes`).
-4. Cloudflare-cache kan kort blijven hangen; eventueel die twee objecten
+2. Werk de `releaseNotes` in `version.json` bij.
+3. Draai `.\gradlew.bat prepareSideloadRelease`. Dit bouwt de gesigneerde
+   sideload-APK, kopieert hem naar `streamtotaal.apk` en synchroniseert
+   versie + SHA-256 in `version.json` met het gebouwde bestand.
+4. Upload in de R2-bucket (Objects > Upload) `streamtotaal.apk` en het
+   bijgewerkte `version.json` (overschrijf de bestaande objecten).
+5. Cloudflare-cache kan kort blijven hangen; eventueel die twee objecten
    purgen via Caching > Configuration.
 
 Migratie vanaf GitHub: reeds geinstalleerde apps (<= 1.0.5) pollen nog de

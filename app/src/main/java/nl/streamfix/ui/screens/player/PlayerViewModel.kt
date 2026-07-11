@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,9 +31,14 @@ data class PlayerUiState(
     val channels: List<LiveChannel> = emptyList(),
     val currentChannelId: String? = null,
     val hasLast: Boolean = false,
-    /** True als de kanalenlijst leeg bleef (categorie weg/onbereikbaar). */
-    val loadFailed: Boolean = false,
+    val channelUnavailable: Boolean = false,
+    val channelLoadFailed: Boolean = false,
 )
+
+private sealed interface ChannelLoadResult {
+    data class Success(val channels: List<LiveChannel>) : ChannelLoadResult
+    data object Failure : ChannelLoadResult
+}
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
@@ -59,12 +65,24 @@ class PlayerViewModel @Inject constructor(
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
 
     init {
+        load()
+    }
+
+    private fun load() {
         viewModelScope.launch {
-            channels = loadChannels()
+            _state.update {
+                it.copy(channelUnavailable = false, channelLoadFailed = false)
+            }
+            when (val result = loadChannels()) {
+                ChannelLoadResult.Failure -> {
+                    channels = emptyList()
+                    _state.update { it.copy(channelLoadFailed = true) }
+                    return@launch
+                }
+                is ChannelLoadResult.Success -> channels = result.channels
+            }
             if (channels.isEmpty()) {
-                // Categorie verdwenen of onbereikbaar: nette melding
-                // i.p.v. een zwart scherm dat eeuwig buffert.
-                _state.update { it.copy(loadFailed = true) }
+                _state.update { it.copy(channelUnavailable = true) }
                 return@launch
             }
             // Bewuste tv-conventie: bestaat het (opgeslagen) startkanaal
@@ -77,17 +95,25 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadChannels(): List<LiveChannel> =
-        if (categoryId == FAVORITES_ID) {
-            observeFavorites().first()
-        } else {
-            // Leeg (bijv. vanuit zoeken) = alle kanalen, anders de categorie.
-            val cat = categoryId.ifBlank { null }
-            when (val r = getChannels(cat)) {
-                is AppResult.Success -> r.data
-                is AppResult.Failure -> emptyList()
+    private suspend fun loadChannels(): ChannelLoadResult =
+        try {
+            if (categoryId == FAVORITES_ID) {
+                ChannelLoadResult.Success(observeFavorites().first())
+            } else {
+                // Leeg (bijv. vanuit zoeken) = alle kanalen, anders de categorie.
+                val cat = categoryId.ifBlank { null }
+                when (val r = getChannels(cat)) {
+                    is AppResult.Success -> ChannelLoadResult.Success(r.data)
+                    is AppResult.Failure -> ChannelLoadResult.Failure
+                }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            ChannelLoadResult.Failure
         }
+
+    fun retryLoad() = load()
 
     private fun emitCurrent() {
         val channel = channels.getOrNull(index)

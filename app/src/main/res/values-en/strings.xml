@@ -118,6 +118,7 @@
     <!-- ===== Update dialog (sideload). ===== -->
     <string name="update_dialog_title_format">Update available (%1$s)</string>
     <string name="update_downloading">Downloading the update...</string>
+    <string name="update_downloading_progress">Downloading the update... %1$d%%</string>
     <string name="update_failed">The update failed. Check your internet connection and try again.</string>
     <string name="update_now">Update now</string>
     <string name="update_retry">Try again</string>
@@ -132,6 +133,7 @@
     <string name="player_subtitles">Subtitles</string>
     <string name="player_subtitles_off">Off</string>
     <string name="player_connection_problem">Connection problem. Retrying automatically.</string>
+    <string name="player_channel_load_failed">Unable to load the channel list. Check your connection and try again.</string>
     <string name="player_channel_unavailable">This channel is no longer available. Go back and pick another channel.</string>
     <string name="player_retry_now">Retry now</string>
     <string name="player_resume_dialog_title">Continue watching?</string>

@@ -1,14 +1,12 @@
 package nl.streamfix.ui.update
 
 import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import androidx.core.content.ContextCompat
+import android.os.SystemClock
 import androidx.core.content.FileProvider
 import java.io.File
 import java.security.MessageDigest
@@ -17,6 +15,14 @@ import java.security.MessageDigest
 object AppUpdater {
 
     private const val SUBPATH = "updates/streamtotaal-update.apk"
+    private const val POLL_INTERVAL_MS = 500L
+    private const val STALL_TIMEOUT_MS = 90_000L
+
+    private data class DownloadState(
+        val status: Int,
+        val downloadedBytes: Long,
+        val totalBytes: Long,
+    )
 
     /**
      * Downloadt de update-APK en start bij succes de installer.
@@ -30,6 +36,7 @@ object AppUpdater {
         context: Context,
         apkUrl: String,
         expectedSha256: String? = null,
+        onProgress: (Int) -> Unit = {},
         onResult: (Boolean) -> Unit = {},
     ) {
         val dm = context.getSystemService(Context.DOWNLOAD_SERVICE)
@@ -54,37 +61,64 @@ object AppUpdater {
             return
         }
 
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(ctx: Context, intent: Intent) {
-                val done = intent.getLongExtra(
-                    DownloadManager.EXTRA_DOWNLOAD_ID, -1L,
-                )
-                if (done != id) return
-                runCatching { ctx.unregisterReceiver(this) }
-                // Hashen van ~9 MB hoort niet op de main-thread; goAsync
-                // houdt de receiver levend tot het resultaat er is.
-                val pending = goAsync()
-                Thread {
-                    val ok = downloadSucceeded(dm, id) &&
-                        checksumOk(ctx, expectedSha256)
-                    Handler(Looper.getMainLooper()).post {
-                        // Pas geslaagd als de installer ook echt opent;
-                        // anders blijft de dialog in de retry-staat.
-                        val installed = ok && install(ctx)
-                        onResult(installed)
-                        pending.finish()
+        // Niet vertrouwen op alleen ACTION_DOWNLOAD_COMPLETE: sommige
+        // Android-fabrikanten leveren die dynamische broadcast niet altijd
+        // af. Polling geeft bovendien voortgang en kan een vastgelopen
+        // DownloadManager-taak gecontroleerd afbreken.
+        val appContext = context.applicationContext
+        val mainHandler = Handler(Looper.getMainLooper())
+        Thread {
+            var lastBytes = -1L
+            var lastProgressAt = SystemClock.elapsedRealtime()
+            var lastPercent = -1
+            var downloadOk = false
+
+            while (true) {
+                val state = queryDownload(dm, id) ?: break
+                val now = SystemClock.elapsedRealtime()
+                if (state.downloadedBytes > lastBytes) {
+                    lastBytes = state.downloadedBytes
+                    lastProgressAt = now
+                }
+                if (state.totalBytes > 0) {
+                    val percent = (
+                        state.downloadedBytes * 100 / state.totalBytes
+                    ).toInt().coerceIn(0, 100)
+                    if (percent != lastPercent) {
+                        lastPercent = percent
+                        mainHandler.post { onProgress(percent) }
                     }
-                }.start()
+                }
+
+                when (state.status) {
+                    DownloadManager.STATUS_SUCCESSFUL -> {
+                        downloadOk = checksumOk(appContext, expectedSha256)
+                        break
+                    }
+                    DownloadManager.STATUS_FAILED -> break
+                }
+
+                if (now - lastProgressAt >= STALL_TIMEOUT_MS) {
+                    runCatching { dm.remove(id) }
+                    break
+                }
+                try {
+                    Thread.sleep(POLL_INTERVAL_MS)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    break
+                }
             }
+
+            mainHandler.post {
+                val installed = downloadOk && install(appContext)
+                onResult(installed)
+            }
+        }.apply {
+            name = "StreamTotaal-update"
+            isDaemon = true
+            start()
         }
-        ContextCompat.registerReceiver(
-            context.applicationContext,
-            receiver,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            // Systeembroadcasts komen ook bij NOT_EXPORTED gewoon aan;
-            // andere apps kunnen deze receiver dan niet bereiken.
-            ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
     }
 
     /** True als er geen hash is meegegeven of het bestand exact klopt. */
@@ -107,19 +141,30 @@ object AppUpdater {
         }.getOrDefault(false)
     }
 
-    private fun downloadSucceeded(dm: DownloadManager, id: Long): Boolean =
+    private fun queryDownload(dm: DownloadManager, id: Long): DownloadState? =
         runCatching {
             dm.query(DownloadManager.Query().setFilterById(id)).use { c ->
                 if (c != null && c.moveToFirst()) {
-                    val status = c.getInt(
-                        c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS),
+                    DownloadState(
+                        status = c.getInt(
+                            c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS),
+                        ),
+                        downloadedBytes = c.getLong(
+                            c.getColumnIndexOrThrow(
+                                DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR,
+                            ),
+                        ),
+                        totalBytes = c.getLong(
+                            c.getColumnIndexOrThrow(
+                                DownloadManager.COLUMN_TOTAL_SIZE_BYTES,
+                            ),
+                        ),
                     )
-                    status == DownloadManager.STATUS_SUCCESSFUL
                 } else {
-                    false
+                    null
                 }
             }
-        }.getOrDefault(false)
+        }.getOrNull()
 
     /** True als de Android-installer daadwerkelijk is geopend. */
     private fun install(context: Context): Boolean {

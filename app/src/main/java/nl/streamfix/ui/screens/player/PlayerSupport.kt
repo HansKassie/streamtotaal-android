@@ -1,5 +1,6 @@
 package nl.streamfix.ui.screens.player
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -275,7 +276,10 @@ private fun OptionRow(
 
 /** Zichtbare foutmelding met handmatige retry over de speler heen. */
 @Composable
-fun PlayerErrorOverlay(onRetry: () -> Unit) {
+fun PlayerErrorOverlay(
+    @StringRes messageRes: Int = R.string.player_connection_problem,
+    onRetry: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -288,7 +292,7 @@ fun PlayerErrorOverlay(onRetry: () -> Unit) {
             modifier = Modifier.padding(24.dp),
         ) {
             Text(
-                text = stringResource(R.string.player_connection_problem),
+                text = stringResource(messageRes),
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
             )

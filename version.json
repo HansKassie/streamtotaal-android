@@ -1,9 +1,9 @@
 {
-  "versionCode": 13,
-  "versionName": "1.0.12",
-  "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-  "sha256": "49e551cc629013ac0f33170d9cc54c0bf65916907ce0a141d4e0f121cff86394",
-  "releaseNotes": "Providerkeuze uitgebreid en verduidelijkt. Via 'Overige' kun je eenvoudig zelf een providernaam en server-URL invoeren.",
-  "minSupportedVersionCode": 1,
-  "forceUpdate": false
+    "versionCode": 14,
+    "versionName": "1.0.13",
+    "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
+    "sha256": "eee38cc67900f0b2f69c6a7425550137957d990d20af4bc830a73ff50ef67552",
+    "releaseNotes": "De updater toont nu downloadvoortgang en herstelt netjes als een download vastloopt. Tijdelijke netwerk- of providerfouten bij het openen van een zender kunnen direct opnieuw worden geprobeerd.",
+    "minSupportedVersionCode": 1,
+    "forceUpdate": false
 }

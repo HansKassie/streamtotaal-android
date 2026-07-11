@@ -22,19 +22,24 @@ fun UpdateDialog(
 ) {
     val context = LocalContext.current
     var phase by remember { mutableStateOf(Phase.Idle) }
+    var downloadProgress by remember { mutableStateOf<Int?>(null) }
 
     val body = when (phase) {
         Phase.Idle -> update.releaseNotes
-        Phase.Downloading -> stringResource(R.string.update_downloading)
+        Phase.Downloading -> downloadProgress?.let {
+            stringResource(R.string.update_downloading_progress, it)
+        } ?: stringResource(R.string.update_downloading)
         Phase.Failed -> stringResource(R.string.update_failed)
     }
 
     fun start() {
         phase = Phase.Downloading
+        downloadProgress = null
         AppUpdater.downloadAndInstall(
-            context,
-            update.apkUrl,
-            update.sha256,
+            context = context,
+            apkUrl = update.apkUrl,
+            expectedSha256 = update.sha256,
+            onProgress = { downloadProgress = it },
         ) { ok ->
             if (ok) onDismiss() else phase = Phase.Failed
         }

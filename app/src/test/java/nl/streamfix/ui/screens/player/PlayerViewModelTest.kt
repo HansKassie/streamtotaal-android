@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
+import nl.streamfix.domain.model.AppError
 import nl.streamfix.domain.repository.LiveRepository
 import nl.streamfix.domain.usecase.GetLiveCastUrlUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
@@ -31,12 +32,14 @@ import org.junit.Test
 private class FakeLiveRepository(
     private val channels: List<LiveChannel>,
 ) : LiveRepository {
+    var channelResult: AppResult<List<LiveChannel>> = AppResult.Success(channels)
+
     override suspend fun getCategories(): AppResult<List<LiveCategory>> =
         AppResult.Success(emptyList())
 
     override suspend fun getChannels(
         categoryId: String?,
-    ): AppResult<List<LiveChannel>> = AppResult.Success(channels)
+    ): AppResult<List<LiveChannel>> = channelResult
 
     override fun observeFavorites(): Flow<List<LiveChannel>> =
         flowOf(channels)
@@ -156,14 +159,32 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun legeCategorieGeeftLoadFailed() = runTest(dispatcher) {
+    fun legeCategorieGeeftNietBeschikbaar() = runTest(dispatcher) {
         val vm = viewModel(
             startChannelId = "c1",
             repo = FakeLiveRepository(emptyList()),
         )
         advanceUntilIdle()
-        assertTrue(vm.state.value.loadFailed)
+        assertTrue(vm.state.value.channelUnavailable)
+        assertFalse(vm.state.value.channelLoadFailed)
         assertEquals(null, vm.state.value.streamUrl)
+    }
+
+    @Test
+    fun netwerkfoutKanOpnieuwWordenGeprobeerd() = runTest(dispatcher) {
+        val repo = FakeLiveRepository(sample).apply {
+            channelResult = AppResult.Failure(AppError.NetworkUnavailable)
+        }
+        val vm = viewModel(startChannelId = "c1", repo = repo)
+        advanceUntilIdle()
+        assertTrue(vm.state.value.channelLoadFailed)
+        assertFalse(vm.state.value.channelUnavailable)
+
+        repo.channelResult = AppResult.Success(sample)
+        vm.retryLoad()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.channelLoadFailed)
+        assertEquals("c1", vm.state.value.currentChannelId)
     }
 
     @Test
