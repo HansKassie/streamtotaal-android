@@ -30,16 +30,15 @@ val LocalIsTv = compositionLocalOf { false }
  * focus naar het vorige/volgende element.
  */
 fun Modifier.dpadExitField(focusManager: FocusManager): Modifier =
-    onPreviewKeyEvent { e ->
-        if (e.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
-        when (e.key) {
-            Key.DirectionDown -> {
-                focusManager.moveFocus(FocusDirection.Down); true
+    composed {
+        if (!LocalIsTv.current) return@composed this
+        onPreviewKeyEvent { e ->
+            if (e.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
+            when (e.key) {
+                Key.DirectionDown -> focusManager.moveFocus(FocusDirection.Down)
+                Key.DirectionUp -> focusManager.moveFocus(FocusDirection.Up)
+                else -> false
             }
-            Key.DirectionUp -> {
-                focusManager.moveFocus(FocusDirection.Up); true
-            }
-            else -> false
         }
     }
 

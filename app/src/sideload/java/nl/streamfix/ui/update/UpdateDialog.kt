@@ -41,7 +41,11 @@ fun UpdateDialog(
             expectedSha256 = update.sha256,
             onProgress = { downloadProgress = it },
         ) { ok ->
-            if (ok) onDismiss() else phase = Phase.Failed
+            when {
+                !ok -> phase = Phase.Failed
+                update.mandatory -> phase = Phase.Idle
+                else -> onDismiss()
+            }
         }
     }
 
