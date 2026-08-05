@@ -1,9 +1,9 @@
 {
-    "versionCode": 14,
-    "versionName": "1.0.13",
+    "versionCode": 15,
+    "versionName": "1.0.14",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-    "sha256": "eee38cc67900f0b2f69c6a7425550137957d990d20af4bc830a73ff50ef67552",
-    "releaseNotes": "De updater toont nu downloadvoortgang en herstelt netjes als een download vastloopt. Tijdelijke netwerk- of providerfouten bij het openen van een zender kunnen direct opnieuw worden geprobeerd.",
+    "sha256": "33cc8439899dac51d42e79484fb6c803776f5d537e3d2fe9b0ad0c41f4db1baf",
+    "releaseNotes": "StreamTotaal heeft een nieuw logo. Ga je terug uit een zender, dan staat de lijst weer op die zender in plaats van bovenaan; heb je in de speler doorgezapt, dan land je op de zender waar je eindigde. Vanuit de zenderlijst omhoog gaat nu naar de categoriekeuze. Verder: vlotter wisselen tussen categorie\u00ebn en providers, en met een pincode ingesteld blijft volwassen content ook in je favorieten verborgen.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }
