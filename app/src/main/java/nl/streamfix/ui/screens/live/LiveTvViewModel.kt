@@ -20,6 +20,7 @@ import nl.streamfix.domain.model.LiveChannel
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
 import nl.streamfix.domain.usecase.GetChannelEpgUseCase
 import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
+import nl.streamfix.domain.usecase.GetLastWatchedChannelUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
 import nl.streamfix.domain.usecase.SetFavoriteUseCase
@@ -50,9 +51,37 @@ class LiveTvViewModel @Inject constructor(
     private val setFavorite: SetFavoriteUseCase,
     private val getChannelEpg: GetChannelEpgUseCase,
     private val getActiveAccount: GetActiveAccountUseCase,
+    private val getLastWatched: GetLastWatchedChannelUseCase,
     private val appSettings: AppSettingsStore,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
+
+    /**
+     * Laatst gefocuste kanaal in de lijst. Staat bewust hier en niet in
+     * rememberSaveable: bij het openen van de speler verdwijnt het scherm
+     * uit de compositie en bleek die state niet betrouwbaar terug te komen,
+     * waardoor de lijst weer bovenaan begon.
+     */
+    private var focusedChannelId: String? = null
+
+    fun onChannelFocused(channelId: String) {
+        focusedChannelId = channelId
+    }
+
+    /**
+     * Waar de focus heen moet bij het (her)opbouwen van de lijst. Eerst de
+     * zender waar de speler op eindigde: wie daar met de pijltjes doorzapt,
+     * verwacht bij terugkeer die zender en niet degene die hij aantikte.
+     * Daarna het laatst gefocuste item, anders het begin van de lijst.
+     */
+    fun focusTargetId(channels: List<LiveChannel>): String? {
+        if (channels.isEmpty()) return null
+        val watched = getLastWatched()?.second
+        if (watched != null && channels.any { it.id == watched }) return watched
+        val focused = focusedChannelId
+        if (focused != null && channels.any { it.id == focused }) return focused
+        return channels.first().id
+    }
 
     private val _state = MutableStateFlow(LiveUiState())
     val state: StateFlow<LiveUiState> = _state.asStateFlow()

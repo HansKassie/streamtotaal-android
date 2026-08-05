@@ -41,7 +41,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
@@ -88,9 +87,10 @@ fun LiveTvScreen(
     val isTv = LocalIsTv.current
     val rowFocus = remember { FocusRequester() }
     val listState = rememberLazyListState()
-    var lastFocusedId by rememberSaveable { mutableStateOf<String?>(null) }
-    val targetId = state.visibleChannels.firstOrNull { it.id == lastFocusedId }?.id
-        ?: state.visibleChannels.firstOrNull()?.id
+    // Doel wordt door de ViewModel bepaald (die overleeft het bezoek aan de
+    // speler) en hier alleen vastgehouden om de FocusRequester aan de juiste
+    // rij te hangen.
+    var targetId by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(
         isTv,
         state.selectedCategoryId,
@@ -99,10 +99,14 @@ fun LiveTvScreen(
         if (!isTv || state.visibleChannels.isEmpty()) {
             return@LaunchedEffect
         }
+        val target = viewModel.focusTargetId(state.visibleChannels)
+        targetId = target
         val idx = state.visibleChannels
-            .indexOfFirst { it.id == targetId }
+            .indexOfFirst { it.id == target }
             .coerceAtLeast(0)
         listState.scrollToItem(idx)
+        // Een frame wachten zodat de recompositie de FocusRequester aan de
+        // juiste rij heeft gekoppeld voordat we focus vragen.
         withFrameNanos {}
         runCatching { rowFocus.requestFocus() }
     }
@@ -306,7 +310,7 @@ fun LiveTvScreen(
                         onInfo = { onOpenChannelEpg(channel.id, channel.name) },
                         onFocused = {
                             focusedChannel = channel
-                            lastFocusedId = channel.id
+                            viewModel.onChannelFocused(channel.id)
                         },
                     )
                 }
