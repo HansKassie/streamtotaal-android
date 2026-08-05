@@ -3,13 +3,24 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Glyph blijft binnen de adaptive-icon safe zone (midden ~66dp) -->
-    <group android:scaleX="0.62" android:scaleY="0.62" android:pivotX="54" android:pivotY="54">
+    <!--
+      Tech TV-glyph binnen de adaptive-icon safe zone. Schaal 0.70 (niet
+      hoger): bij 0.76 stak de rechterrand van de signaalpillen ~2dp buiten
+      de veilige cirkel van 33dp, waardoor ronde launcher-maskers er een
+      stukje af sneden.
+    -->
+    <group android:scaleX="0.70" android:scaleY="0.70" android:pivotX="54" android:pivotY="54">
         <path
             android:fillColor="#F97316"
-            android:pathData="M54,46 m-30,0 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0" />
+            android:pathData="M80,27 L34,27 C25.2,27 18,34.2 18,43 L18,65 C18,73.8 25.2,81 34,81 L80,81 L80,73 L34,73 C29.6,73 26,69.4 26,65 L26,43 C26,38.6 29.6,35 34,35 L80,35 Z" />
+        <path
+            android:fillColor="#F97316"
+            android:pathData="M84,40 L94,40 C96.2,40 98,41.8 98,44 C98,46.2 96.2,48 94,48 L84,48 C81.8,48 80,46.2 80,44 C80,41.8 81.8,40 84,40 Z" />
+        <path
+            android:fillColor="#F97316"
+            android:pathData="M84,60 L94,60 C96.2,60 98,61.8 98,64 C98,66.2 96.2,68 94,68 L84,68 C81.8,68 80,66.2 80,64 C80,61.8 81.8,60 84,60 Z" />
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M46,30 L46,62 L74,46 Z" />
+            android:pathData="M44,40 L44,68 L69,54 Z" />
     </group>
 </vector>
