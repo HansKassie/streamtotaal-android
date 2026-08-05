@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MASTER voor de Android TV-banner (variant C: beeldmerk links, naam rechts).
+
+  Werkwijze:
+  1. Open dit bestand in je vectorprogramma.
+  2. Vervang het lettertype in de <text> door het gewenste font en zet de
+     tekst daarna om naar contouren ("convert to path" / "outline text").
+  3. Exporteer als PNG 320x180 -> app/src/main/res/drawable-xhdpi/tv_banner.png
+     Optioneel 480x270 -> drawable-xxhdpi/tv_banner.png voor 4K-tv's.
+  4. Verwijder daarna app/src/main/res/drawable/tv_banner.xml, anders staan
+     er twee bronnen voor dezelfde resourcenaam.
+
+  Kleuren: accent #F97316, achtergrond #15151A, tekst #ECECEF.
+  Het beeldmerk staat op schaal 0.62 met de oorspronkelijke 108-coordinaten,
+  zodat het identiek blijft aan het launcher-icoon en het app-logo.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"
+     viewBox="0 0 320 180">
+
+  <rect width="320" height="180" fill="#15151A"/>
+
+  <!-- Beeldmerk: identiek aan ic_streamfix_logo, geschaald en links geplaatst -->
+  <g transform="translate(18,58) scale(0.62)">
+    <path fill="#F97316"
+          d="M80,27 L34,27 C25.2,27 18,34.2 18,43 L18,65 C18,73.8 25.2,81 34,81
+             L80,81 L80,73 L34,73 C29.6,73 26,69.4 26,65 L26,43 C26,38.6 29.6,35
+             34,35 L80,35 Z"/>
+    <path fill="#F97316"
+          d="M84,40 L94,40 C96.2,40 98,41.8 98,44 C98,46.2 96.2,48 94,48 L84,48
+             C81.8,48 80,46.2 80,44 C80,41.8 81.8,40 84,40 Z"/>
+    <path fill="#F97316"
+          d="M84,60 L94,60 C96.2,60 98,61.8 98,64 C98,66.2 96.2,68 94,68 L84,68
+             C81.8,68 80,66.2 80,64 C80,61.8 81.8,60 84,60 Z"/>
+    <path fill="#FFFFFF" d="M44,40 L44,68 L69,54 Z"/>
+  </g>
+
+  <!-- Woordmerk: vervang het font en zet daarna om naar contouren -->
+  <text x="102" y="99"
+        font-family="Inter, Roboto, 'Segoe UI', system-ui, sans-serif"
+        font-size="25" font-weight="700" fill="#ECECEF">Stream<tspan
+        fill="#F97316">Totaal</tspan></text>
+</svg>
