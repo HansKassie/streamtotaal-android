@@ -25,6 +25,7 @@ import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
 import nl.streamfix.domain.usecase.SetFavoriteUseCase
 import nl.streamfix.domain.util.AppResult
+import nl.streamfix.ui.pickFocusTarget
 import nl.streamfix.ui.uiMessage
 
 const val FAVORITES_ID = "__favorites__"
@@ -74,14 +75,12 @@ class LiveTvViewModel @Inject constructor(
      * verwacht bij terugkeer die zender en niet degene die hij aantikte.
      * Daarna het laatst gefocuste item, anders het begin van de lijst.
      */
-    fun focusTargetId(channels: List<LiveChannel>): String? {
-        if (channels.isEmpty()) return null
-        val watched = getLastWatched()?.second
-        if (watched != null && channels.any { it.id == watched }) return watched
-        val focused = focusedChannelId
-        if (focused != null && channels.any { it.id == focused }) return focused
-        return channels.first().id
-    }
+    fun focusTargetId(channels: List<LiveChannel>): String? =
+        pickFocusTarget(
+            channels = channels,
+            lastWatchedId = getLastWatched()?.second,
+            lastFocusedId = focusedChannelId,
+        )
 
     private val _state = MutableStateFlow(LiveUiState())
     val state: StateFlow<LiveUiState> = _state.asStateFlow()
