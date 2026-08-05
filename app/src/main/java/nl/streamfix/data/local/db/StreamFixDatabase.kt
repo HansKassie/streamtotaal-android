@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PlaybackProgressEntity::class,
         EpgCacheEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class StreamFixDatabase : RoomDatabase() {
@@ -67,6 +67,18 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
                 "fetchedAt INTEGER NOT NULL, " +
                 "PRIMARY KEY(accountId, streamId))",
         )
+    }
+}
+
+/**
+ * Favorieten onthouden voortaan hun categorie en of ze volwassen content
+ * zijn. Bestaande rijen krijgen NULL: "nog niet geclassificeerd", zodat het
+ * filter daar terugvalt op de naamcontrole tot de backfill ze bijwerkt.
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE favorite_channels ADD COLUMN categoryId TEXT")
+        db.execSQL("ALTER TABLE favorite_channels ADD COLUMN isAdult INTEGER")
     }
 }
 

@@ -13,6 +13,7 @@ import nl.streamfix.data.local.SecureCredentialStore
 import nl.streamfix.data.local.filterActive
 import nl.streamfix.data.local.db.FavoriteChannelEntity
 import nl.streamfix.data.local.db.FavoriteDao
+import nl.streamfix.data.local.db.hiddenByAdultFilter
 import nl.streamfix.data.remote.XtreamLiveService
 import nl.streamfix.data.remote.XtreamUrls
 import nl.streamfix.domain.model.Account
@@ -50,6 +51,10 @@ class LiveRepositoryImpl @Inject constructor(
         val r = liveService.channels(
             acc.serverUrl, acc.username, acc.password, categoryId,
         )
+        // Backfill op de ONGEFILTERDE lijst: favorieten uit een volwassen
+        // categorie moeten juist geclassificeerd worden, ook (en vooral) als
+        // ze straks weggefilterd worden.
+        if (r is AppResult.Success) classifyFavorites(acc, r.data)
         if (r !is AppResult.Success || !appSettings.adultFilterActive()) return r
         // "Alle kanalen" (zoeken/gemist): kanalen uit volwassen-categorieen
         // weglaten op basis van de categorie-namen.
@@ -83,6 +88,36 @@ class LiveRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Vult ontbrekende volwassen-classificaties van favorieten aan zodra de
+     * bijbehorende kanalen toch al opgehaald zijn. Zonder dit blijft een
+     * favoriet uit een volwassen categorie met neutrale naam zichtbaar,
+     * omdat de opgeslagen rij geen categorie kent.
+     */
+    private suspend fun classifyFavorites(
+        acc: Account.Xtream,
+        channels: List<LiveChannel>,
+    ) {
+        val pending = runCatching { favoriteDao.unclassified(acc.id) }
+            .getOrDefault(emptyList())
+        if (pending.isEmpty()) return
+        val byId = channels.associateBy { it.id }
+        val adultIds = adultCategoryIds(acc)
+        pending.forEach { fav ->
+            val channel = byId[fav.channelId] ?: return@forEach
+            val adult = AdultContent.isAdult(channel.name) ||
+                (channel.categoryId != null && channel.categoryId in adultIds)
+            runCatching {
+                favoriteDao.classify(
+                    accountId = acc.id,
+                    channelId = fav.channelId,
+                    categoryId = channel.categoryId,
+                    isAdult = adult,
+                )
+            }
+        }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeFavorites(): Flow<List<LiveChannel>> =
         store.activeAccount.flatMapLatest { account ->
@@ -94,9 +129,7 @@ class LiveRepositoryImpl @Inject constructor(
                     appSettings.adultState,
                 ) { list, adult ->
                     list
-                        .filterNot {
-                            adult.filterActive && AdultContent.isAdult(it.name)
-                        }
+                        .filterNot { it.hiddenByAdultFilter(adult.filterActive) }
                         .map {
                             LiveChannel(
                                 id = it.channelId,
@@ -113,12 +146,21 @@ class LiveRepositoryImpl @Inject constructor(
     override suspend fun setFavorite(channel: LiveChannel, favorite: Boolean) {
         val acc = activeXtream() ?: return
         if (favorite) {
+            // Nu classificeren, want hier is de categorie nog bekend; later
+            // (vanuit de favorietenlijst) is die informatie weg.
+            val adult = AdultContent.isAdult(channel.name) ||
+                (
+                    channel.categoryId != null &&
+                        channel.categoryId in adultCategoryIds(acc)
+                    )
             favoriteDao.add(
                 FavoriteChannelEntity(
                     accountId = acc.id,
                     channelId = channel.id,
                     name = channel.name,
                     logoUrl = channel.logoUrl,
+                    categoryId = channel.categoryId,
+                    isAdult = adult,
                 ),
             )
         } else {
@@ -169,8 +211,11 @@ class LiveRepositoryImpl @Inject constructor(
         val acc = activeXtream() ?: return
         // Volwassen kanalen niet onthouden: automatisch afspelen bij start
         // zou anders het PIN-slot omzeilen (sessie-ontgrendeling vervalt
-        // bij afsluiten).
-        if (AdultContent.isAdult(channel.name)) return
+        // bij afsluiten). Naast de naam ook de categorie wegen; die is hier
+        // alleen bekend via de sessie-cache (deze functie is niet suspend).
+        val adultIds = adultIdsCache
+            ?.takeIf { it.first == acc.id }?.second.orEmpty()
+        if (AdultContent.isAdult(channel.name) || categoryId in adultIds) return
         appSettings.setLastChannel(acc.id, categoryId, channel.id)
     }
 
