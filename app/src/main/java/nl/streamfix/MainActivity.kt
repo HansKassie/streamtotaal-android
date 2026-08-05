@@ -41,6 +41,12 @@ class MainActivity : FragmentActivity() {
                 val state by rootViewModel.state.collectAsStateWithLifecycle()
                 val deviceIsTv = remember { DeviceMode.isTelevision(this) }
                 CompositionLocalProvider(LocalIsTv provides deviceIsTv) {
+                // De padding blijft bewust ongebruikt: deze Scaffold heeft
+                // geen balken en levert alleen de achtergrond. De schermen
+                // eronder hebben elk hun eigen Scaffold die de insets
+                // afhandelt; hier nogmaals padding zetten geeft dubbele
+                // marges.
+                @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
                 Scaffold(modifier = Modifier.fillMaxSize()) { _ ->
                     when (state) {
                         RootState.Loading -> StartupLoadingScreen()

@@ -16,6 +16,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.framework.CastButtonFactory
@@ -53,6 +54,7 @@ fun CastButton(modifier: Modifier = Modifier) {
     )
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
 internal fun mimeFor(url: String): String {
     val u = url.substringBefore('?').lowercase()
     return when {
@@ -70,6 +72,7 @@ internal fun mimeFor(url: String): String {
  * wisselt automatisch zodra een cast-sessie start of stopt. [current] is de
  * speler die de PlayerView moet tonen.
  */
+@androidx.annotation.OptIn(UnstableApi::class)
 class CastController(
     private val exo: ExoPlayer,
     castContext: CastContext?,
@@ -187,6 +190,7 @@ class CastController(
     }
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun rememberCastController(exo: ExoPlayer): CastController {
     val castContext = rememberCastContext()

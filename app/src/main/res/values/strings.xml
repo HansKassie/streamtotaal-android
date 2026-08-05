@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">StreamTotaal</string>
+    <!-- Merknaam: bewust niet vertaald. -->
+    <string name="app_name" translatable="false">StreamTotaal</string>
 
     <!-- ===== Foutmeldingen (AppError -> uiMessage). ===== -->
     <string name="err_invalid_credentials">Gebruikersnaam of wachtwoord klopt niet.</string>

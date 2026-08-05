@@ -57,7 +57,9 @@ import nl.streamfix.R
  *    weer te haperen na een hiccup.
  *  - HTTP read-timeout 15s voorkomt dat trage IPTV-panels meteen falen.
  */
-@OptIn(UnstableApi::class)
+// androidx.annotation.OptIn (niet kotlin.OptIn): alleen die vorm herkent
+// Media3's lint-check UnsafeOptInUsageError.
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun rememberStreamFixExoPlayer(): ExoPlayer {
     val context = LocalContext.current

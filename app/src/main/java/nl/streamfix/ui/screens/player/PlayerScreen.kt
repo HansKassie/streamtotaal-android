@@ -59,6 +59,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import nl.streamfix.R
@@ -69,6 +70,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(
     onBack: () -> Unit,
