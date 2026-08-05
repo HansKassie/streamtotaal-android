@@ -1,6 +1,7 @@
 package nl.streamfix.data.remote
 
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.streamfix.domain.model.LiveCategory
@@ -26,6 +27,9 @@ class XtreamVodService @Inject constructor(
                     LiveCategory(id = id, name = dto.categoryName ?: id)
                 },
             )
+        } catch (e: CancellationException) {
+            // Annulering (bijv. snelle categoriewissel) is geen fout.
+            throw e
         } catch (e: Exception) {
             AppResult.Failure(XtreamErrorMapper.map(e))
         }
@@ -55,6 +59,9 @@ class XtreamVodService @Inject constructor(
                     )
                 },
             )
+        } catch (e: CancellationException) {
+            // Annulering (bijv. snelle categoriewissel) is geen fout.
+            throw e
         } catch (e: Exception) {
             AppResult.Failure(XtreamErrorMapper.map(e))
         }
@@ -82,6 +89,9 @@ class XtreamVodService @Inject constructor(
                     )
                 },
             )
+        } catch (e: CancellationException) {
+            // Annulering (bijv. snelle categoriewissel) is geen fout.
+            throw e
         } catch (e: Exception) {
             AppResult.Failure(XtreamErrorMapper.map(e))
         }
@@ -119,6 +129,9 @@ class XtreamVodService @Inject constructor(
                     containerExtension = ext,
                 ),
             )
+        } catch (e: CancellationException) {
+            // Annulering (bijv. snelle categoriewissel) is geen fout.
+            throw e
         } catch (e: Exception) {
             AppResult.Failure(XtreamErrorMapper.map(e))
         }

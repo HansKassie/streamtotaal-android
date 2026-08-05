@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import nl.streamfix.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -77,8 +78,12 @@ class MainViewModel @Inject constructor(
         reload()
     }
 
+    private var reloadJob: Job? = null
+
     private fun reload() {
-        viewModelScope.launch {
+        // Snel achter elkaar wisselen: alleen het laatste antwoord telt.
+        reloadJob?.cancel()
+        reloadJob = viewModelScope.launch {
             val account = getActiveAccount.once()
             val accounts = getAccounts()
             _state.update {

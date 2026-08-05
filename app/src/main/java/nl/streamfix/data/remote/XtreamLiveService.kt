@@ -3,6 +3,7 @@ package nl.streamfix.data.remote
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.streamfix.R
@@ -28,6 +29,9 @@ class XtreamLiveService @Inject constructor(
                 LiveCategory(id = id, name = dto.categoryName ?: id)
             }
             AppResult.Success(result)
+        } catch (e: CancellationException) {
+            // Annulering (bijv. snelle categoriewissel) is geen fout.
+            throw e
         } catch (e: Exception) {
             AppResult.Failure(XtreamErrorMapper.map(e))
         }
@@ -59,6 +63,9 @@ class XtreamLiveService @Inject constructor(
                 )
             }
             AppResult.Success(result)
+        } catch (e: CancellationException) {
+            // Annulering (bijv. snelle categoriewissel) is geen fout.
+            throw e
         } catch (e: Exception) {
             AppResult.Failure(XtreamErrorMapper.map(e))
         }

@@ -2,6 +2,7 @@ package nl.streamfix.data.remote
 
 import android.util.Base64
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.streamfix.domain.model.EpgProgramme
@@ -36,6 +37,9 @@ class XtreamEpgService @Inject constructor(
                 }
                 .sortedBy { it.startMs }
             AppResult.Success(programmes)
+        } catch (e: CancellationException) {
+            // Annulering (bijv. snelle categoriewissel) is geen fout.
+            throw e
         } catch (e: Exception) {
             AppResult.Failure(XtreamErrorMapper.map(e))
         }
@@ -67,6 +71,9 @@ class XtreamEpgService @Inject constructor(
                 }
                 .sortedBy { it.startMs }
             AppResult.Success(programmes)
+        } catch (e: CancellationException) {
+            // Annulering (bijv. snelle categoriewissel) is geen fout.
+            throw e
         } catch (e: Exception) {
             AppResult.Failure(XtreamErrorMapper.map(e))
         }

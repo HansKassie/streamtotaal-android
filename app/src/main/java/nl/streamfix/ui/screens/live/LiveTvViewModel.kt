@@ -9,6 +9,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -64,6 +65,24 @@ class LiveTvViewModel @Inject constructor(
 
     private var favorites: List<LiveChannel> = emptyList()
 
+    private var categoriesJob: Job? = null
+    private var channelsJob: Job? = null
+
+    /**
+     * Hoogt op bij elke provider- of filterwissel. Een laadactie onthoudt de
+     * generatie waarin hij startte; komt het antwoord later binnen dan is het
+     * verouderd en wordt het genegeerd. Nodig naast [Job.cancel] omdat
+     * annuleren pas bij het volgende suspension-punt aankomt, en omdat
+     * categorie-ids per provider hergebruikt kunnen worden.
+     */
+    private var loadGeneration = 0
+
+    private fun startFreshLoad() {
+        loadGeneration++
+        categoriesJob?.cancel()
+        channelsJob?.cancel()
+    }
+
     init {
         viewModelScope.launch {
             observeFavorites().collect { favs ->
@@ -90,6 +109,7 @@ class LiveTvViewModel @Inject constructor(
                 if (first || id != lastId) {
                     first = false
                     lastId = id
+                    startFreshLoad()
                     _state.value = LiveUiState()
                     epgRequested.clear()
                     _epg.value = emptyMap()
@@ -100,14 +120,21 @@ class LiveTvViewModel @Inject constructor(
         // Volwassen-zichtbaarheid gewijzigd: categorieen opnieuw laden
         // (gefilterd); favorieten blijven, zelfde provider.
         viewModelScope.launch {
-            appSettings.adultState.drop(1).collect { loadCategories() }
+            appSettings.adultState.drop(1).collect {
+                startFreshLoad()
+                loadCategories()
+            }
         }
     }
 
     private fun loadCategories() {
+        val gen = loadGeneration
+        categoriesJob?.cancel()
         _state.update { it.copy(isLoading = true, errorMessage = null) }
-        viewModelScope.launch {
-            when (val result = getCategories()) {
+        categoriesJob = viewModelScope.launch {
+            val result = getCategories()
+            if (gen != loadGeneration) return@launch
+            when (result) {
                 is AppResult.Success -> {
                     _state.update { it.copy(isLoading = false, categories = result.data) }
                     val first = result.data.firstOrNull()?.id
@@ -125,14 +152,24 @@ class LiveTvViewModel @Inject constructor(
     }
 
     fun selectCategory(categoryId: String) {
+        val gen = loadGeneration
+        channelsJob?.cancel()
         _state.update { it.copy(selectedCategoryId = categoryId, query = "") }
         if (categoryId == FAVORITES_ID) {
             _state.update { it.copy(channels = favorites, isLoading = false) }
             return
         }
         _state.update { it.copy(isLoading = true, errorMessage = null) }
-        viewModelScope.launch {
-            when (val result = getChannels(categoryId)) {
+        channelsJob = viewModelScope.launch {
+            val result = getChannels(categoryId)
+            // Verouderd antwoord: andere provider/filter, of de gebruiker
+            // koos inmiddels een andere categorie.
+            if (gen != loadGeneration ||
+                _state.value.selectedCategoryId != categoryId
+            ) {
+                return@launch
+            }
+            when (result) {
                 is AppResult.Success ->
                     _state.update {
                         it.copy(isLoading = false, channels = result.data)

@@ -1,6 +1,7 @@
 package nl.streamfix.data.remote
 
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.streamfix.data.remote.dto.XtreamUserInfoDto
@@ -37,6 +38,9 @@ class XtreamAuthService @Inject constructor(
                     AppResult.Failure(AppError.InvalidCredentials)
                 else -> AppResult.Success(XtreamAuthData(base, info))
             }
+        } catch (e: CancellationException) {
+            // Annulering (bijv. snelle providerwissel) is geen fout.
+            throw e
         } catch (e: Exception) {
             AppResult.Failure(XtreamErrorMapper.map(e))
         }

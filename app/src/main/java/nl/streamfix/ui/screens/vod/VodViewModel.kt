@@ -9,6 +9,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -55,6 +56,18 @@ class VodViewModel @Inject constructor(
     private val _state = MutableStateFlow(VodUiState())
     val state: StateFlow<VodUiState> = _state.asStateFlow()
 
+    private var categoriesJob: Job? = null
+    private var itemsJob: Job? = null
+
+    /** Zie LiveTvViewModel: negeert antwoorden van een oudere generatie. */
+    private var loadGeneration = 0
+
+    private fun startFreshLoad() {
+        loadGeneration++
+        categoriesJob?.cancel()
+        itemsJob?.cancel()
+    }
+
     init {
         viewModelScope.launch {
             observeFavorites().collect { favs ->
@@ -70,20 +83,28 @@ class VodViewModel @Inject constructor(
                 if (first || id != lastId) {
                     first = false
                     lastId = id
+                    startFreshLoad()
                     _state.value = VodUiState()
                     if (acc != null) loadCategories()
                 }
             }
         }
         viewModelScope.launch {
-            appSettings.adultState.drop(1).collect { loadCategories() }
+            appSettings.adultState.drop(1).collect {
+                startFreshLoad()
+                loadCategories()
+            }
         }
     }
 
     private fun loadCategories() {
+        val gen = loadGeneration
+        categoriesJob?.cancel()
         _state.update { it.copy(isLoading = true, errorMessage = null) }
-        viewModelScope.launch {
-            when (val r = getCategories()) {
+        categoriesJob = viewModelScope.launch {
+            val result = getCategories()
+            if (gen != loadGeneration) return@launch
+            when (val r = result) {
                 is AppResult.Success -> {
                     val cats = listOf(
                         LiveCategory(
@@ -103,6 +124,8 @@ class VodViewModel @Inject constructor(
     }
 
     fun selectCategory(categoryId: String) {
+        val gen = loadGeneration
+        itemsJob?.cancel()
         if (categoryId == FAVORITES_ID) {
             _state.update {
                 it.copy(
@@ -122,8 +145,14 @@ class VodViewModel @Inject constructor(
                 errorMessage = null,
             )
         }
-        viewModelScope.launch {
-            when (val r = getItems(categoryId)) {
+        itemsJob = viewModelScope.launch {
+            val result = getItems(categoryId)
+            if (gen != loadGeneration ||
+                _state.value.selectedCategoryId != categoryId
+            ) {
+                return@launch
+            }
+            when (val r = result) {
                 is AppResult.Success ->
                     _state.update { it.copy(isLoading = false, items = r.data) }
                 is AppResult.Failure ->
