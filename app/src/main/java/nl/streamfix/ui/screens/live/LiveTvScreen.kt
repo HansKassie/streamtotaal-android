@@ -46,7 +46,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.KeyEventType
@@ -69,6 +71,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// kotlin.OptIn: focusProperties.enter is een echte Compose-experimentele API
+// (anders dan Media3's UnstableApi, dat om androidx.annotation.OptIn vraagt).
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun LiveTvScreen(
     onOpenChannel: (categoryId: String, channelId: String) -> Unit,
@@ -157,11 +162,16 @@ fun LiveTvScreen(
                 ?.name ?: categoryPlaceholder
         }
 
+        val categoryFocus = remember { FocusRequester() }
         val categoryButton: @Composable () -> Unit = {
             Box {
                 OutlinedButton(
                     onClick = { menuOpen = true },
-                    modifier = if (isTv) Modifier else Modifier.fillMaxWidth(),
+                    modifier = if (isTv) {
+                        Modifier.focusRequester(categoryFocus)
+                    } else {
+                        Modifier.fillMaxWidth()
+                    },
                 ) {
                     Text(
                         text = selectedLabel,
@@ -201,7 +211,14 @@ fun LiveTvScreen(
 
         if (isTv) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
+                // Vanuit de zenderlijst omhoog hoort de focus op de categorie
+                // te landen. Zonder deze regel kiest focus-search de knop die
+                // geometrisch het dichtst bij het midden van de brede
+                // kanaalrij ligt, en dat is de providerknop rechts.
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .focusProperties { enter = { categoryFocus } }
+                    .focusGroup(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 categoryButton()
