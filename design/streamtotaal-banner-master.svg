@@ -7,7 +7,11 @@
   2. Vervang het lettertype in de <text> door het gewenste font en zet de
      tekst daarna om naar contouren ("convert to path" / "outline text").
   3. Exporteer als PNG 320x180 -> app/src/main/res/drawable-xhdpi/tv_banner.png
-     Optioneel 480x270 -> drawable-xxhdpi/tv_banner.png voor 4K-tv's.
+     Dit is de noodzakelijke hoofdvariant: vrijwel alle Android TV's melden
+     zich als xhdpi, ook 4K-toestellen (Android kiest op gerapporteerde
+     schermdichtheid, niet op resolutie). Een extra 480x270 in
+     drawable-xxhdpi is optionele scherpte voor het zeldzame toestel dat
+     zich wel als xxhdpi meldt.
   4. Verwijder daarna app/src/main/res/drawable/tv_banner.xml, anders staan
      er twee bronnen voor dezelfde resourcenaam.
 
