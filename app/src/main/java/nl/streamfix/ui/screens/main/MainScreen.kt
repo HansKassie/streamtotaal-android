@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,9 +22,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Schedule
@@ -31,13 +36,14 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -47,14 +53,19 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,6 +78,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -76,6 +88,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -116,6 +129,16 @@ private enum class Tab(
     Catchup(R.string.tab_catchup, Icons.Filled.Replay),
     History(R.string.tab_history, Icons.Filled.History),
     Settings(R.string.tab_settings, Icons.Filled.Settings),
+}
+
+private enum class SettingsSection(
+    @StringRes val labelRes: Int,
+    val icon: ImageVector,
+) {
+    Account(R.string.settings_account, Icons.Filled.AccountCircle),
+    Preferences(R.string.settings_section_preferences, Icons.Filled.Tune),
+    Parental(R.string.settings_section_parental, Icons.Filled.Lock),
+    App(R.string.settings_section_app, Icons.Filled.Info),
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
@@ -255,29 +278,24 @@ fun MainScreen(
                 onOpenChannel = onOpenCatchupChannel,
             )
             Tab.History -> HistoryScreen(onResume = onResumeMedia)
-            Tab.Settings -> Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                SettingsContent(
-                    state = state,
-                    adult = adultState,
-                    tvMode = tvMode,
-                    startupTab = startupTab,
-                    onSwitchProvider = viewModel::onSwitchProvider,
-                    onRemoveProvider = viewModel::onRemoveProvider,
-                    onSetStreamFormat = viewModel::onSetStreamFormat,
-                    onSetAdultPin = viewModel::onSetAdultPin,
-                    onUnlockAdult = viewModel::onUnlockAdult,
-                    unlockWaitSeconds = viewModel::onUnlockWaitSeconds,
-                    onHideAdult = viewModel::onHideAdult,
-                    onSetTvMode = viewModel::onSetTvMode,
-                    onSetStartupTab = viewModel::onSetStartupTab,
-                    onAddProvider = onAddProvider,
-                    onOpenConnectionTest = onOpenConnectionTest,
-                    onLogout = viewModel::onLogout,
-                )
-            }
+            Tab.Settings -> SettingsContent(
+                state = state,
+                adult = adultState,
+                tvMode = tvMode,
+                startupTab = startupTab,
+                onSwitchProvider = viewModel::onSwitchProvider,
+                onRemoveProvider = viewModel::onRemoveProvider,
+                onSetStreamFormat = viewModel::onSetStreamFormat,
+                onSetAdultPin = viewModel::onSetAdultPin,
+                onUnlockAdult = viewModel::onUnlockAdult,
+                unlockWaitSeconds = viewModel::onUnlockWaitSeconds,
+                onHideAdult = viewModel::onHideAdult,
+                onSetTvMode = viewModel::onSetTvMode,
+                onSetStartupTab = viewModel::onSetStartupTab,
+                onAddProvider = onAddProvider,
+                onOpenConnectionTest = onOpenConnectionTest,
+                onLogout = viewModel::onLogout,
+            )
             else -> Column(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -416,20 +434,6 @@ private fun PlaceholderContent(name: String) {
 }
 
 @Composable
-private fun SettingsCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(6.dp))
-            content()
-        }
-    }
-}
-
-@Composable
 private fun SettingsContent(
     state: MainState,
     adult: nl.streamfix.data.local.AdultState,
@@ -448,224 +452,409 @@ private fun SettingsContent(
     onOpenConnectionTest: () -> Unit,
     onLogout: () -> Unit,
 ) {
-    val context = LocalContext.current
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
-    ) {
-        SettingsCard(stringResource(R.string.settings_account)) {
-            Text(
-                text = state.account?.displayName
-                    ?: stringResource(R.string.account_unknown),
-                style = MaterialTheme.typography.bodyMedium,
+    val isTv = LocalIsTv.current
+    var selected by rememberSaveable { mutableIntStateOf(0) }
+    val sections = SettingsSection.entries
+    val current = sections[selected]
+
+    val content: @Composable ColumnScope.() -> Unit = {
+        when (current) {
+            SettingsSection.Account -> AccountSettings(
+                state = state,
+                isTv = isTv,
+                onSwitchProvider = onSwitchProvider,
+                onRemoveProvider = onRemoveProvider,
+                onAddProvider = onAddProvider,
+                onOpenConnectionTest = onOpenConnectionTest,
             )
-            state.accountInfo?.let { info ->
-                val parts = listOfNotNull(
-                    info.status?.let {
-                        stringResource(R.string.account_status_prefix, it)
-                    },
-                    formatXtreamExpiry(context, info.expirationDate)?.let {
-                        stringResource(R.string.account_expiry_prefix, it)
-                    },
-                    info.maxConnections?.let {
-                        stringResource(R.string.account_max_prefix, it)
-                    },
+            SettingsSection.Preferences -> PreferenceSettings(
+                state = state,
+                tvMode = tvMode,
+                startupTab = startupTab,
+                onSetStreamFormat = onSetStreamFormat,
+                onSetTvMode = onSetTvMode,
+                onSetStartupTab = onSetStartupTab,
+            )
+            SettingsSection.Parental -> SettingsGroup(
+                stringResource(R.string.settings_adult_content),
+            ) {
+                AdultContentSection(
+                    adult = adult,
+                    onSetAdultPin = onSetAdultPin,
+                    onUnlockAdult = onUnlockAdult,
+                    unlockWaitSeconds = unlockWaitSeconds,
+                    onHideAdult = onHideAdult,
                 )
-                if (parts.isNotEmpty()) {
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = parts.joinToString("  -  "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+            }
+            SettingsSection.App -> AppSettings(onLogout)
+        }
+    }
+
+    if (isTv) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            SettingsSectionMenu(
+                sections = sections,
+                selected = selected,
+                onSelect = { selected = it },
+                modifier = Modifier
+                    .width(260.dp)
+                    .fillMaxHeight()
+                    .padding(horizontal = 12.dp, vertical = 16.dp),
+            )
+            VerticalDivider(modifier = Modifier.fillMaxHeight())
+            key(current) {
+                SettingsSectionPane(
+                    titleRes = current.labelRes,
+                    modifier = Modifier.weight(1f),
+                    content = content,
+                )
+            }
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxSize()) {
+            ScrollableTabRow(
+                selectedTabIndex = selected,
+                edgePadding = 12.dp,
+            ) {
+                sections.forEachIndexed { index, section ->
+                    Tab(
+                        selected = selected == index,
+                        onClick = { selected = index },
+                        text = { Text(stringResource(section.labelRes)) },
+                        icon = {
+                            Icon(
+                                section.icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
                     )
                 }
             }
+            key(current) {
+                SettingsSectionPane(
+                    titleRes = current.labelRes,
+                    modifier = Modifier.weight(1f),
+                    content = content,
+                )
+            }
+        }
+    }
+}
 
-            Spacer(Modifier.height(10.dp))
-            Text(
-                stringResource(R.string.settings_providers),
-                style = MaterialTheme.typography.titleSmall,
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun SettingsSectionMenu(
+    sections: List<SettingsSection>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val focusRequesters = remember {
+        List(sections.size) { FocusRequester() }
+    }
+    Column(
+        modifier = modifier
+            .focusProperties { enter = { focusRequesters[selected] } }
+            .focusGroup(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        sections.forEachIndexed { index, section ->
+            SettingsSectionButton(
+                section = section,
+                selected = selected == index,
+                onClick = { onSelect(index) },
+                modifier = Modifier.focusRequester(focusRequesters[index]),
             )
-            Spacer(Modifier.height(4.dp))
-            state.accounts.forEach { acc ->
-                val isActive = acc.id == state.account?.id
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isActive) {
-                            onSwitchProvider(acc.id)
-                        }
-                        .padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+        }
+    }
+}
+
+@Composable
+private fun SettingsSectionButton(
+    section: SettingsSection,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var focused by remember { mutableStateOf(false) }
+    val color = when {
+        focused -> MaterialTheme.colorScheme.primaryContainer
+        selected -> MaterialTheme.colorScheme.secondaryContainer
+        else -> MaterialTheme.colorScheme.surface
+    }
+    Surface(
+        color = color,
+        shape = RoundedCornerShape(6.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .onFocusChanged { focused = it.isFocused }
+            .clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                section.icon,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = stringResource(section.labelRes),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            if (selected) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsSectionPane(
+    @StringRes titleRes: Int,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+    ) {
+        Text(
+            text = stringResource(titleRes),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Spacer(Modifier.height(18.dp))
+        content()
+        Spacer(Modifier.height(32.dp))
+    }
+}
+
+@Composable
+private fun SettingsGroup(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(8.dp))
+        content()
+    }
+}
+
+@Composable
+private fun AccountSettings(
+    state: MainState,
+    isTv: Boolean,
+    onSwitchProvider: (String) -> Unit,
+    onRemoveProvider: (String) -> Unit,
+    onAddProvider: () -> Unit,
+    onOpenConnectionTest: () -> Unit,
+) {
+    val context = LocalContext.current
+    SettingsGroup(stringResource(R.string.settings_active_provider)) {
+        Text(
+            text = state.account?.displayName
+                ?: stringResource(R.string.account_unknown),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        state.accountInfo?.let { info ->
+            val parts = listOfNotNull(
+                info.status?.let {
+                    stringResource(R.string.account_status_prefix, it)
+                },
+                formatXtreamExpiry(context, info.expirationDate)?.let {
+                    stringResource(R.string.account_expiry_prefix, it)
+                },
+                info.maxConnections?.let {
+                    stringResource(R.string.account_max_prefix, it)
+                },
+            )
+            if (parts.isNotEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = parts.joinToString("  -  "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+
+    Spacer(Modifier.height(18.dp))
+    HorizontalDivider()
+    Spacer(Modifier.height(18.dp))
+    SettingsGroup(stringResource(R.string.settings_providers)) {
+        state.accounts.forEach { acc ->
+            val isActive = acc.id == state.account?.id
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isActive) {
+                        onSwitchProvider(acc.id)
+                    }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(
+                    selected = isActive,
+                    onClick = { if (!isActive) onSwitchProvider(acc.id) },
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = acc.displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = { onRemoveProvider(acc.id) },
+                    modifier = Modifier.size(36.dp),
                 ) {
-                    RadioButton(
-                        selected = isActive,
-                        onClick = { if (!isActive) onSwitchProvider(acc.id) },
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription =
+                            stringResource(R.string.provider_remove_desc),
                         modifier = Modifier.size(20.dp),
                     )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = acc.displayName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f),
-                    )
-                    IconButton(
-                        onClick = { onRemoveProvider(acc.id) },
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription =
-                                stringResource(R.string.provider_remove_desc),
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
                 }
             }
+        }
+    }
 
-            Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(18.dp))
+    if (isTv) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(
                 onClick = onAddProvider,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.welcome_add_provider))
-            }
-            Spacer(Modifier.height(8.dp))
+                modifier = Modifier.weight(1f),
+            ) { Text(stringResource(R.string.welcome_add_provider)) }
             OutlinedButton(
                 onClick = onOpenConnectionTest,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.settings_connection_test))
-            }
+                modifier = Modifier.weight(1f),
+            ) { Text(stringResource(R.string.settings_connection_test)) }
         }
-
-        // Startscherm boven Weergave: de instelling die klanten het eerst
-        // zoeken, en zo is direct zichtbaar dat de pagina verder scrolt.
+    } else {
+        OutlinedButton(
+            onClick = onAddProvider,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(stringResource(R.string.welcome_add_provider)) }
         Spacer(Modifier.height(8.dp))
-        SettingsCard(stringResource(R.string.settings_startup_screen)) {
-            listOf(
-                STARTUP_TAB_LIVE to stringResource(R.string.tab_live_tv),
-                STARTUP_TAB_FAVORITES to stringResource(R.string.common_favorites),
-                STARTUP_TAB_HISTORY to stringResource(R.string.startup_tab_history),
-                STARTUP_TAB_LAST to stringResource(R.string.startup_tab_last),
-            ).forEach { (value, label) ->
-                val isSelected = startupTab == value
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isSelected) {
-                            onSetStartupTab(value)
-                        }
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(
-                        selected = isSelected,
-                        onClick = { if (!isSelected) onSetStartupTab(value) },
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-            }
-        }
+        OutlinedButton(
+            onClick = onOpenConnectionTest,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(stringResource(R.string.settings_connection_test)) }
+    }
+}
 
-        Spacer(Modifier.height(8.dp))
-        SettingsCard(stringResource(R.string.settings_display)) {
-            listOf(
-                "auto" to stringResource(R.string.tv_mode_auto),
-                "tv" to stringResource(R.string.tv_mode_tv),
-                "phone" to stringResource(R.string.tv_mode_phone),
-            ).forEach { (value, label) ->
-                val isSelected = tvMode == value
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isSelected) {
-                            onSetTvMode(value)
-                        }
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(
-                        selected = isSelected,
-                        onClick = { if (!isSelected) onSetTvMode(value) },
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-            }
-        }
-
-        (state.account as? Account.Xtream)?.let { xt ->
-            Spacer(Modifier.height(12.dp))
-            SettingsCard(stringResource(R.string.settings_stream_format)) {
-                val formats = listOf(
-                    "auto" to stringResource(R.string.stream_format_auto),
-                    "ts" to stringResource(R.string.stream_format_ts),
-                    "m3u8" to stringResource(R.string.stream_format_m3u8),
-                )
-                formats.forEach { (value, label) ->
-                    val isSelected = xt.streamFormat == value
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = !isSelected) {
-                                onSetStreamFormat(value)
-                            }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(
-                            selected = isSelected,
-                            onClick = {
-                                if (!isSelected) onSetStreamFormat(value)
-                            },
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-        SettingsCard(stringResource(R.string.settings_adult_content)) {
-            AdultContentSection(
-                adult = adult,
-                onSetAdultPin = onSetAdultPin,
-                onUnlockAdult = onUnlockAdult,
-                unlockWaitSeconds = unlockWaitSeconds,
-                onHideAdult = onHideAdult,
-            )
-        }
-
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.logout))
-        }
-
-        Spacer(Modifier.height(24.dp))
-        Text(
-            text = "${stringResource(R.string.app_name)} ${BuildConfig.VERSION_NAME}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+@Composable
+private fun PreferenceSettings(
+    state: MainState,
+    tvMode: String,
+    startupTab: String,
+    onSetStreamFormat: (String) -> Unit,
+    onSetTvMode: (String) -> Unit,
+    onSetStartupTab: (String) -> Unit,
+) {
+    RadioSettingsGroup(
+        title = stringResource(R.string.settings_startup_screen),
+        selectedValue = startupTab,
+        options = listOf(
+            STARTUP_TAB_LIVE to stringResource(R.string.tab_live_tv),
+            STARTUP_TAB_FAVORITES to stringResource(R.string.common_favorites),
+            STARTUP_TAB_HISTORY to stringResource(R.string.startup_tab_history),
+            STARTUP_TAB_LAST to stringResource(R.string.startup_tab_last),
+        ),
+        onSelect = onSetStartupTab,
+    )
+    SettingsDivider()
+    RadioSettingsGroup(
+        title = stringResource(R.string.settings_display),
+        selectedValue = tvMode,
+        options = listOf(
+            "auto" to stringResource(R.string.tv_mode_auto),
+            "tv" to stringResource(R.string.tv_mode_tv),
+            "phone" to stringResource(R.string.tv_mode_phone),
+        ),
+        onSelect = onSetTvMode,
+    )
+    (state.account as? Account.Xtream)?.let { xt ->
+        SettingsDivider()
+        RadioSettingsGroup(
+            title = stringResource(R.string.settings_stream_format),
+            selectedValue = xt.streamFormat,
+            options = listOf(
+                "auto" to stringResource(R.string.stream_format_auto),
+                "ts" to stringResource(R.string.stream_format_ts),
+                "m3u8" to stringResource(R.string.stream_format_m3u8),
+            ),
+            onSelect = onSetStreamFormat,
         )
-        // Ademruimte onderaan: maakt op tv duidelijk dat de pagina hier
-        // echt eindigt (en niet op de schermrand wordt afgekapt).
-        Spacer(Modifier.height(32.dp))
+    }
+}
+
+@Composable
+private fun RadioSettingsGroup(
+    title: String,
+    selectedValue: String,
+    options: List<Pair<String, String>>,
+    onSelect: (String) -> Unit,
+) {
+    SettingsGroup(title) {
+        options.forEach { (value, label) ->
+            val isSelected = selectedValue == value
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isSelected) { onSelect(value) }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(
+                    selected = isSelected,
+                    onClick = { if (!isSelected) onSelect(value) },
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(text = label, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsDivider() {
+    Spacer(Modifier.height(18.dp))
+    HorizontalDivider()
+    Spacer(Modifier.height(18.dp))
+}
+
+@Composable
+private fun AppSettings(onLogout: () -> Unit) {
+    Text(
+        text = stringResource(R.string.app_name),
+        style = MaterialTheme.typography.titleLarge,
+    )
+    Spacer(Modifier.height(4.dp))
+    Text(
+        text = stringResource(
+            R.string.settings_version,
+            BuildConfig.VERSION_NAME,
+        ),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(24.dp))
+    Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.logout))
     }
 }
 

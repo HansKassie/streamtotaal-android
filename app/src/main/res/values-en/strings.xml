@@ -183,6 +183,11 @@
     <string name="settings_providers">Providers</string>
     <string name="provider_switched_toast">Switched to %1$s</string>
     <string name="settings_connection_test">Test connection</string>
+    <string name="settings_active_provider">Active provider</string>
+    <string name="settings_section_preferences">Preferences</string>
+    <string name="settings_section_parental">Parental controls</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_version">Version %1$s</string>
 
     <!-- ===== Display mode. ===== -->
     <string name="settings_display">Display</string>

@@ -184,6 +184,11 @@
     <string name="settings_providers">Providers</string>
     <string name="provider_switched_toast">Gewisseld naar %1$s</string>
     <string name="settings_connection_test">Verbinding testen</string>
+    <string name="settings_active_provider">Actieve provider</string>
+    <string name="settings_section_preferences">Voorkeuren</string>
+    <string name="settings_section_parental">Ouderlijk toezicht</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_version">Versie %1$s</string>
 
     <!-- ===== Weergavemodus. ===== -->
     <string name="settings_display">Weergave</string>
