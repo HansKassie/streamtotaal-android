@@ -1,9 +1,9 @@
 {
-    "versionCode": 16,
-    "versionName": "1.0.15",
+    "versionCode": 17,
+    "versionName": "1.0.16",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-    "sha256": "bb3343b93a1c2e46d0ec0c6b807a5e10a7b18801ba72011371b4947db433729d",
-    "releaseNotes": "Films en series spoel je nu met links en rechts op de afstandsbediening. Verlaat je een film of aflevering, dan vraagt de app eerst of je wilt stoppen; je kijkpositie blijft bewaard. Bij films en series wordt Nederlandse ondertiteling automatisch gekozen als die beschikbaar is. Het tabblad Meer is opnieuw ingedeeld in Account, Voorkeuren, Ouderlijk toezicht en App, zodat je instellingen sneller vindt. Start een zender niet, dan krijg je een duidelijkere melding met de tip dezelfde zender vanuit een andere groep te openen.",
+    "sha256": "bef622925d1bdae5d2e0e5fca2ccfaf224beb3622f085ce31826a52709277936",
+    "releaseNotes": "De updatefunctie is betrouwbaarder gemaakt voor Android TV's waarop de systeemdownload niet op gang kwam. Films en series spoel je nu met links en rechts op de afstandsbediening. Verlaat je een film of aflevering, dan vraagt de app eerst of je wilt stoppen; je kijkpositie blijft bewaard. Bij films en series wordt Nederlandse ondertiteling automatisch gekozen als die beschikbaar is. Het tabblad Meer is opnieuw ingedeeld in Account, Voorkeuren, Ouderlijk toezicht en App, zodat je instellingen sneller vindt. Start een zender niet, dan krijg je een duidelijkere melding met de tip dezelfde zender vanuit een andere groep te openen.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }

@@ -1,28 +1,30 @@
 package nl.streamfix.ui.update
 
-import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
 import androidx.core.content.FileProvider
 import java.io.File
 import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 /** Downloadt de update-APK en start de Android-installer. */
 object AppUpdater {
 
     private const val SUBPATH = "updates/streamtotaal-update.apk"
-    private const val POLL_INTERVAL_MS = 500L
-    private const val STALL_TIMEOUT_MS = 90_000L
+    private const val PARTIAL_SUBPATH = "$SUBPATH.part"
 
-    private data class DownloadState(
-        val status: Int,
-        val downloadedBytes: Long,
-        val totalBytes: Long,
-    )
+    private val client by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(3, TimeUnit.MINUTES)
+            .followRedirects(true)
+            .build()
+    }
 
     /**
      * Downloadt de update-APK en start bij succes de installer.
@@ -39,77 +41,17 @@ object AppUpdater {
         onProgress: (Int) -> Unit = {},
         onResult: (Boolean) -> Unit = {},
     ) {
-        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE)
-            as? DownloadManager
-        if (dm == null) {
-            onResult(false)
-            return
-        }
-
-        // Oude download opruimen zodat de installer de nieuwe pakt.
-        File(context.getExternalFilesDir(null), SUBPATH).delete()
-
-        val request = DownloadManager.Request(Uri.parse(apkUrl))
-            .setTitle("StreamTotaal update")
-            .setDestinationInExternalFilesDir(context, null, SUBPATH)
-            .setNotificationVisibility(
-                DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
-            )
-        val id = runCatching { dm.enqueue(request) }.getOrNull()
-        if (id == null) {
-            onResult(false)
-            return
-        }
-
-        // Niet vertrouwen op alleen ACTION_DOWNLOAD_COMPLETE: sommige
-        // Android-fabrikanten leveren die dynamische broadcast niet altijd
-        // af. Polling geeft bovendien voortgang en kan een vastgelopen
-        // DownloadManager-taak gecontroleerd afbreken.
         val appContext = context.applicationContext
         val mainHandler = Handler(Looper.getMainLooper())
         Thread {
-            var lastBytes = -1L
-            var lastProgressAt = SystemClock.elapsedRealtime()
-            var lastPercent = -1
-            var downloadOk = false
-
-            while (true) {
-                val state = queryDownload(dm, id) ?: break
-                val now = SystemClock.elapsedRealtime()
-                if (state.downloadedBytes > lastBytes) {
-                    lastBytes = state.downloadedBytes
-                    lastProgressAt = now
-                }
-                if (state.totalBytes > 0) {
-                    val percent = (
-                        state.downloadedBytes * 100 / state.totalBytes
-                    ).toInt().coerceIn(0, 100)
-                    if (percent != lastPercent) {
-                        lastPercent = percent
-                        mainHandler.post { onProgress(percent) }
-                    }
-                }
-
-                when (state.status) {
-                    DownloadManager.STATUS_SUCCESSFUL -> {
-                        downloadOk = checksumOk(appContext, expectedSha256)
-                        break
-                    }
-                    DownloadManager.STATUS_FAILED -> break
-                }
-
-                if (now - lastProgressAt >= STALL_TIMEOUT_MS) {
-                    runCatching { dm.remove(id) }
-                    break
-                }
-                try {
-                    Thread.sleep(POLL_INTERVAL_MS)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
-                }
-            }
-
+            val downloadOk = downloadApk(
+                context = appContext,
+                apkUrl = apkUrl,
+                expectedSha256 = expectedSha256,
+                onProgress = { percent ->
+                    mainHandler.post { onProgress(percent) }
+                },
+            )
             mainHandler.post {
                 val installed = downloadOk && install(appContext)
                 onResult(installed)
@@ -119,6 +61,71 @@ object AppUpdater {
             isDaemon = true
             start()
         }
+    }
+
+    /**
+     * Downloadt rechtstreeks naar app-private externe opslag. Sommige
+     * Android TV-fabrikanten laten DownloadManager-taken eindeloos op nul
+     * bytes staan; een gewone OkHttp-stream heeft daar geen last van.
+     */
+    private fun downloadApk(
+        context: Context,
+        apkUrl: String,
+        expectedSha256: String?,
+        onProgress: (Int) -> Unit,
+    ): Boolean {
+        val target = File(context.getExternalFilesDir(null), SUBPATH)
+        val partial = File(context.getExternalFilesDir(null), PARTIAL_SUBPATH)
+        target.parentFile?.mkdirs()
+        target.delete()
+        partial.delete()
+
+        val ok = runCatching {
+            val request = Request.Builder().url(apkUrl).get().build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@use false
+                val body = response.body ?: return@use false
+                val totalBytes = body.contentLength()
+                var downloadedBytes = 0L
+                var lastPercent = -1
+
+                body.byteStream().use { input ->
+                    partial.outputStream().buffered().use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            output.write(buffer, 0, read)
+                            downloadedBytes += read
+                            if (totalBytes > 0) {
+                                val percent = (
+                                    downloadedBytes * 100 / totalBytes
+                                ).toInt().coerceIn(0, 100)
+                                if (percent != lastPercent) {
+                                    lastPercent = percent
+                                    onProgress(percent)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (totalBytes > 0 && downloadedBytes != totalBytes) {
+                    return@use false
+                }
+                if (!partial.renameTo(target)) {
+                    partial.copyTo(target, overwrite = true)
+                    partial.delete()
+                }
+                checksumOk(context, expectedSha256)
+            }
+        }.getOrDefault(false)
+
+        if (!ok) {
+            partial.delete()
+            target.delete()
+        }
+        return ok
     }
 
     /** True als er geen hash is meegegeven of het bestand exact klopt. */
@@ -140,31 +147,6 @@ object AppUpdater {
                 .equals(expected.trim(), ignoreCase = true)
         }.getOrDefault(false)
     }
-
-    private fun queryDownload(dm: DownloadManager, id: Long): DownloadState? =
-        runCatching {
-            dm.query(DownloadManager.Query().setFilterById(id)).use { c ->
-                if (c != null && c.moveToFirst()) {
-                    DownloadState(
-                        status = c.getInt(
-                            c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS),
-                        ),
-                        downloadedBytes = c.getLong(
-                            c.getColumnIndexOrThrow(
-                                DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR,
-                            ),
-                        ),
-                        totalBytes = c.getLong(
-                            c.getColumnIndexOrThrow(
-                                DownloadManager.COLUMN_TOTAL_SIZE_BYTES,
-                            ),
-                        ),
-                    )
-                } else {
-                    null
-                }
-            }
-        }.getOrNull()
 
     /** True als de Android-installer daadwerkelijk is geopend. */
     private fun install(context: Context): Boolean {
