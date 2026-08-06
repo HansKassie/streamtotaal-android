@@ -13,6 +13,7 @@ import nl.streamfix.ui.screens.search.SearchScreen
 import nl.streamfix.ui.screens.login.XtreamLoginScreen
 import nl.streamfix.ui.screens.main.MainScreen
 import nl.streamfix.ui.screens.epg.ChannelEpgScreen
+import nl.streamfix.ui.screens.history.PlaybackTarget
 import nl.streamfix.ui.screens.epg.EpgGuideScreen
 import nl.streamfix.ui.screens.player.EpisodePlayerScreen
 import nl.streamfix.ui.screens.player.PlaybackScreen
@@ -20,6 +21,22 @@ import nl.streamfix.ui.screens.player.PlayerScreen
 import nl.streamfix.ui.screens.series.SeriesDetailScreen
 import nl.streamfix.ui.screens.vod.VodDetailScreen
 import nl.streamfix.ui.screens.welcome.WelcomeScreen
+
+/** Route voor een afspeelbron; nooit een complete stream-URL. */
+private fun routeFor(target: PlaybackTarget): String = when (target.type) {
+    "ep" -> Routes.playbackEpisode(
+        contentId = target.contentId,
+        extension = target.extension,
+        title = target.title,
+        mediaId = target.mediaId,
+    )
+    else -> Routes.playbackVod(
+        contentId = target.contentId,
+        extension = target.extension,
+        title = target.title,
+        mediaId = target.mediaId,
+    )
+}
 
 @Composable
 fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
@@ -80,8 +97,8 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
                 onOpenSeries = { seriesId ->
                     navController.navigate(Routes.seriesDetail(seriesId))
                 },
-                onResumeMedia = { url, title, mediaId ->
-                    navController.navigate(Routes.playback(url, title, mediaId))
+                onResumeMedia = { target ->
+                    navController.navigate(routeFor(target))
                 },
                 onOpenCatchupChannel = { channelId, channelName, days ->
                     navController.navigate(
@@ -152,15 +169,23 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
         ) {
             VodDetailScreen(
                 onBack = { navController.popBackStack() },
-                onPlay = { url, title, mediaId ->
-                    navController.navigate(Routes.playback(url, title, mediaId))
-                },
+                onPlay = { target -> navController.navigate(routeFor(target)) },
             )
         }
 
         composable(
             route = Routes.PLAYBACK_ROUTE,
             arguments = listOf(
+                navArgument(Routes.PLAYBACK_ARG_TYPE) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.PLAYBACK_ARG_CONTENT) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.PLAYBACK_ARG_EXT) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                // Tijdelijk: alleen catch-up geeft nog een URL door.
                 navArgument(Routes.PLAYBACK_ARG_URL) {
                     type = NavType.StringType; defaultValue = ""
                 },

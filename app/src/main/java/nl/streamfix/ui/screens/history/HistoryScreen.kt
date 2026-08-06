@@ -42,7 +42,7 @@ import nl.streamfix.domain.model.HistoryItem
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
-    onResume: (streamUrl: String, title: String, mediaId: String) -> Unit,
+    onResume: (target: PlaybackTarget) -> Unit,
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val items by viewModel.items.collectAsStateWithLifecycle()
@@ -92,9 +92,7 @@ fun HistoryScreen(
                         .tvFocusable()
                         .combinedClickable(
                             onClick = {
-                                viewModel.targetFor(item)?.let { (url, title, mid) ->
-                                    onResume(url, title, mid)
-                                }
+                                viewModel.targetFor(item)?.let(onResume)
                             },
                             onLongClick = { pendingDelete = item },
                         )

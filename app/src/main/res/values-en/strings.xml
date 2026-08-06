@@ -133,6 +133,7 @@
     <string name="player_subtitles">Subtitles</string>
     <string name="player_subtitles_off">Off</string>
     <string name="player_connection_problem">Connection problem. Retrying automatically.</string>
+    <string name="player_media_unavailable">This item cannot be played right now. Go back and try again.</string>
     <string name="player_channel_group_problem">Channel temporarily unavailable in this group</string>
     <string name="player_channel_group_hint">Pick another group and open the same channel there</string>
     <string name="player_channel_load_failed">Unable to load the channel list. Check your connection and try again.</string>

@@ -95,6 +95,7 @@ import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.screens.catchup.CatchupScreen
 import nl.streamfix.ui.screens.favorites.FavoritesScreen
 import nl.streamfix.ui.screens.history.HistoryScreen
+import nl.streamfix.ui.screens.history.PlaybackTarget
 import nl.streamfix.ui.screens.live.LiveTvScreen
 import nl.streamfix.ui.screens.series.SeriesScreen
 import nl.streamfix.ui.screens.vod.VodScreen
@@ -127,7 +128,7 @@ fun MainScreen(
     onOpenGuide: (categoryId: String) -> Unit,
     onOpenVod: (vodId: String) -> Unit,
     onOpenSeries: (seriesId: String) -> Unit,
-    onResumeMedia: (streamUrl: String, title: String, mediaId: String) -> Unit,
+    onResumeMedia: (target: PlaybackTarget) -> Unit,
     onOpenCatchupChannel: (
         channelId: String, channelName: String, days: Int,
     ) -> Unit,

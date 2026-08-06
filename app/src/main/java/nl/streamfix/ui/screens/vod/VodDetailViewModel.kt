@@ -17,12 +17,12 @@ import kotlinx.coroutines.launch
 import nl.streamfix.domain.model.HistoryItem
 import nl.streamfix.domain.model.VodDetail
 import nl.streamfix.domain.usecase.GetVodDetailUseCase
-import nl.streamfix.domain.usecase.GetVodStreamUrlUseCase
 import nl.streamfix.domain.usecase.IsVodFavoriteUseCase
 import nl.streamfix.domain.usecase.SetVodFavoriteUseCase
 import nl.streamfix.domain.usecase.StartWatchingUseCase
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.ui.navigation.Routes
+import nl.streamfix.ui.screens.history.PlaybackTarget
 import nl.streamfix.ui.uiMessage
 
 data class VodDetailState(
@@ -35,7 +35,6 @@ data class VodDetailState(
 class VodDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getDetail: GetVodDetailUseCase,
-    private val getStreamUrl: GetVodStreamUrlUseCase,
     private val startWatching: StartWatchingUseCase,
     private val isVodFavorite: IsVodFavoriteUseCase,
     private val setVodFavorite: SetVodFavoriteUseCase,
@@ -75,12 +74,12 @@ class VodDetailViewModel @Inject constructor(
     }
 
     /**
-     * Registreert het item in "Verder kijken" en geeft (streamUrl, title,
-     * mediaId) terug, of null als er nog geen detail is.
+     * Registreert het item in "Verder kijken" en geeft de brongegevens
+     * terug, of null als er nog geen detail is. Bewust geen stream-URL:
+     * die bevat inloggegevens en gaat niet door de navigatiestate.
      */
-    fun startAndTarget(): Triple<String, String, String>? {
+    fun startAndTarget(): PlaybackTarget? {
         val d = _state.value.detail ?: return null
-        val url = getStreamUrl(d.id, d.containerExtension) ?: return null
         val mediaId = "vod:${d.id}"
         viewModelScope.launch {
             startWatching(
@@ -95,6 +94,12 @@ class VodDetailViewModel @Inject constructor(
                 ),
             )
         }
-        return Triple(url, d.name, mediaId)
+        return PlaybackTarget(
+            type = "vod",
+            contentId = d.id,
+            extension = d.containerExtension,
+            title = d.name,
+            mediaId = mediaId,
+        )
     }
 }

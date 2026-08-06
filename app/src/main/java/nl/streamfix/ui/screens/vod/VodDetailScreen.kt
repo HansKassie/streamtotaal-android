@@ -37,12 +37,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import nl.streamfix.R
+import nl.streamfix.ui.screens.history.PlaybackTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VodDetailScreen(
     onBack: () -> Unit,
-    onPlay: (streamUrl: String, title: String, mediaId: String) -> Unit,
+    onPlay: (target: PlaybackTarget) -> Unit,
     viewModel: VodDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -134,11 +135,7 @@ fun VodDetailScreen(
                     }
                     Spacer(Modifier.height(20.dp))
                     Button(
-                        onClick = {
-                            viewModel.startAndTarget()?.let { (url, title, mid) ->
-                                onPlay(url, title, mid)
-                            }
-                        },
+                        onClick = { viewModel.startAndTarget()?.let(onPlay) },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(Icons.Filled.PlayArrow, contentDescription = null)

@@ -10,16 +10,21 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import nl.streamfix.domain.model.HistoryItem
 import nl.streamfix.domain.usecase.ClearHistoryUseCase
-import nl.streamfix.domain.usecase.GetEpisodeStreamUrlUseCase
-import nl.streamfix.domain.usecase.GetVodStreamUrlUseCase
 import nl.streamfix.domain.usecase.ObserveHistoryUseCase
 import nl.streamfix.domain.usecase.RemoveFromHistoryUseCase
+
+/** Wat de speler nodig heeft om een item af te spelen, zonder stream-URL. */
+data class PlaybackTarget(
+    val type: String,
+    val contentId: String,
+    val extension: String,
+    val title: String,
+    val mediaId: String,
+)
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     observeHistory: ObserveHistoryUseCase,
-    private val getVodStreamUrl: GetVodStreamUrlUseCase,
-    private val getEpisodeStreamUrl: GetEpisodeStreamUrlUseCase,
     private val removeFromHistory: RemoveFromHistoryUseCase,
     private val clearHistory: ClearHistoryUseCase,
 ) : ViewModel() {
@@ -39,13 +44,19 @@ class HistoryViewModel @Inject constructor(
         viewModelScope.launch { clearHistory() }
     }
 
-    /** (streamUrl, title, mediaId) om af te spelen, of null als niet mogelijk. */
-    fun targetFor(item: HistoryItem): Triple<String, String, String>? {
-        val url = when (item.type) {
-            "vod" -> getVodStreamUrl(item.contentId, item.extension)
-            "ep" -> getEpisodeStreamUrl(item.contentId, item.extension)
-            else -> null
-        } ?: return null
-        return Triple(url, item.title, item.mediaId)
+    /**
+     * Brongegevens om af te spelen, of null bij een onbekend type. Bewust
+     * GEEN stream-URL: die bevat inloggegevens en zou zo in de
+     * navigatiestate belanden. De speler bouwt hem zelf op.
+     */
+    fun targetFor(item: HistoryItem): PlaybackTarget? = when (item.type) {
+        "vod", "ep" -> PlaybackTarget(
+            type = item.type,
+            contentId = item.contentId,
+            extension = item.extension,
+            title = item.title,
+            mediaId = item.mediaId,
+        )
+        else -> null
     }
 }

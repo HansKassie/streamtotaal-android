@@ -180,6 +180,15 @@ fun PlaybackScreen(
             }
         }
 
+        if (state.sourceUnavailable) {
+            // Geen actieve provider of onbekend brontype: melding in plaats
+            // van een zwart scherm dat blijft bufferen.
+            PlayerErrorOverlay(
+                messageRes = R.string.player_media_unavailable,
+                onRetry = onBack,
+            )
+        }
+
         if (showError) {
             PlayerErrorOverlay(onRetry = {
                 retryJob?.cancel()

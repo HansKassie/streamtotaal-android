@@ -25,11 +25,61 @@ object Routes {
 
     fun vodDetail(vodId: String): String = "vod/${android.net.Uri.encode(vodId)}"
 
-    const val PLAYBACK_ARG_URL = "u"
+    /*
+     * De speler krijgt bewust GEEN complete stream-URL mee. Die bevat bij
+     * Xtream de gebruikersnaam en het wachtwoord in het pad, en een
+     * navigatieargument belandt onversleuteld in de backstack en in de
+     * saved-instance-state. In plaats daarvan reizen alleen brongegevens
+     * mee; PlaybackViewModel bouwt de URL zelf via de use-cases, die de
+     * inloggegevens uit de versleutelde opslag halen.
+     */
+    const val PLAYBACK_ARG_TYPE = "type"
+    const val PLAYBACK_ARG_CONTENT = "cid"
+    const val PLAYBACK_ARG_EXT = "ext"
     const val PLAYBACK_ARG_TITLE = "t"
     const val PLAYBACK_ARG_MEDIA = "m"
-    const val PLAYBACK_ROUTE = "playback?u={u}&t={t}&m={m}"
 
+    /** Waarden voor [PLAYBACK_ARG_TYPE]. */
+    const val PLAYBACK_TYPE_VOD = "vod"
+    const val PLAYBACK_TYPE_EPISODE = "ep"
+
+    // Tijdelijk: catch-up geeft nog een complete URL door. Vervalt zodra
+    // die route is omgezet.
+    const val PLAYBACK_ARG_URL = "u"
+
+    const val PLAYBACK_ROUTE =
+        "playback?type={type}&cid={cid}&ext={ext}&u={u}&t={t}&m={m}"
+
+    fun playbackVod(
+        contentId: String,
+        extension: String,
+        title: String,
+        mediaId: String,
+    ): String = playbackSource(PLAYBACK_TYPE_VOD, contentId, extension, title, mediaId)
+
+    fun playbackEpisode(
+        contentId: String,
+        extension: String,
+        title: String,
+        mediaId: String,
+    ): String =
+        playbackSource(PLAYBACK_TYPE_EPISODE, contentId, extension, title, mediaId)
+
+    private fun playbackSource(
+        type: String,
+        contentId: String,
+        extension: String,
+        title: String,
+        mediaId: String,
+    ): String {
+        val c = android.net.Uri.encode(contentId)
+        val e = android.net.Uri.encode(extension)
+        val t = android.net.Uri.encode(title)
+        val m = android.net.Uri.encode(mediaId)
+        return "playback?type=$type&cid=$c&ext=$e&t=$t&m=$m"
+    }
+
+    // Tijdelijk, alleen nog voor catch-up.
     fun playback(url: String, title: String, mediaId: String): String {
         val u = android.net.Uri.encode(url)
         val t = android.net.Uri.encode(title)
