@@ -505,6 +505,8 @@ private fun SettingsContent(
             key(current) {
                 SettingsSectionPane(
                     titleRes = current.labelRes,
+                    compactContent = current == SettingsSection.Parental ||
+                        current == SettingsSection.App,
                     modifier = Modifier.weight(1f),
                     content = content,
                 )
@@ -534,6 +536,8 @@ private fun SettingsContent(
             key(current) {
                 SettingsSectionPane(
                     titleRes = current.labelRes,
+                    compactContent = current == SettingsSection.Parental ||
+                        current == SettingsSection.App,
                     modifier = Modifier.weight(1f),
                     content = content,
                 )
@@ -619,22 +623,33 @@ private fun SettingsSectionButton(
 @Composable
 private fun SettingsSectionPane(
     @StringRes titleRes: Int,
+    compactContent: Boolean = false,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxHeight()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+    Box(
+        modifier = modifier.fillMaxHeight(),
+        contentAlignment = Alignment.TopCenter,
     ) {
-        Text(
-            text = stringResource(titleRes),
-            style = MaterialTheme.typography.headlineSmall,
-        )
-        Spacer(Modifier.height(18.dp))
-        content()
-        Spacer(Modifier.height(32.dp))
+        Column(
+            modifier = (if (compactContent) {
+                Modifier.widthIn(max = 640.dp)
+            } else {
+                Modifier
+            })
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+        ) {
+            Text(
+                text = stringResource(titleRes),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            Spacer(Modifier.height(18.dp))
+            content()
+            Spacer(Modifier.height(32.dp))
+        }
     }
 }
 

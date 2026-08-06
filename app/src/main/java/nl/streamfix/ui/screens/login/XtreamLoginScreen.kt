@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -36,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
@@ -48,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nl.streamfix.R
+import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.dpadExitField
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,6 +64,9 @@ fun XtreamLoginScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var passwordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    val isTv = LocalIsTv.current
+    val fieldSpacing = if (isTv) 12.dp else 16.dp
+    val actionSpacing = if (isTv) 20.dp else 32.dp
 
     LaunchedEffect(state.loggedIn) {
         if (state.loggedIn) onLoggedIn()
@@ -84,8 +91,13 @@ fun XtreamLoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = 640.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    horizontal = 24.dp,
+                    vertical = if (isTv) 16.dp else 24.dp,
+                ),
             verticalArrangement = Arrangement.Top,
         ) {
             if (state.providers.isNotEmpty()) {
@@ -139,7 +151,7 @@ fun XtreamLoginScreen(
                         )
                     }
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(fieldSpacing))
             }
 
             if (state.useCustomProvider) {
@@ -157,7 +169,7 @@ fun XtreamLoginScreen(
                         .dpadExitField(focusManager)
                         .fillMaxWidth(),
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(fieldSpacing))
                 OutlinedTextField(
                     value = state.customUrl,
                     onValueChange = viewModel::onCustomUrlChange,
@@ -175,7 +187,7 @@ fun XtreamLoginScreen(
                         .dpadExitField(focusManager)
                         .fillMaxWidth(),
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(fieldSpacing))
             }
             OutlinedTextField(
                 value = state.username,
@@ -191,7 +203,7 @@ fun XtreamLoginScreen(
                     .dpadExitField(focusManager)
                     .fillMaxWidth(),
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(fieldSpacing))
             OutlinedTextField(
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
@@ -242,7 +254,7 @@ fun XtreamLoginScreen(
                 )
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(actionSpacing))
             Button(
                 onClick = viewModel::submit,
                 enabled = state.canSubmit,
