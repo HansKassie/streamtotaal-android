@@ -174,6 +174,20 @@ class CastController(
         )
     }
 
+    /**
+     * Stopt het afspelen echt, ook op de Chromecast. Alleen bedoeld voor
+     * "Stoppen": bij gewoon weglopen uit de speler blijft casten doorgaan.
+     *
+     * [release] is hiervoor niet genoeg: dat verbreekt alleen de koppeling
+     * met de CastPlayer, waarna de ontvanger vrolijk doorspeelt zonder dat
+     * de app er nog bij kan. Roep dit aan NA het bewaren van de kijkpositie,
+     * want daarna geeft de ontvanger geen bruikbare positie meer terug.
+     */
+    fun stopPlayback() {
+        exo.playWhenReady = false
+        castPlayer?.stop()
+    }
+
     /** Lokaal opnieuw proberen; tijdens casten regelt de ontvanger dit zelf. */
     fun retryLocal() {
         if (current === exo) {

@@ -363,6 +363,14 @@ fun PlayerErrorOverlay(
     @StringRes actionRes: Int = R.string.player_retry_now,
     onRetry: () -> Unit,
 ) {
+    // Deze overlay ligt in hetzelfde venster als de speler, niet in een eigen
+    // dialoogvenster. Op tv moet de knop dus zelf de focus pakken, anders
+    // blijft hij onbereikbaar met de afstandsbediening.
+    val actionFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        withFrameNanos {}
+        runCatching { actionFocus.requestFocus() }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -388,7 +396,10 @@ fun PlayerErrorOverlay(
                     textAlign = TextAlign.Center,
                 )
             }
-            Button(onClick = onRetry) {
+            Button(
+                onClick = onRetry,
+                modifier = Modifier.focusRequester(actionFocus),
+            ) {
                 Text(stringResource(actionRes))
             }
         }

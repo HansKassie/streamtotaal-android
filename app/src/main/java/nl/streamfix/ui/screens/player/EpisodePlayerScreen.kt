@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -74,18 +77,39 @@ fun EpisodePlayerScreen(
     var pendingResumeMs by remember { mutableStateOf<Long?>(null) }
     var showExitConfirm by remember { mutableStateOf(false) }
     var pausedForExit by remember { mutableStateOf(false) }
+    var stoppedExplicitly by remember { mutableStateOf(false) }
     val tracks = rememberTracks(player)
     val cast = rememberCastController(player)
     val playerView = remember { mutableStateOf<PlayerView?>(null) }
     // Zolang de knoppenbalk de focus heeft zijn links en rechts nodig om
     // tussen die knoppen te bewegen, en spoelt de speler dus niet.
     val topBarFocused = remember { mutableStateOf(false) }
+    val countdownFocus = remember { FocusRequester() }
     PauseLocalWhenBackgrounded(cast, isLive = false)
+
+    LaunchedEffect(countdown != null) {
+        if (countdown == null) return@LaunchedEffect
+        withFrameNanos {}
+        runCatching { countdownFocus.requestFocus() }
+    }
+
+    // Overlays die in het spelervenster zelf liggen en dus met de
+    // afstandsbediening bereikbaar moeten blijven.
+    fun overlayVisible(): Boolean = showError || countdown != null
 
     fun continuePlayback() {
         showExitConfirm = false
         if (pausedForExit) cast.resumeLocal(isLive = false)
         pausedForExit = false
+    }
+
+    fun stopAndLeave() {
+        // Eerst bewaren, dan pas stoppen: na het stoppen geeft een
+        // Chromecast geen bruikbare positie meer terug.
+        viewModel.savePosition(cast.positionMs)
+        stoppedExplicitly = true
+        cast.stopPlayback()
+        onBack()
     }
 
     fun requestExit() {
@@ -107,18 +131,28 @@ fun EpisodePlayerScreen(
         PlayerActive.inPlayer = true
         if (isTv) {
             PlayerActive.onTvKeyEvent = { event ->
-                handleTvPlaybackKey(
-                    event = event,
-                    topBarFocused = topBarFocused.value,
-                    cast = cast,
-                    playerView = playerView.value,
-                )
+                // Foutoverlay en de aftelknoppen liggen in hetzelfde venster
+                // als de speler, dus de router moet ze met rust laten; anders
+                // slikt de speler de OK-toets op. Dialoogvensters hebben een
+                // eigen venster en komen hier sowieso niet langs.
+                if (overlayVisible()) {
+                    false
+                } else {
+                    handleTvPlaybackKey(
+                        event = event,
+                        topBarFocused = topBarFocused.value,
+                        cast = cast,
+                        playerView = playerView.value,
+                    )
+                }
             }
         }
         onDispose {
             PlayerActive.inPlayer = false
             PlayerActive.onTvKeyEvent = null
-            viewModel.savePosition(cast.positionMs)
+            // Bij "Stoppen" is de positie al bewaard voordat de ontvanger
+            // stopte; nu nog eens opslaan zou daar een 0 overheen zetten.
+            if (!stoppedExplicitly) viewModel.savePosition(cast.positionMs)
             cast.release()
             player.release()
         }
@@ -286,10 +320,15 @@ fun EpisodePlayerScreen(
                     OutlinedButton(onClick = { countdown = null }) {
                         Text(stringResource(R.string.common_cancel))
                     }
-                    Button(onClick = {
-                        countdown = null
-                        viewModel.next()
-                    }) {
+                    Button(
+                        onClick = {
+                            countdown = null
+                            viewModel.next()
+                        },
+                        // Op tv moet deze knop zelf de focus pakken: hij ligt
+                        // in het spelervenster, niet in een dialoogvenster.
+                        modifier = Modifier.focusRequester(countdownFocus),
+                    ) {
                         Text(stringResource(R.string.common_now))
                     }
                 }
@@ -299,7 +338,7 @@ fun EpisodePlayerScreen(
         if (showExitConfirm) {
             ExitPlaybackDialog(
                 onContinue = ::continuePlayback,
-                onStop = onBack,
+                onStop = ::stopAndLeave,
             )
         }
     }

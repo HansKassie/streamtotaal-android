@@ -71,6 +71,7 @@ fun PlaybackScreen(
     var pendingResumeMs by remember { mutableStateOf<Long?>(null) }
     var showExitConfirm by remember { mutableStateOf(false) }
     var pausedForExit by remember { mutableStateOf(false) }
+    var stoppedExplicitly by remember { mutableStateOf(false) }
     val tracks = rememberTracks(player)
     val cast = rememberCastController(player)
     val playerView = remember { mutableStateOf<PlayerView?>(null) }
@@ -79,10 +80,23 @@ fun PlaybackScreen(
     val topBarFocused = remember { mutableStateOf(false) }
     PauseLocalWhenBackgrounded(cast, isLive = false)
 
+    // Overlays die in het spelervenster zelf liggen en dus met de
+    // afstandsbediening bereikbaar moeten blijven.
+    fun overlayVisible(): Boolean = state.sourceUnavailable || showError
+
     fun continuePlayback() {
         showExitConfirm = false
         if (pausedForExit) cast.resumeLocal(isLive = false)
         pausedForExit = false
+    }
+
+    fun stopAndLeave() {
+        // Eerst bewaren, dan pas stoppen: na het stoppen geeft een
+        // Chromecast geen bruikbare positie meer terug.
+        viewModel.savePosition(cast.positionMs)
+        stoppedExplicitly = true
+        cast.stopPlayback()
+        onBack()
     }
 
     fun requestExit() {
@@ -107,18 +121,28 @@ fun PlaybackScreen(
         PlayerActive.inPlayer = true
         if (isTv) {
             PlayerActive.onTvKeyEvent = { event ->
-                handleTvPlaybackKey(
-                    event = event,
-                    topBarFocused = topBarFocused.value,
-                    cast = cast,
-                    playerView = playerView.value,
-                )
+                // Foutoverlays liggen in hetzelfde venster als de speler, dus
+                // de router moet ze met rust laten; anders slikt de speler de
+                // OK-toets op en is de knop niet te bedienen. Dialoogvensters
+                // hebben een eigen venster en komen hier sowieso niet langs.
+                if (overlayVisible()) {
+                    false
+                } else {
+                    handleTvPlaybackKey(
+                        event = event,
+                        topBarFocused = topBarFocused.value,
+                        cast = cast,
+                        playerView = playerView.value,
+                    )
+                }
             }
         }
         onDispose {
             PlayerActive.inPlayer = false
             PlayerActive.onTvKeyEvent = null
-            viewModel.savePosition(cast.positionMs)
+            // Bij "Stoppen" is de positie al bewaard voordat de ontvanger
+            // stopte; nu nog eens opslaan zou daar een 0 overheen zetten.
+            if (!stoppedExplicitly) viewModel.savePosition(cast.positionMs)
             cast.release()
             player.release()
         }
@@ -268,7 +292,7 @@ fun PlaybackScreen(
         if (showExitConfirm) {
             ExitPlaybackDialog(
                 onContinue = ::continuePlayback,
-                onStop = onBack,
+                onStop = ::stopAndLeave,
             )
         }
     }

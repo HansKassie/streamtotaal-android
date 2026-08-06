@@ -21,6 +21,18 @@ tasks.register("prepareSideloadRelease") {
     dependsOn(":app:assembleSideloadRelease")
 
     doLast {
+        // Zonder keystore.properties slaat het app-project de release-signing
+        // stil over en rolt er een niet-ondertekende APK uit. Die kopieren en
+        // hashen zou een uploadbestand opleveren dat klanten niet kunnen
+        // installeren. Daarom hier hard stoppen; zie SETUP.md.
+        if (!rootProject.file("keystore.properties").exists()) {
+            throw GradleException(
+                "keystore.properties ontbreekt, dus de release-APK is niet " +
+                    "ondertekend. Zet de keystore klaar volgens SETUP.md " +
+                    "voordat je een uitrol voorbereidt.",
+            )
+        }
+
         val releaseDir = file("app/build/outputs/apk/sideload/release")
         val metadataFile = releaseDir.resolve("output-metadata.json")
         val metadata = JsonSlurper().parse(metadataFile) as Map<*, *>
