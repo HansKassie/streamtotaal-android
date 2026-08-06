@@ -1,9 +1,9 @@
 {
-    "versionCode": 15,
-    "versionName": "1.0.14",
+    "versionCode": 16,
+    "versionName": "1.0.15",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-    "sha256": "33cc8439899dac51d42e79484fb6c803776f5d537e3d2fe9b0ad0c41f4db1baf",
-    "releaseNotes": "StreamTotaal heeft een nieuw logo. Ga je terug uit een zender, dan staat de lijst weer op die zender in plaats van bovenaan; heb je in de speler doorgezapt, dan land je op de zender waar je eindigde. Vanuit de zenderlijst omhoog gaat nu naar de categoriekeuze. Verder: vlotter wisselen tussen categorie\u00ebn en providers, en met een pincode ingesteld blijft volwassen content ook in je favorieten verborgen.",
+    "sha256": "183f9022b581c3958f6d4664c29c0f0f5df3a4c7942ecf4e2846cf2d03531fdd",
+    "releaseNotes": "Films en series spoel je nu met links en rechts op de afstandsbediening. Verlaat je een film, dan wordt eerst gevraagd of je wilt stoppen, zodat je er niet per ongeluk uit valt; je kijkpositie blijft hoe dan ook bewaard. Is er Nederlandse ondertiteling, dan wordt die vanzelf gekozen. Het tabblad Meer is opnieuw ingedeeld in Account, Voorkeuren, Ouderlijk toezicht en App, zodat je sneller vindt wat je zoekt. Start een zender niet, dan zie je een duidelijkere melding met de tip om dezelfde zender in een andere groep te openen.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }
