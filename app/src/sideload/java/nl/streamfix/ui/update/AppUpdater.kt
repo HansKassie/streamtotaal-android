@@ -2,8 +2,11 @@ package nl.streamfix.ui.update
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import androidx.core.content.FileProvider
 import java.io.File
 import java.security.MessageDigest
@@ -11,11 +14,34 @@ import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
+enum class UpdateResult {
+    InstallerOpened,
+    DownloadFailed,
+    IntegrityFailed,
+    PermissionRequired,
+    InstallerFailed,
+}
+
+data class UpdateOutcome(
+    val result: UpdateResult,
+    val diagnostic: String? = null,
+)
+
 /** Downloadt de update-APK en start de Android-installer. */
 object AppUpdater {
 
     private const val SUBPATH = "updates/streamtotaal-update.apk"
     private const val PARTIAL_SUBPATH = "$SUBPATH.part"
+    private const val USER_AGENT =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+    private enum class DownloadResult { Success, Failed, IntegrityFailed }
+
+    private data class DownloadOutcome(
+        val result: DownloadResult,
+        val diagnostic: String? = null,
+    )
 
     private val client by lazy {
         OkHttpClient.Builder()
@@ -30,21 +56,35 @@ object AppUpdater {
      * Downloadt de update-APK en start bij succes de installer.
      * [expectedSha256] (hex, optioneel) wordt na de download tegen het
      * bestand geverifieerd; mismatch = mislukt, geen installatie.
-     * [onResult] wordt op de main-thread aangeroepen: true = download
-     * geslaagd en installer gestart, false = mislukt (geen install
-     * geprobeerd, zodat de UI een nette fout/retry kan tonen).
+     * [onResult] wordt op de main-thread aangeroepen met de uitkomst en,
+     * bij een fout, een korte diagnosecode voor ondersteuning op afstand.
      */
     fun downloadAndInstall(
         context: Context,
         apkUrl: String,
         expectedSha256: String? = null,
         onProgress: (Int) -> Unit = {},
-        onResult: (Boolean) -> Unit = {},
+        onResult: (UpdateOutcome) -> Unit = {},
     ) {
         val appContext = context.applicationContext
+        if (!canInstallPackages(appContext)) {
+            val settingsOpened = openInstallPermissionSettings(appContext)
+            onResult(
+                UpdateOutcome(
+                    result = UpdateResult.PermissionRequired,
+                    diagnostic = if (settingsOpened) {
+                        "INSTALL_PERMISSION"
+                    } else {
+                        "PERMISSION_SETTINGS_UNAVAILABLE"
+                    },
+                ),
+            )
+            return
+        }
+
         val mainHandler = Handler(Looper.getMainLooper())
         Thread {
-            val downloadOk = downloadApk(
+            val downloadResult = downloadApk(
                 context = appContext,
                 apkUrl = apkUrl,
                 expectedSha256 = expectedSha256,
@@ -53,8 +93,25 @@ object AppUpdater {
                 },
             )
             mainHandler.post {
-                val installed = downloadOk && install(appContext)
-                onResult(installed)
+                val outcome = when (downloadResult.result) {
+                    DownloadResult.Failed -> UpdateOutcome(
+                        UpdateResult.DownloadFailed,
+                        downloadResult.diagnostic,
+                    )
+                    DownloadResult.IntegrityFailed -> UpdateOutcome(
+                        UpdateResult.IntegrityFailed,
+                        downloadResult.diagnostic,
+                    )
+                    DownloadResult.Success -> {
+                        val installDiagnostic = install(appContext)
+                        if (installDiagnostic == null) {
+                            UpdateOutcome(UpdateResult.InstallerOpened)
+                        } else {
+                            UpdateOutcome(UpdateResult.InstallerFailed, installDiagnostic)
+                        }
+                    }
+                }
+                onResult(outcome)
             }
         }.apply {
             name = "StreamTotaal-update"
@@ -73,18 +130,37 @@ object AppUpdater {
         apkUrl: String,
         expectedSha256: String?,
         onProgress: (Int) -> Unit,
-    ): Boolean {
-        val target = File(context.getExternalFilesDir(null), SUBPATH)
-        val partial = File(context.getExternalFilesDir(null), PARTIAL_SUBPATH)
-        target.parentFile?.mkdirs()
+    ): DownloadOutcome {
+        val target = updateFile(context)
+        val partial = File(context.filesDir, PARTIAL_SUBPATH)
+        val parent = target.parentFile ?: return DownloadOutcome(
+            DownloadResult.Failed,
+            "STORAGE_UNAVAILABLE",
+        )
+        if ((!parent.exists() && !parent.mkdirs()) || !parent.isDirectory) {
+            return DownloadOutcome(DownloadResult.Failed, "STORAGE_UNAVAILABLE")
+        }
         target.delete()
         partial.delete()
 
-        val ok = runCatching {
-            val request = Request.Builder().url(apkUrl).get().build()
+        val result = runCatching {
+            val request = Request.Builder()
+                .url(apkUrl)
+                .header("User-Agent", USER_AGENT)
+                .header("Accept", "application/vnd.android.package-archive,*/*")
+                .get()
+                .build()
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@use false
-                val body = response.body ?: return@use false
+                if (!response.isSuccessful) {
+                    return@use DownloadOutcome(
+                        DownloadResult.Failed,
+                        "HTTP_${response.code}",
+                    )
+                }
+                val body = response.body ?: return@use DownloadOutcome(
+                    DownloadResult.Failed,
+                    "EMPTY_RESPONSE",
+                )
                 val totalBytes = body.contentLength()
                 var downloadedBytes = 0L
                 var lastPercent = -1
@@ -111,28 +187,56 @@ object AppUpdater {
                 }
 
                 if (totalBytes > 0 && downloadedBytes != totalBytes) {
-                    return@use false
+                    return@use DownloadOutcome(
+                        DownloadResult.Failed,
+                        "INCOMPLETE_DOWNLOAD",
+                    )
                 }
                 if (!partial.renameTo(target)) {
                     partial.copyTo(target, overwrite = true)
                     partial.delete()
                 }
-                checksumOk(context, expectedSha256)
+                if (checksumOk(context, expectedSha256)) {
+                    DownloadOutcome(DownloadResult.Success)
+                } else {
+                    DownloadOutcome(DownloadResult.IntegrityFailed, "HASH_MISMATCH")
+                }
             }
-        }.getOrDefault(false)
+        }.getOrElse { error ->
+            DownloadOutcome(
+                DownloadResult.Failed,
+                error.javaClass.simpleName.ifBlank { "DOWNLOAD_EXCEPTION" },
+            )
+        }
 
-        if (!ok) {
+        if (result.result != DownloadResult.Success) {
             partial.delete()
             target.delete()
         }
-        return ok
+        return result
+    }
+
+    private fun canInstallPackages(context: Context): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
+            context.packageManager.canRequestPackageInstalls()
+
+    private fun openInstallPermissionSettings(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
+        return runCatching {
+            context.startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:${context.packageName}"),
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }.isSuccess
     }
 
     /** True als er geen hash is meegegeven of het bestand exact klopt. */
     private fun checksumOk(context: Context, expected: String?): Boolean {
         if (expected.isNullOrBlank()) return true
         return runCatching {
-            val file = File(context.getExternalFilesDir(null), SUBPATH)
+            val file = updateFile(context)
             val digest = MessageDigest.getInstance("SHA-256")
             file.inputStream().use { input ->
                 val buffer = ByteArray(64 * 1024)
@@ -148,10 +252,10 @@ object AppUpdater {
         }.getOrDefault(false)
     }
 
-    /** True als de Android-installer daadwerkelijk is geopend. */
-    private fun install(context: Context): Boolean {
-        val file = File(context.getExternalFilesDir(null), SUBPATH)
-        if (!file.exists()) return false
+    /** Null als de Android-installer daadwerkelijk is geopend, anders een foutcode. */
+    private fun install(context: Context): String? {
+        val file = updateFile(context)
+        if (!file.exists()) return "APK_NOT_FOUND"
         return runCatching {
             val uri = FileProvider.getUriForFile(
                 context,
@@ -164,6 +268,11 @@ object AppUpdater {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(intent)
-        }.isSuccess
+            null
+        }.getOrElse { error ->
+            "INSTALL_${error.javaClass.simpleName.ifBlank { "EXCEPTION" }}"
+        }
     }
+
+    private fun updateFile(context: Context): File = File(context.filesDir, SUBPATH)
 }

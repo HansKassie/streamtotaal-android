@@ -120,7 +120,13 @@
     <string name="update_dialog_title_format">Update beschikbaar (%1$s)</string>
     <string name="update_downloading">Bezig met downloaden van de update...</string>
     <string name="update_downloading_progress">Bezig met downloaden van de update... %1$d%%</string>
-    <string name="update_failed">De update is mislukt. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="update_failed">De update kon niet worden geïnstalleerd. Probeer het opnieuw.</string>
+    <string name="update_failed_download">De update kon niet worden gedownload. Probeer het opnieuw.</string>
+    <string name="update_failed_integrity">Het gedownloade updatebestand klopt niet. Probeer het opnieuw.</string>
+    <string name="update_permission_required">Geef StreamTotaal toestemming om apps te installeren en probeer het daarna opnieuw.</string>
+    <string name="update_failed_installer">De update is gedownload, maar het installatiescherm kon niet worden geopend.</string>
+    <string name="update_open_permission">Toestemming openen</string>
+    <string name="update_diagnostic">Updater %1$s - Foutcode: %2$s</string>
     <string name="update_now">Nu updaten</string>
     <string name="update_retry">Opnieuw proberen</string>
     <string name="update_later">Later</string>
