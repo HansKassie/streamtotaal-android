@@ -182,9 +182,11 @@ fun PlaybackScreen(
 
         if (state.sourceUnavailable) {
             // Geen actieve provider of onbekend brontype: melding in plaats
-            // van een zwart scherm dat blijft bufferen.
+            // van een zwart scherm dat blijft bufferen. Opnieuw proberen
+            // heeft hier geen zin, dus de knop gaat terug.
             PlayerErrorOverlay(
                 messageRes = R.string.player_media_unavailable,
+                actionRes = R.string.common_back,
                 onRetry = onBack,
             )
         }

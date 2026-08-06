@@ -285,6 +285,7 @@ private fun OptionRow(
 fun PlayerErrorOverlay(
     @StringRes messageRes: Int = R.string.player_connection_problem,
     @StringRes hintRes: Int? = null,
+    @StringRes actionRes: Int = R.string.player_retry_now,
     onRetry: () -> Unit,
 ) {
     Box(
@@ -313,7 +314,7 @@ fun PlayerErrorOverlay(
                 )
             }
             Button(onClick = onRetry) {
-                Text(stringResource(R.string.player_retry_now))
+                Text(stringResource(actionRes))
             }
         }
     }
