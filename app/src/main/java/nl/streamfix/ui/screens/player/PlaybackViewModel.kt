@@ -40,6 +40,11 @@ class PlaybackViewModel @Inject constructor(
         savedStateHandle.get<String>(Routes.PLAYBACK_ARG_MEDIA).orEmpty()
     private val type: String =
         savedStateHandle.get<String>(Routes.PLAYBACK_ARG_TYPE).orEmpty()
+
+    /** Alleen films en afleveringen vragen bevestiging bij verlaten. */
+    val requiresExitConfirmation: Boolean =
+        type == Routes.PLAYBACK_TYPE_VOD ||
+            type == Routes.PLAYBACK_TYPE_EPISODE
     private val contentId: String =
         savedStateHandle.get<String>(Routes.PLAYBACK_ARG_CONTENT).orEmpty()
     private val extension: String =

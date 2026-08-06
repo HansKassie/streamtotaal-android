@@ -144,6 +144,10 @@
     <string name="player_resume_dialog_body">Je was gebleven bij %1$s.</string>
     <string name="player_resume_from">Verder vanaf %1$s</string>
     <string name="player_restart">Vanaf begin</string>
+    <string name="player_exit_title">Afspelen stoppen?</string>
+    <string name="player_exit_body">Je kijkpositie wordt bewaard, zodat je later verder kunt kijken.</string>
+    <string name="player_continue_watching">Doorgaan met kijken</string>
+    <string name="player_stop_playback">Stoppen</string>
     <string name="player_prev_channel_desc">Vorig kanaal</string>
     <string name="player_next_channel_desc">Volgend kanaal</string>
     <string name="player_overlay_tv_guide">☰  TV-gids</string>

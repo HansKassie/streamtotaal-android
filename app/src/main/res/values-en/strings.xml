@@ -143,6 +143,10 @@
     <string name="player_resume_dialog_body">You stopped at %1$s.</string>
     <string name="player_resume_from">Continue from %1$s</string>
     <string name="player_restart">From beginning</string>
+    <string name="player_exit_title">Stop playback?</string>
+    <string name="player_exit_body">Your viewing position will be saved, so you can continue later.</string>
+    <string name="player_continue_watching">Continue watching</string>
+    <string name="player_stop_playback">Stop</string>
     <string name="player_prev_channel_desc">Previous channel</string>
     <string name="player_next_channel_desc">Next channel</string>
     <string name="player_overlay_tv_guide">☰  TV guide</string>

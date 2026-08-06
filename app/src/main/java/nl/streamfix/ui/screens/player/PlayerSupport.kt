@@ -18,12 +18,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -412,6 +416,38 @@ fun ResumeDialog(
         dismissButton = {
             TextButton(onClick = onRestart) {
                 Text(stringResource(R.string.player_restart))
+            }
+        },
+    )
+}
+
+/** Bevestigt het verlaten van een film of aflevering. */
+@Composable
+fun ExitPlaybackDialog(
+    onContinue: () -> Unit,
+    onStop: () -> Unit,
+) {
+    val continueFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        withFrameNanos {}
+        runCatching { continueFocus.requestFocus() }
+    }
+
+    AlertDialog(
+        onDismissRequest = onContinue,
+        title = { Text(stringResource(R.string.player_exit_title)) },
+        text = { Text(stringResource(R.string.player_exit_body)) },
+        confirmButton = {
+            TextButton(onClick = onStop) {
+                Text(stringResource(R.string.player_stop_playback))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onContinue,
+                modifier = Modifier.focusRequester(continueFocus),
+            ) {
+                Text(stringResource(R.string.player_continue_watching))
             }
         },
     )

@@ -1,5 +1,6 @@
 package nl.streamfix.ui.screens.player
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -66,6 +67,8 @@ fun PlaybackScreen(
     var showError by remember { mutableStateOf(false) }
     var showTracks by remember { mutableStateOf(false) }
     var pendingResumeMs by remember { mutableStateOf<Long?>(null) }
+    var showExitConfirm by remember { mutableStateOf(false) }
+    var pausedForExit by remember { mutableStateOf(false) }
     val tracks = rememberTracks(player)
     val cast = rememberCastController(player)
     val playerView = remember { mutableStateOf<PlayerView?>(null) }
@@ -73,6 +76,30 @@ fun PlaybackScreen(
     // tussen die knoppen te bewegen, en spoelt de speler dus niet.
     val topBarFocused = remember { mutableStateOf(false) }
     PauseLocalWhenBackgrounded(cast, isLive = false)
+
+    fun continuePlayback() {
+        showExitConfirm = false
+        if (pausedForExit) cast.resumeLocal(isLive = false)
+        pausedForExit = false
+    }
+
+    fun requestExit() {
+        if (state.sourceUnavailable || !viewModel.requiresExitConfirmation) {
+            onBack()
+            return
+        }
+        if (showExitConfirm) return
+        pausedForExit = cast.pauseLocal()
+        showExitConfirm = true
+    }
+
+    BackHandler(enabled = !showTracks && pendingResumeMs == null) {
+        when {
+            showExitConfirm -> continuePlayback()
+            showError -> showError = false
+            else -> requestExit()
+        }
+    }
 
     DisposableEffect(isTv) {
         PlayerActive.inPlayer = true
@@ -169,7 +196,7 @@ fun PlaybackScreen(
                 .onFocusChanged { topBarFocused.value = it.hasFocus },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) {
+            IconButton(onClick = ::requestExit) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.common_back),
@@ -233,6 +260,13 @@ fun PlaybackScreen(
                     cast.seekToAndPlay(0)
                     pendingResumeMs = null
                 },
+            )
+        }
+
+        if (showExitConfirm) {
+            ExitPlaybackDialog(
+                onContinue = ::continuePlayback,
+                onStop = onBack,
             )
         }
     }
