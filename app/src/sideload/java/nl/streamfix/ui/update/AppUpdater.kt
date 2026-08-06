@@ -11,6 +11,7 @@ import androidx.core.content.FileProvider
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import nl.streamfix.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -32,9 +33,7 @@ object AppUpdater {
 
     private const val SUBPATH = "updates/streamtotaal-update.apk"
     private const val PARTIAL_SUBPATH = "$SUBPATH.part"
-    private const val USER_AGENT =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    private val userAgent = "StreamTotaal/${BuildConfig.VERSION_NAME} (Android TV)"
 
     private enum class DownloadResult { Success, Failed, IntegrityFailed }
 
@@ -47,7 +46,6 @@ object AppUpdater {
         OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
-            .callTimeout(3, TimeUnit.MINUTES)
             .followRedirects(true)
             .build()
     }
@@ -146,7 +144,7 @@ object AppUpdater {
         val result = runCatching {
             val request = Request.Builder()
                 .url(apkUrl)
-                .header("User-Agent", USER_AGENT)
+                .header("User-Agent", userAgent)
                 .header("Accept", "application/vnd.android.package-archive,*/*")
                 .get()
                 .build()
