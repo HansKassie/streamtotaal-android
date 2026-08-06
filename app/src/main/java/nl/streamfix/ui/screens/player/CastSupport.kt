@@ -155,6 +155,25 @@ class CastController(
         current.playWhenReady = true
     }
 
+    /**
+     * Spoelt een stuk terug of vooruit. De stap volgt de speelduur, net als
+     * de tijdbalk zou doen: een twintigste van de film, met een ondergrens
+     * van 15 seconden en een bovengrens van 5 minuten. Zonder bekende duur
+     * (live) wordt het een vaste stap van 30 seconden.
+     */
+    fun seekStep(forward: Boolean) {
+        val player = current
+        val duration = player.duration
+        val known = duration != C.TIME_UNSET && duration > 0L
+        val step =
+            if (known) (duration / 20L).coerceIn(15_000L, 300_000L)
+            else 30_000L
+        val target = player.currentPosition + if (forward) step else -step
+        player.seekTo(
+            target.coerceIn(0L, if (known) duration else Long.MAX_VALUE),
+        )
+    }
+
     /** Lokaal opnieuw proberen; tijdens casten regelt de ontvanger dit zelf. */
     fun retryLocal() {
         if (current === exo) {

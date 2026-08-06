@@ -42,6 +42,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.PlayerView
 import nl.streamfix.R
 
 /**
@@ -81,6 +82,66 @@ fun rememberStreamFixExoPlayer(): ExoPlayer {
             .setLoadControl(loadControl)
             .setMediaSourceFactory(mediaSourceFactory)
             .build()
+    }
+}
+
+/** Tv-instellingen voor de speler-view van films en series. */
+@androidx.annotation.OptIn(UnstableApi::class)
+fun PlayerView.applyTvControls(onChromeVisible: (Boolean) -> Unit) {
+    setControllerAutoShow(false)
+    setControllerShowTimeoutMs(4000)
+    setControllerVisibilityListener(
+        PlayerView.ControllerVisibilityListener { visibility ->
+            onChromeVisible(visibility == android.view.View.VISIBLE)
+        },
+    )
+}
+
+/**
+ * Eenduidige D-pad-bediening voor films en series. Links/rechts spoelen;
+ * OK en omhoog/omlaag gaan rechtstreeks naar Media3 zodat diens
+ * bedieningsbalk zichtbaar en navigeerbaar blijft.
+ */
+@androidx.annotation.OptIn(UnstableApi::class)
+fun handleTvPlaybackKey(
+    event: android.view.KeyEvent,
+    topBarFocused: Boolean,
+    cast: CastController,
+    playerView: PlayerView?,
+): Boolean {
+    if (topBarFocused) return false
+
+    val firstDown = event.action == android.view.KeyEvent.ACTION_DOWN &&
+        event.repeatCount == 0
+    return when (event.keyCode) {
+        android.view.KeyEvent.KEYCODE_DPAD_LEFT,
+        android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+            if (firstDown) {
+                cast.seekStep(
+                    forward = event.keyCode ==
+                        android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
+                )
+                playerView?.showController()
+            }
+            true
+        }
+        android.view.KeyEvent.KEYCODE_DPAD_CENTER,
+        android.view.KeyEvent.KEYCODE_ENTER,
+        android.view.KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+            val view = playerView ?: return false
+            // showController focust synchroon Media3's play/pauzeknop.
+            // Dezelfde key-event kan daarna die knop, of een andere reeds
+            // gefocuste Media3-knop, normaal activeren.
+            if (firstDown && !view.isControllerFullyVisible) {
+                view.showController()
+            }
+            view.dispatchKeyEvent(event)
+        }
+        android.view.KeyEvent.KEYCODE_DPAD_UP,
+        android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+            playerView?.dispatchKeyEvent(event) ?: false
+        }
+        else -> false
     }
 }
 

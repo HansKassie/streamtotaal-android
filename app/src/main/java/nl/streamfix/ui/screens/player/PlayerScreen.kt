@@ -499,4 +499,11 @@ private fun adjustVolume(context: android.content.Context, step: Float) {
 object PlayerActive {
     @Volatile
     var inPlayer: Boolean = false
+
+    /**
+     * Centrale tv-toetsafhandeling voor films en series. Null betekent dat
+     * de normale Activity- en Compose-afhandeling van kracht blijft.
+     */
+    @Volatile
+    var onTvKeyEvent: ((android.view.KeyEvent) -> Boolean)? = null
 }

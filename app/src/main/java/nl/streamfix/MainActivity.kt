@@ -1,10 +1,12 @@
 package nl.streamfix
 
+import android.annotation.SuppressLint
 import android.app.PictureInPictureParams
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Rational
+import android.view.KeyEvent
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -65,6 +67,21 @@ class MainActivity : FragmentActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * Geeft tv-toetsen eerst aan de actieve film- of seriespeler. Een
+     * PlayerView in AndroidView krijgt D-pad-events niet betrouwbaar terug
+     * zodra focus tussen Compose en Media3 wisselt; de Activity ziet ze wel
+     * altijd. De speler beslist welke toetsen hij overneemt.
+     */
+    // Media3 adviseert Activity-delegatie voor Android TV. FragmentActivity
+    // erft dezelfde methode met een AndroidX RestrictedApi-annotatie, daarom
+    // is de suppressie bewust beperkt tot deze override.
+    @SuppressLint("RestrictedApi")
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (PlayerActive.onTvKeyEvent?.invoke(event) == true) return true
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onUserLeaveHint() {

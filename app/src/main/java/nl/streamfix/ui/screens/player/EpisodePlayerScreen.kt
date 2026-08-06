@@ -29,8 +29,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -71,12 +73,27 @@ fun EpisodePlayerScreen(
     var pendingResumeMs by remember { mutableStateOf<Long?>(null) }
     val tracks = rememberTracks(player)
     val cast = rememberCastController(player)
+    val playerView = remember { mutableStateOf<PlayerView?>(null) }
+    // Zolang de knoppenbalk de focus heeft zijn links en rechts nodig om
+    // tussen die knoppen te bewegen, en spoelt de speler dus niet.
+    val topBarFocused = remember { mutableStateOf(false) }
     PauseLocalWhenBackgrounded(cast, isLive = false)
 
-    DisposableEffect(Unit) {
+    DisposableEffect(isTv) {
         PlayerActive.inPlayer = true
+        if (isTv) {
+            PlayerActive.onTvKeyEvent = { event ->
+                handleTvPlaybackKey(
+                    event = event,
+                    topBarFocused = topBarFocused.value,
+                    cast = cast,
+                    playerView = playerView.value,
+                )
+            }
+        }
         onDispose {
             PlayerActive.inPlayer = false
+            PlayerActive.onTvKeyEvent = null
             viewModel.savePosition(cast.positionMs)
             cast.release()
             player.release()
@@ -154,26 +171,23 @@ fun EpisodePlayerScreen(
                     setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
                     setBackgroundColor(android.graphics.Color.BLACK)
                     isFocusable = true
-                    if (isTv) {
-                        setControllerAutoShow(false)
-                        setControllerShowTimeoutMs(4000)
-                        setControllerVisibilityListener(
-                            PlayerView.ControllerVisibilityListener { vis ->
-                                chromeVisible = vis == android.view.View.VISIBLE
-                            },
-                        )
-                    }
+                    if (isTv) applyTvControls { chromeVisible = it }
                     post { requestFocus() }
+                    playerView.value = this
                 }
             },
             update = { if (it.player !== cast.current) it.player = cast.current },
         )
 
-        if (!isTv || chromeVisible) Row(
+        // Blijft ook staan zolang hij de focus heeft, anders verdwijnt hij
+        // onder je handen zodra de bediening na een paar seconden weggaat.
+        if (!isTv || chromeVisible || topBarFocused.value) Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(8.dp),
+                .padding(8.dp)
+                .focusGroup()
+                .onFocusChanged { topBarFocused.value = it.hasFocus },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
