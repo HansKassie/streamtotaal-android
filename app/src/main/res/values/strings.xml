@@ -134,6 +134,8 @@
     <string name="player_subtitles">Ondertitels</string>
     <string name="player_subtitles_off">Uit</string>
     <string name="player_connection_problem">Verbindingsprobleem. We proberen het automatisch opnieuw.</string>
+    <string name="player_channel_group_problem">Zender tijdelijk niet beschikbaar in deze groep</string>
+    <string name="player_channel_group_hint">Kies een andere groep en open daar dezelfde zender opnieuw</string>
     <string name="player_channel_load_failed">Kan de zenderlijst niet laden. Controleer je verbinding en probeer opnieuw.</string>
     <string name="player_channel_unavailable">Deze zender is niet meer beschikbaar. Ga terug en kies een andere zender.</string>
     <string name="player_retry_now">Nu opnieuw proberen</string>

@@ -309,12 +309,20 @@ fun PlayerScreen(
         }
 
         if (showError) {
-            PlayerErrorOverlay(onRetry = {
-                retryJob?.cancel()
-                retryAttempt = 0
-                cast.retryLocal()
-                showError = false
-            })
+            // Live-specifiek: dezelfde zender zit vaak in meerdere groepen en
+            // werkt daar wel, dus dat is een concretere tip dan "controleer je
+            // verbinding". Films en series houden de algemene melding, want
+            // daar bestaan geen groepen.
+            PlayerErrorOverlay(
+                messageRes = R.string.player_channel_group_problem,
+                hintRes = R.string.player_channel_group_hint,
+                onRetry = {
+                    retryJob?.cancel()
+                    retryAttempt = 0
+                    cast.retryLocal()
+                    showError = false
+                },
+            )
         }
 
         if (state.channelLoadFailed) {

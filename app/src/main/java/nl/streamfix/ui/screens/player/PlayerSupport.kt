@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -276,10 +277,14 @@ private fun OptionRow(
     }
 }
 
-/** Zichtbare foutmelding met handmatige retry over de speler heen. */
+/**
+ * Zichtbare foutmelding met handmatige retry over de speler heen.
+ * [hintRes] is een optionele tweede regel met een concrete suggestie.
+ */
 @Composable
 fun PlayerErrorOverlay(
     @StringRes messageRes: Int = R.string.player_connection_problem,
+    @StringRes hintRes: Int? = null,
     onRetry: () -> Unit,
 ) {
     Box(
@@ -297,7 +302,16 @@ fun PlayerErrorOverlay(
                 text = stringResource(messageRes),
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
             )
+            if (hintRes != null) {
+                Text(
+                    text = stringResource(hintRes),
+                    color = Color.White.copy(alpha = 0.75f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Button(onClick = onRetry) {
                 Text(stringResource(R.string.player_retry_now))
             }
