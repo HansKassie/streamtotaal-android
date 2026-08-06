@@ -12,6 +12,7 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import nl.streamfix.BuildConfig
+import nl.streamfix.DeviceMode
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -33,7 +34,6 @@ object AppUpdater {
 
     private const val SUBPATH = "updates/streamtotaal-update.apk"
     private const val PARTIAL_SUBPATH = "$SUBPATH.part"
-    private val userAgent = "StreamTotaal/${BuildConfig.VERSION_NAME} (Android TV)"
 
     private enum class DownloadResult { Success, Failed, IntegrityFailed }
 
@@ -119,7 +119,7 @@ object AppUpdater {
     }
 
     /**
-     * Downloadt rechtstreeks naar app-private externe opslag. Sommige
+     * Downloadt rechtstreeks naar app-private interne opslag. Sommige
      * Android TV-fabrikanten laten DownloadManager-taken eindeloos op nul
      * bytes staan; een gewone OkHttp-stream heeft daar geen last van.
      */
@@ -144,7 +144,7 @@ object AppUpdater {
         val result = runCatching {
             val request = Request.Builder()
                 .url(apkUrl)
-                .header("User-Agent", userAgent)
+                .header("User-Agent", userAgent(context))
                 .header("Accept", "application/vnd.android.package-archive,*/*")
                 .get()
                 .build()
@@ -273,4 +273,9 @@ object AppUpdater {
     }
 
     private fun updateFile(context: Context): File = File(context.filesDir, SUBPATH)
+
+    private fun userAgent(context: Context): String {
+        val device = if (DeviceMode.isTelevision(context)) "Android TV" else "Android"
+        return "StreamTotaal/${BuildConfig.VERSION_NAME} ($device)"
+    }
 }
