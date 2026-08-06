@@ -51,13 +51,12 @@ class PlaybackViewModel @Inject constructor(
         savedStateHandle.get<String>(Routes.PLAYBACK_ARG_DURATION)
             ?.toIntOrNull() ?: 0
 
-    // Tijdelijk: vervalt zodra alle bronnen zijn omgezet.
-    private val legacyUrl: String =
-        savedStateHandle.get<String>(Routes.PLAYBACK_ARG_URL).orEmpty()
-
     /**
      * De stream-URL wordt hier opgebouwd uit de brongegevens uit de route,
-     * zodat de inloggegevens niet in de navigatiestate terechtkomen.
+     * zodat de inloggegevens niet in de navigatiestate terechtkomen. Dit
+     * loopt ook na een proceskill goed: de route wordt hersteld en de URL
+     * wordt opnieuw opgebouwd uit de versleutelde opslag. Een onbekend
+     * type levert een nette melding op in plaats van een zwart scherm.
      */
     private fun buildStreamUrl(): String? = when (type) {
         Routes.PLAYBACK_TYPE_VOD -> getVodStreamUrl(contentId, extension)
@@ -65,7 +64,7 @@ class PlaybackViewModel @Inject constructor(
             getEpisodeStreamUrl(contentId, extension)
         Routes.PLAYBACK_TYPE_CATCHUP ->
             getTimeshiftUrl(contentId, startMs, durationMin)
-        else -> legacyUrl.takeIf { it.isNotBlank() }
+        else -> null
     }
 
     private val _state = MutableStateFlow(

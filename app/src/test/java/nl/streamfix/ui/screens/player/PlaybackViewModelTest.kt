@@ -269,6 +269,42 @@ class PlaybackViewModelTest {
     }
 
     @Test
+    fun procesherstelBouwtDeUrlOpnieuwOp() = runTest(dispatcher) {
+        // Na een proceskill herstelt Navigation de route met dezelfde
+        // argumenten. De URL moet dan opnieuw uit de opslag komen.
+        val args = mapOf(
+            Routes.PLAYBACK_ARG_TYPE to Routes.PLAYBACK_TYPE_VOD,
+            Routes.PLAYBACK_ARG_CONTENT to "42",
+            Routes.PLAYBACK_ARG_EXT to "mkv",
+            Routes.PLAYBACK_ARG_MEDIA to "vod:42",
+        )
+        val vod = FakeVodRepository(url = "stream://vod/42.mkv")
+        viewModel(args, vod = vod)
+        advanceUntilIdle()
+
+        val herstart = viewModel(
+            args,
+            vod = vod,
+            playback = FakePlaybackRepository(position = 60_000L),
+        )
+        advanceUntilIdle()
+
+        assertEquals("stream://vod/42.mkv", herstart.state.value.streamUrl)
+        assertEquals(60_000L, herstart.state.value.startPositionMs)
+    }
+
+    @Test
+    fun eenLosseUrlInDeRouteWordtGenegeerd() = runTest(dispatcher) {
+        // Regressie: de oude parameter is weg. Een herstelde backstack uit
+        // een oudere versie mag geen URL meer naar binnen smokkelen.
+        val vm = viewModel(mapOf("u" to "http://gebruiker:wachtwoord@host/1"))
+        advanceUntilIdle()
+
+        assertEquals("", vm.state.value.streamUrl)
+        assertTrue(vm.state.value.sourceUnavailable)
+    }
+
+    @Test
     fun catchupZonderProviderGeeftMelding() = runTest(dispatcher) {
         val vm = viewModel(
             mapOf(

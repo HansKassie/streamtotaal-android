@@ -48,12 +48,9 @@ object Routes {
     const val PLAYBACK_TYPE_EPISODE = "ep"
     const val PLAYBACK_TYPE_CATCHUP = "cu"
 
-    // Tijdelijk: vervalt zodra alle bronnen zijn omgezet.
-    const val PLAYBACK_ARG_URL = "u"
-
     const val PLAYBACK_ROUTE =
         "playback?type={type}&cid={cid}&ext={ext}&st={st}&dur={dur}" +
-            "&u={u}&t={t}&m={m}"
+            "&t={t}&m={m}"
 
     fun playbackVod(
         contentId: String,
@@ -96,14 +93,6 @@ object Routes {
         val t = android.net.Uri.encode(title)
         val m = android.net.Uri.encode(mediaId)
         return "playback?type=$type&cid=$c&ext=$e&t=$t&m=$m"
-    }
-
-    // Tijdelijk, alleen nog voor catch-up.
-    fun playback(url: String, title: String, mediaId: String): String {
-        val u = android.net.Uri.encode(url)
-        val t = android.net.Uri.encode(title)
-        val m = android.net.Uri.encode(mediaId)
-        return "playback?u=$u&t=$t&m=$m"
     }
 
     const val SERIES_ARG_ID = "id"

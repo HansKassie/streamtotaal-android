@@ -192,10 +192,6 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
                 navArgument(Routes.PLAYBACK_ARG_DURATION) {
                     type = NavType.StringType; defaultValue = ""
                 },
-                // Tijdelijk: vervalt zodra alle bronnen zijn omgezet.
-                navArgument(Routes.PLAYBACK_ARG_URL) {
-                    type = NavType.StringType; defaultValue = ""
-                },
                 navArgument(Routes.PLAYBACK_ARG_TITLE) {
                     type = NavType.StringType; defaultValue = ""
                 },
