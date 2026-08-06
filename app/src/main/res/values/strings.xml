@@ -180,7 +180,7 @@
     <string name="account_unknown">Onbekend</string>
     <string name="account_status_prefix">Status: %1$s</string>
     <string name="account_expiry_prefix">Verloopt: %1$s</string>
-    <string name="account_max_prefix">Max: %1$s</string>
+    <string name="account_max_prefix">Gelijktijdige verbindingen: %1$s</string>
     <string name="settings_providers">Providers</string>
     <string name="provider_switched_toast">Gewisseld naar %1$s</string>
     <string name="settings_connection_test">Verbinding testen</string>
