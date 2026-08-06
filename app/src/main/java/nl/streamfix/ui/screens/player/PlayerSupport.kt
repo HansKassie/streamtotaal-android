@@ -67,9 +67,11 @@ import nl.streamfix.R
 // Media3's lint-check UnsafeOptInUsageError.
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-fun rememberStreamFixExoPlayer(): ExoPlayer {
+fun rememberStreamFixExoPlayer(
+    preferDutchSubtitles: Boolean = false,
+): ExoPlayer {
     val context = LocalContext.current
-    return remember(context) {
+    return remember(context, preferDutchSubtitles) {
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
                 /* minBufferMs = */ 30_000,
@@ -86,6 +88,14 @@ fun rememberStreamFixExoPlayer(): ExoPlayer {
             .setLoadControl(loadControl)
             .setMediaSourceFactory(mediaSourceFactory)
             .build()
+            .apply {
+                if (preferDutchSubtitles) {
+                    trackSelectionParameters = trackSelectionParameters
+                        .buildUpon()
+                        .setPreferredTextLanguages("nl", "nld", "dut")
+                        .build()
+                }
+            }
     }
 }
 

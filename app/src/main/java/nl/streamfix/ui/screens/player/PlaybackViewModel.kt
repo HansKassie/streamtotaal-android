@@ -41,10 +41,15 @@ class PlaybackViewModel @Inject constructor(
     private val type: String =
         savedStateHandle.get<String>(Routes.PLAYBACK_ARG_TYPE).orEmpty()
 
-    /** Alleen films en afleveringen vragen bevestiging bij verlaten. */
-    val requiresExitConfirmation: Boolean =
+    private val isOnDemandContent: Boolean =
         type == Routes.PLAYBACK_TYPE_VOD ||
             type == Routes.PLAYBACK_TYPE_EPISODE
+
+    /** Alleen films en afleveringen vragen bevestiging bij verlaten. */
+    val requiresExitConfirmation: Boolean = isOnDemandContent
+
+    /** Live TV en terugkijken houden hun bestaande ondertitelgedrag. */
+    val prefersDutchSubtitles: Boolean = isOnDemandContent
     private val contentId: String =
         savedStateHandle.get<String>(Routes.PLAYBACK_ARG_CONTENT).orEmpty()
     private val extension: String =

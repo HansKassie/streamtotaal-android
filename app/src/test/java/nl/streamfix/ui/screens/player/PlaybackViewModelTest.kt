@@ -189,6 +189,7 @@ class PlaybackViewModelTest {
         assertTrue(vm.state.value.ready)
         assertFalse(vm.state.value.sourceUnavailable)
         assertTrue(vm.requiresExitConfirmation)
+        assertTrue(vm.prefersDutchSubtitles)
     }
 
     @Test
@@ -208,6 +209,7 @@ class PlaybackViewModelTest {
         assertEquals("7" to "mp4", series.lastArgs)
         assertEquals("stream://ep/7.mp4", vm.state.value.streamUrl)
         assertTrue(vm.requiresExitConfirmation)
+        assertTrue(vm.prefersDutchSubtitles)
     }
 
     @Test
@@ -269,6 +271,7 @@ class PlaybackViewModelTest {
         assertEquals("stream://cu/9.ts", vm.state.value.streamUrl)
         assertFalse(vm.state.value.sourceUnavailable)
         assertFalse(vm.requiresExitConfirmation)
+        assertFalse(vm.prefersDutchSubtitles)
     }
 
     @Test

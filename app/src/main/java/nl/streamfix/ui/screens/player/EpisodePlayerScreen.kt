@@ -65,7 +65,7 @@ fun EpisodePlayerScreen(
     val scope = rememberCoroutineScope()
     var chromeVisible by remember { mutableStateOf(false) }
 
-    val player = rememberStreamFixExoPlayer()
+    val player = rememberStreamFixExoPlayer(preferDutchSubtitles = true)
     var countdown by remember { mutableStateOf<Int?>(null) }
     var retryAttempt by remember { mutableIntStateOf(0) }
     var retryJob by remember { mutableStateOf<Job?>(null) }
