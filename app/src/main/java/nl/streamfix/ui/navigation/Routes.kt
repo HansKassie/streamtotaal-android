@@ -39,16 +39,21 @@ object Routes {
     const val PLAYBACK_ARG_TITLE = "t"
     const val PLAYBACK_ARG_MEDIA = "m"
 
+    /** Alleen voor catch-up: begintijd in ms en duur in minuten. */
+    const val PLAYBACK_ARG_START = "st"
+    const val PLAYBACK_ARG_DURATION = "dur"
+
     /** Waarden voor [PLAYBACK_ARG_TYPE]. */
     const val PLAYBACK_TYPE_VOD = "vod"
     const val PLAYBACK_TYPE_EPISODE = "ep"
+    const val PLAYBACK_TYPE_CATCHUP = "cu"
 
-    // Tijdelijk: catch-up geeft nog een complete URL door. Vervalt zodra
-    // die route is omgezet.
+    // Tijdelijk: vervalt zodra alle bronnen zijn omgezet.
     const val PLAYBACK_ARG_URL = "u"
 
     const val PLAYBACK_ROUTE =
-        "playback?type={type}&cid={cid}&ext={ext}&u={u}&t={t}&m={m}"
+        "playback?type={type}&cid={cid}&ext={ext}&st={st}&dur={dur}" +
+            "&u={u}&t={t}&m={m}"
 
     fun playbackVod(
         contentId: String,
@@ -64,6 +69,20 @@ object Routes {
         mediaId: String,
     ): String =
         playbackSource(PLAYBACK_TYPE_EPISODE, contentId, extension, title, mediaId)
+
+    fun playbackCatchup(
+        channelId: String,
+        startMs: Long,
+        durationMin: Int,
+        title: String,
+        mediaId: String,
+    ): String {
+        val c = android.net.Uri.encode(channelId)
+        val t = android.net.Uri.encode(title)
+        val m = android.net.Uri.encode(mediaId)
+        return "playback?type=$PLAYBACK_TYPE_CATCHUP&cid=$c" +
+            "&st=$startMs&dur=$durationMin&t=$t&m=$m"
+    }
 
     private fun playbackSource(
         type: String,

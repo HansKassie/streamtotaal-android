@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.streamfix.domain.usecase.GetEpisodeStreamUrlUseCase
 import nl.streamfix.domain.usecase.GetResumePositionUseCase
+import nl.streamfix.domain.usecase.GetTimeshiftUrlUseCase
 import nl.streamfix.domain.usecase.GetVodStreamUrlUseCase
 import nl.streamfix.domain.usecase.SaveResumePositionUseCase
 import nl.streamfix.ui.navigation.Routes
@@ -32,6 +33,7 @@ class PlaybackViewModel @Inject constructor(
     private val saveResumePosition: SaveResumePositionUseCase,
     private val getVodStreamUrl: GetVodStreamUrlUseCase,
     private val getEpisodeStreamUrl: GetEpisodeStreamUrlUseCase,
+    private val getTimeshiftUrl: GetTimeshiftUrlUseCase,
 ) : ViewModel() {
 
     private val mediaId: String =
@@ -42,21 +44,27 @@ class PlaybackViewModel @Inject constructor(
         savedStateHandle.get<String>(Routes.PLAYBACK_ARG_CONTENT).orEmpty()
     private val extension: String =
         savedStateHandle.get<String>(Routes.PLAYBACK_ARG_EXT).orEmpty()
+    private val startMs: Long =
+        savedStateHandle.get<String>(Routes.PLAYBACK_ARG_START)
+            ?.toLongOrNull() ?: 0L
+    private val durationMin: Int =
+        savedStateHandle.get<String>(Routes.PLAYBACK_ARG_DURATION)
+            ?.toIntOrNull() ?: 0
 
-    // Tijdelijk: alleen catch-up geeft nog een kant-en-klare URL door.
+    // Tijdelijk: vervalt zodra alle bronnen zijn omgezet.
     private val legacyUrl: String =
         savedStateHandle.get<String>(Routes.PLAYBACK_ARG_URL).orEmpty()
 
     /**
      * De stream-URL wordt hier opgebouwd uit de brongegevens uit de route,
-     * zodat de inloggegevens niet in de navigatiestate terechtkomen. De
-     * legacy-parameter wordt alleen nog gebruikt door catch-up, dat nog
-     * omgezet moet worden.
+     * zodat de inloggegevens niet in de navigatiestate terechtkomen.
      */
     private fun buildStreamUrl(): String? = when (type) {
         Routes.PLAYBACK_TYPE_VOD -> getVodStreamUrl(contentId, extension)
         Routes.PLAYBACK_TYPE_EPISODE ->
             getEpisodeStreamUrl(contentId, extension)
+        Routes.PLAYBACK_TYPE_CATCHUP ->
+            getTimeshiftUrl(contentId, startMs, durationMin)
         else -> legacyUrl.takeIf { it.isNotBlank() }
     }
 

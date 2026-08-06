@@ -13,15 +13,18 @@ import kotlinx.coroutines.test.setMain
 import nl.streamfix.domain.model.AppError
 import nl.streamfix.domain.model.HistoryItem
 import nl.streamfix.domain.model.LiveCategory
+import nl.streamfix.domain.model.LiveChannel
 import nl.streamfix.domain.model.SeriesDetail
 import nl.streamfix.domain.model.SeriesItem
 import nl.streamfix.domain.model.VodDetail
 import nl.streamfix.domain.model.VodItem
+import nl.streamfix.domain.repository.LiveRepository
 import nl.streamfix.domain.repository.PlaybackRepository
 import nl.streamfix.domain.repository.SeriesRepository
 import nl.streamfix.domain.repository.VodRepository
 import nl.streamfix.domain.usecase.GetEpisodeStreamUrlUseCase
 import nl.streamfix.domain.usecase.GetResumePositionUseCase
+import nl.streamfix.domain.usecase.GetTimeshiftUrlUseCase
 import nl.streamfix.domain.usecase.GetVodStreamUrlUseCase
 import nl.streamfix.domain.usecase.SaveResumePositionUseCase
 import nl.streamfix.domain.util.AppResult
@@ -77,6 +80,42 @@ private class FakeSeriesRepository(
     }
 }
 
+private class FakeTimeshiftRepository(
+    var timeshift: String? = "stream://timeshift",
+) : LiveRepository {
+    override suspend fun getCategories(): AppResult<List<LiveCategory>> =
+        AppResult.Success(emptyList())
+
+    override suspend fun getChannels(
+        categoryId: String?,
+    ): AppResult<List<LiveChannel>> = AppResult.Success(emptyList())
+
+    override fun observeFavorites(): Flow<List<LiveChannel>> =
+        flowOf(emptyList())
+
+    override suspend fun setFavorite(channel: LiveChannel, favorite: Boolean) =
+        Unit
+
+    override fun streamUrl(channelId: String): String? = null
+    override fun streamUrlForCast(channelId: String): String? = null
+
+    var lastTimeshiftArgs: Triple<String, Long, Int>? = null
+
+    override fun timeshiftUrl(
+        channelId: String,
+        startMs: Long,
+        durationMin: Int,
+    ): String? {
+        lastTimeshiftArgs = Triple(channelId, startMs, durationMin)
+        return timeshift
+    }
+
+    override fun rememberLastChannel(categoryId: String, channel: LiveChannel) =
+        Unit
+
+    override fun lastWatchedChannel(): Pair<String, String>? = null
+}
+
 private class FakePlaybackRepository(
     private val position: Long = 0L,
 ) : PlaybackRepository {
@@ -119,12 +158,14 @@ class PlaybackViewModelTest {
         vod: FakeVodRepository = FakeVodRepository(),
         series: FakeSeriesRepository = FakeSeriesRepository(),
         playback: FakePlaybackRepository = FakePlaybackRepository(),
+        live: FakeTimeshiftRepository = FakeTimeshiftRepository(),
     ) = PlaybackViewModel(
         savedStateHandle = SavedStateHandle(args),
         getResumePosition = GetResumePositionUseCase(playback),
         saveResumePosition = SaveResumePositionUseCase(playback),
         getVodStreamUrl = GetVodStreamUrlUseCase(vod),
         getEpisodeStreamUrl = GetEpisodeStreamUrlUseCase(series),
+        getTimeshiftUrl = GetTimeshiftUrlUseCase(live),
     )
 
     @Test
@@ -205,17 +246,41 @@ class PlaybackViewModelTest {
     }
 
     @Test
-    fun catchupBlijftVoorlopigWerkenViaDeOudeRoute() = runTest(dispatcher) {
-        // Vervalt zodra catch-up een eigen route heeft.
+    fun catchupBronWordtLokaalOpgebouwd() = runTest(dispatcher) {
+        val live = FakeTimeshiftRepository(timeshift = "stream://cu/9.ts")
         val vm = viewModel(
             mapOf(
-                Routes.PLAYBACK_ARG_URL to "stream://timeshift",
-                Routes.PLAYBACK_ARG_MEDIA to "catchup:1:2",
+                Routes.PLAYBACK_ARG_TYPE to Routes.PLAYBACK_TYPE_CATCHUP,
+                Routes.PLAYBACK_ARG_CONTENT to "9",
+                Routes.PLAYBACK_ARG_START to "1700000000000",
+                Routes.PLAYBACK_ARG_DURATION to "45",
+                Routes.PLAYBACK_ARG_MEDIA to "catchup:9:1700000000",
             ),
+            live = live,
         )
         advanceUntilIdle()
 
-        assertEquals("stream://timeshift", vm.state.value.streamUrl)
+        assertEquals(
+            Triple("9", 1_700_000_000_000L, 45),
+            live.lastTimeshiftArgs,
+        )
+        assertEquals("stream://cu/9.ts", vm.state.value.streamUrl)
         assertFalse(vm.state.value.sourceUnavailable)
+    }
+
+    @Test
+    fun catchupZonderProviderGeeftMelding() = runTest(dispatcher) {
+        val vm = viewModel(
+            mapOf(
+                Routes.PLAYBACK_ARG_TYPE to Routes.PLAYBACK_TYPE_CATCHUP,
+                Routes.PLAYBACK_ARG_CONTENT to "9",
+                Routes.PLAYBACK_ARG_START to "1700000000000",
+                Routes.PLAYBACK_ARG_DURATION to "45",
+            ),
+            live = FakeTimeshiftRepository(timeshift = null),
+        )
+        advanceUntilIdle()
+
+        assertTrue(vm.state.value.sourceUnavailable)
     }
 }

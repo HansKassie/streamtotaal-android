@@ -41,7 +41,7 @@ import java.util.Locale
 @Composable
 fun CatchupChannelScreen(
     onBack: () -> Unit,
-    onPlay: (streamUrl: String, title: String, mediaId: String) -> Unit,
+    onPlay: (CatchupTarget) -> Unit,
     viewModel: CatchupChannelViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -114,9 +114,7 @@ fun CatchupChannelScreen(
                                 .fillMaxWidth()
                                 .tvFocusable()
                                 .clickable {
-                                    viewModel.targetFor(p)?.let { (u, t, m) ->
-                                        onPlay(u, t, m)
-                                    }
+                                    viewModel.targetFor(p)?.let(onPlay)
                                 }
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                         ) {

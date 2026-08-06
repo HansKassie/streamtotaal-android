@@ -185,7 +185,14 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
                 navArgument(Routes.PLAYBACK_ARG_EXT) {
                     type = NavType.StringType; defaultValue = ""
                 },
-                // Tijdelijk: alleen catch-up geeft nog een URL door.
+                // Alleen catch-up.
+                navArgument(Routes.PLAYBACK_ARG_START) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                navArgument(Routes.PLAYBACK_ARG_DURATION) {
+                    type = NavType.StringType; defaultValue = ""
+                },
+                // Tijdelijk: vervalt zodra alle bronnen zijn omgezet.
                 navArgument(Routes.PLAYBACK_ARG_URL) {
                     type = NavType.StringType; defaultValue = ""
                 },
@@ -279,9 +286,15 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
         ) {
             CatchupChannelScreen(
                 onBack = { navController.popBackStack() },
-                onPlay = { url, title, mediaId ->
+                onPlay = { target ->
                     navController.navigate(
-                        Routes.playback(url, title, mediaId),
+                        Routes.playbackCatchup(
+                            channelId = target.channelId,
+                            startMs = target.startMs,
+                            durationMin = target.durationMin,
+                            title = target.title,
+                            mediaId = target.mediaId,
+                        ),
                     )
                 },
             )

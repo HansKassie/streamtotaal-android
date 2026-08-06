@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.usecase.GetCatchupEpgUseCase
-import nl.streamfix.domain.usecase.GetTimeshiftUrlUseCase
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.ui.navigation.Routes
 import nl.streamfix.ui.uiMessage
@@ -30,7 +29,6 @@ data class CatchupChannelState(
 class CatchupChannelViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getCatchupEpg: GetCatchupEpgUseCase,
-    private val getTimeshiftUrl: GetTimeshiftUrlUseCase,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -72,14 +70,6 @@ class CatchupChannelViewModel @Inject constructor(
         }
     }
 
-    /** (streamUrl, title, mediaId) om terug te kijken, of null. */
-    fun targetFor(p: EpgProgramme): Triple<String, String, String>? {
-        val durationMin =
-            ((p.endMs - p.startMs) / 60_000L).toInt().coerceAtLeast(1)
-        val url = getTimeshiftUrl(channelId, p.startMs, durationMin)
-            ?: return null
-        val title = "${_state.value.channelName} - ${p.title}"
-        val mediaId = "catchup:$channelId:${p.startMs / 1000L}"
-        return Triple(url, title, mediaId)
-    }
+    fun targetFor(p: EpgProgramme): CatchupTarget? =
+        catchupTargetFor(channelId, _state.value.channelName, p)
 }
