@@ -3,9 +3,11 @@ package nl.streamfix.ui.screens.player
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -34,12 +36,21 @@ private class FakeLiveRepository(
 ) : LiveRepository {
     var channelResult: AppResult<List<LiveChannel>> = AppResult.Success(channels)
 
+    /** Laat een trage laadpoging nabootsen, voor de race-test. */
+    var loadDelayMs: Long = 0L
+
     override suspend fun getCategories(): AppResult<List<LiveCategory>> =
         AppResult.Success(emptyList())
 
     override suspend fun getChannels(
         categoryId: String?,
-    ): AppResult<List<LiveChannel>> = channelResult
+    ): AppResult<List<LiveChannel>> {
+        // Bewust vooraf vastleggen: anders pakt een trage poging alsnog
+        // het nieuwere antwoord op en valt er niets te racen.
+        val result = channelResult
+        if (loadDelayMs > 0L) delay(loadDelayMs)
+        return result
+    }
 
     override fun observeFavorites(): Flow<List<LiveChannel>> =
         flowOf(channels)
@@ -159,16 +170,55 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun legeCategorieGeeftNietBeschikbaar() = runTest(dispatcher) {
+    fun legeLijstIsHerstelbaarEnGeenVerdwenenZender() = runTest(dispatcher) {
         val vm = viewModel(
             startChannelId = "c1",
             repo = FakeLiveRepository(emptyList()),
         )
         advanceUntilIdle()
-        assertTrue(vm.state.value.channelUnavailable)
+        assertTrue(vm.state.value.channelListEmpty)
         assertFalse(vm.state.value.channelLoadFailed)
         assertEquals(null, vm.state.value.streamUrl)
     }
+
+    @Test
+    fun legeLijstIsTeHerstellenMetOpnieuwProberen() = runTest(dispatcher) {
+        val repo = FakeLiveRepository(sample).apply {
+            channelResult = AppResult.Success(emptyList())
+        }
+        val vm = viewModel(startChannelId = "c1", repo = repo)
+        advanceUntilIdle()
+        assertTrue(vm.state.value.channelListEmpty)
+
+        repo.channelResult = AppResult.Success(sample)
+        vm.retryLoad()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.channelListEmpty)
+        assertEquals("c1", vm.state.value.currentChannelId)
+    }
+
+    @Test
+    fun trageEerstePogingOverschrijftGeslaagdeTweedeNiet() =
+        runTest(dispatcher) {
+            // Regressie: zonder annuleerbare job plus generatieteller zet de
+            // late mislukte poging alsnog een foutvlag, en die melding landt
+            // over beeld dat al speelt.
+            val repo = FakeLiveRepository(sample).apply {
+                channelResult = AppResult.Failure(AppError.NetworkUnavailable)
+                loadDelayMs = 5_000L
+            }
+            val vm = viewModel(startChannelId = "c1", repo = repo)
+            advanceTimeBy(1_000L)
+
+            repo.channelResult = AppResult.Success(sample)
+            repo.loadDelayMs = 0L
+            vm.retryLoad()
+            advanceUntilIdle()
+
+            assertFalse(vm.state.value.channelLoadFailed)
+            assertFalse(vm.state.value.channelListEmpty)
+            assertEquals("c1", vm.state.value.currentChannelId)
+        }
 
     @Test
     fun netwerkfoutKanOpnieuwWordenGeprobeerd() = runTest(dispatcher) {
@@ -178,7 +228,7 @@ class PlayerViewModelTest {
         val vm = viewModel(startChannelId = "c1", repo = repo)
         advanceUntilIdle()
         assertTrue(vm.state.value.channelLoadFailed)
-        assertFalse(vm.state.value.channelUnavailable)
+        assertFalse(vm.state.value.channelListEmpty)
 
         repo.channelResult = AppResult.Success(sample)
         vm.retryLoad()

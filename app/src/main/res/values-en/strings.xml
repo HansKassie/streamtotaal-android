@@ -143,7 +143,8 @@
     <string name="player_channel_group_problem">Channel temporarily unavailable in this group</string>
     <string name="player_channel_group_hint">Pick another group and open the same channel there</string>
     <string name="player_channel_load_failed">Unable to load the channel list. Check your connection and try again.</string>
-    <string name="player_channel_unavailable">This channel is no longer available. Go back and pick another channel.</string>
+    <string name="player_channel_list_empty">No channels were received</string>
+    <string name="player_channel_list_empty_hint">Try again, or go back and pick another group</string>
     <string name="player_retry_now">Retry now</string>
     <string name="player_resume_dialog_title">Continue watching?</string>
     <string name="player_resume_dialog_body">You stopped at %1$s.</string>

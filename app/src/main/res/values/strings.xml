@@ -144,7 +144,8 @@
     <string name="player_channel_group_problem">Zender tijdelijk niet beschikbaar in deze groep</string>
     <string name="player_channel_group_hint">Kies een andere groep en open daar dezelfde zender opnieuw</string>
     <string name="player_channel_load_failed">Kan de zenderlijst niet laden. Controleer je verbinding en probeer opnieuw.</string>
-    <string name="player_channel_unavailable">Deze zender is niet meer beschikbaar. Ga terug en kies een andere zender.</string>
+    <string name="player_channel_list_empty">Geen zenders ontvangen</string>
+    <string name="player_channel_list_empty_hint">Probeer het opnieuw, of ga terug en kies een andere groep</string>
     <string name="player_retry_now">Nu opnieuw proberen</string>
     <string name="player_resume_dialog_title">Verder kijken?</string>
     <string name="player_resume_dialog_body">Je was gebleven bij %1$s.</string>

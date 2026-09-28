@@ -85,6 +85,13 @@ class CastController(
     var current: Player by mutableStateOf(exo)
         private set
 
+    /**
+     * True zolang de lokale speler het beeld levert. Tijdens casten blijft
+     * de lokale ExoPlayer bestaan en kan hij nog fouten geven, maar die
+     * zeggen dan niets over wat de kijker ziet.
+     */
+    val isLocalActive: Boolean get() = current === exo
+
     // Lokale (speler) en cast-variant kunnen verschillen: live cast verplicht
     // HLS, want Chromecast speelt geen rauwe .ts.
     private var localItem: MediaItem? = null
@@ -188,9 +195,16 @@ class CastController(
         castPlayer?.stop()
     }
 
-    /** Lokaal opnieuw proberen; tijdens casten regelt de ontvanger dit zelf. */
-    fun retryLocal() {
+    /**
+     * Lokaal opnieuw proberen; tijdens casten regelt de ontvanger dit zelf.
+     *
+     * Live springt eerst terug naar de live-rand, net als [resumeLocal].
+     * Opnieuw preparen op een verouderde live-positie kan direct opnieuw
+     * mislukken.
+     */
+    fun retryLocal(isLive: Boolean = false) {
         if (current === exo) {
+            if (isLive) exo.seekToDefaultPosition()
             exo.prepare()
             exo.playWhenReady = true
         }

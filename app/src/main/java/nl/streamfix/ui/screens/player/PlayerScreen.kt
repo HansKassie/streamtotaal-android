@@ -2,6 +2,7 @@ package nl.streamfix.ui.screens.player
 
 import android.app.Activity
 import android.media.AudioManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -70,6 +71,16 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/**
+ * Hoe lang een storing mag duren voordat de kijker er iets van merkt. Ruim
+ * genoeg voor twee automatische pogingen (1s en 2s backoff) plus de
+ * aanloopbuffer, zodat een gewone hapering onzichtbaar blijft.
+ */
+private const val ERROR_GRACE_MS = 6_000L
+
+/** Vanaf hier is het geen hapering meer en mag de groeptip erbij. */
+private const val ERROR_PERSISTENT_MS = 20_000L
+
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(
@@ -109,8 +120,24 @@ fun PlayerScreen(
     var retryAttempt by remember { mutableIntStateOf(0) }
     var retryJob by remember { mutableStateOf<Job?>(null) }
     var showError by remember { mutableStateOf(false) }
+    // Blijft de storing aanhouden, dan pas de groeptip; die trekt een
+    // conclusie over de zender en die is bij een korte hapering onjuist.
+    var persistentError by remember { mutableStateOf(false) }
+    var errorJob by remember { mutableStateOf<Job?>(null) }
     val cast = rememberCastController(player)
     PauseLocalWhenBackgrounded(cast, isLive = true)
+
+    // Alles wat bij een storing hoort in een klap opruimen, zodat er geen
+    // vertraagde melding meer binnenvalt nadat het beeld alweer speelt.
+    fun clearErrorState() {
+        errorJob?.cancel()
+        errorJob = null
+        retryJob?.cancel()
+        retryJob = null
+        retryAttempt = 0
+        showError = false
+        persistentError = false
+    }
 
     // Markeer dat we in de speler zitten zodat MainActivity PiP kan starten.
     DisposableEffect(Unit) {
@@ -123,24 +150,39 @@ fun PlayerScreen(
     }
 
     // Auto-retry met exponentiele backoff (briefing: herstel binnen ~10s).
+    //
+    // De melding komt bewust NIET meteen in beeld. Een netwerkdip, een
+    // read-timeout of een bronwissel bij de provider is bij IPTV dagelijkse
+    // kost en lost zichzelf meestal binnen een seconde op. Direct melden
+    // dat de zender niet beschikbaar is, is dan onwaar en precies waarover
+    // klanten belden. Tot ERROR_GRACE_MS ziet de kijker alleen de
+    // bufferspinner die de PlayerView al toont.
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) {
-                    retryAttempt = 0
-                    showError = false
-                }
+                if (playbackState == Player.STATE_READY) clearErrorState()
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                showError = true
+                // Tijdens casten speelt de ontvanger; een fout van de
+                // lokale speler zegt dan niets over wat de kijker ziet.
+                if (!cast.isLocalActive) return
+
                 val backoffMs =
                     (1000L shl retryAttempt.coerceAtMost(3)).coerceAtMost(8000L)
                 retryAttempt++
                 retryJob?.cancel()
                 retryJob = scope.launch {
                     delay(backoffMs)
-                    cast.retryLocal()
+                    cast.retryLocal(isLive = true)
+                }
+                // Alleen bij de eerste fout van een reeks de klok starten.
+                if (errorJob?.isActive == true) return
+                errorJob = scope.launch {
+                    delay(ERROR_GRACE_MS)
+                    showError = true
+                    delay(ERROR_PERSISTENT_MS - ERROR_GRACE_MS)
+                    persistentError = true
                 }
             }
         }
@@ -148,12 +190,15 @@ fun PlayerScreen(
         onDispose { player.removeListener(listener) }
     }
 
+    // Gaat het casten over, dan hoort een openstaande lokale melding weg.
+    LaunchedEffect(cast.isLocalActive) {
+        if (!cast.isLocalActive) clearErrorState()
+    }
+
     // Wissel de bron als het kanaal verandert (vorige/volgende).
     LaunchedEffect(state.streamUrl) {
         val url = state.streamUrl ?: return@LaunchedEffect
-        retryJob?.cancel()
-        retryAttempt = 0
-        showError = false
+        clearErrorState()
         cast.load(
             url,
             state.title,
@@ -161,6 +206,17 @@ fun PlayerScreen(
             isLive = true,
             castUri = state.castStreamUrl ?: url,
         )
+    }
+
+    // Terug sluit eerst wat eroverheen ligt en pas daarna de speler. De
+    // film- en seriespelers doen dit al; de live-speler was overgeslagen.
+    BackHandler(enabled = channelListOpen || showError) {
+        if (channelListOpen) {
+            channelListOpen = false
+        } else {
+            showError = false
+            persistentError = false
+        }
     }
 
     Box(
@@ -180,6 +236,14 @@ fun PlayerScreen(
                                 channelListOpen = false
                                 return@onPreviewKeyEvent true
                             }
+                            return@onPreviewKeyEvent false
+                        }
+                        // Ligt er een melding overheen, dan horen de toetsen
+                        // bij die knop en niet bij zappen. Zonder dit slikt
+                        // de speler OK op en is de knop onbedienbaar.
+                        if (showError || state.channelListEmpty ||
+                            state.channelLoadFailed
+                        ) {
                             return@onPreviewKeyEvent false
                         }
                         if (e.key == Key.Back) return@onPreviewKeyEvent false
@@ -309,18 +373,21 @@ fun PlayerScreen(
         }
 
         if (showError) {
-            // Live-specifiek: dezelfde zender zit vaak in meerdere groepen en
-            // werkt daar wel, dus dat is een concretere tip dan "controleer je
-            // verbinding". Films en series houden de algemene melding, want
-            // daar bestaan geen groepen.
+            // Twee trappen. Eerst de eerlijke boodschap dat het herstel nog
+            // loopt. Pas als de storing aanhoudt de groeptip: dezelfde zender
+            // zit vaak in meerdere groepen en werkt daar wel. Die tip trekt
+            // een conclusie over de zender, en die is bij een hapering onjuist.
             PlayerErrorOverlay(
-                messageRes = R.string.player_channel_group_problem,
-                hintRes = R.string.player_channel_group_hint,
+                messageRes = if (persistentError) {
+                    R.string.player_channel_group_problem
+                } else {
+                    R.string.player_connection_problem
+                },
+                hintRes = R.string.player_channel_group_hint
+                    .takeIf { persistentError },
                 onRetry = {
-                    retryJob?.cancel()
-                    retryAttempt = 0
-                    cast.retryLocal()
-                    showError = false
+                    clearErrorState()
+                    cast.retryLocal(isLive = true)
                 },
             )
         }
@@ -332,20 +399,15 @@ fun PlayerScreen(
             )
         }
 
-        if (state.channelUnavailable) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.8f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.player_channel_unavailable),
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(24.dp),
-                )
-            }
+        if (state.channelListEmpty) {
+            // Herstelbaar: een leeg antwoord bewijst niet dat de zender weg
+            // is. Daarom dezelfde overlay met een knop, niet een doodlopende
+            // mededeling.
+            PlayerErrorOverlay(
+                messageRes = R.string.player_channel_list_empty,
+                hintRes = R.string.player_channel_list_empty_hint,
+                onRetry = viewModel::retryLoad,
+            )
         }
 
         if (!isTv) Row(

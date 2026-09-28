@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,7 +32,13 @@ data class PlayerUiState(
     val channels: List<LiveChannel> = emptyList(),
     val currentChannelId: String? = null,
     val hasLast: Boolean = false,
-    val channelUnavailable: Boolean = false,
+    /**
+     * De lijst kwam leeg terug. Bewust GEEN "deze zender bestaat niet meer":
+     * een leeg antwoord komt ook van een hernoemde categorie, een panel dat
+     * tijdelijk [] teruggeeft of een filter, terwijl de zender zelf prima
+     * werkt. Daarom herstelbaar, met een knop om opnieuw te laden.
+     */
+    val channelListEmpty: Boolean = false,
     val channelLoadFailed: Boolean = false,
 )
 
@@ -68,12 +75,25 @@ class PlayerViewModel @Inject constructor(
         load()
     }
 
+    /**
+     * Annuleerbaar en met een generatieteller, zoals de andere ViewModels
+     * sinds 1.0.14. Zonder dit kan een trage eerste poging na een geslaagde
+     * tweede alsnog een foutvlag zetten, en die melding landt dan over
+     * beeld dat gewoon speelt.
+     */
+    private var loadJob: Job? = null
+    private var loadGeneration: Int = 0
+
     private fun load() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        val generation = ++loadGeneration
+        loadJob = viewModelScope.launch {
             _state.update {
-                it.copy(channelUnavailable = false, channelLoadFailed = false)
+                it.copy(channelListEmpty = false, channelLoadFailed = false)
             }
-            when (val result = loadChannels()) {
+            val result = loadChannels()
+            if (generation != loadGeneration) return@launch
+            when (result) {
                 ChannelLoadResult.Failure -> {
                     channels = emptyList()
                     _state.update { it.copy(channelLoadFailed = true) }
@@ -82,7 +102,7 @@ class PlayerViewModel @Inject constructor(
                 is ChannelLoadResult.Success -> channels = result.channels
             }
             if (channels.isEmpty()) {
-                _state.update { it.copy(channelUnavailable = true) }
+                _state.update { it.copy(channelListEmpty = true) }
                 return@launch
             }
             // Bewuste tv-conventie: bestaat het (opgeslagen) startkanaal
