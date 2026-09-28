@@ -9,7 +9,7 @@ import android.os.Looper
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import java.io.File
-import java.security.MessageDigest
+import nl.streamfix.domain.util.ApkChecksum
 import java.util.concurrent.TimeUnit
 import nl.streamfix.BuildConfig
 import nl.streamfix.DeviceMode
@@ -52,8 +52,8 @@ object AppUpdater {
 
     /**
      * Downloadt de update-APK en start bij succes de installer.
-     * [expectedSha256] (hex, optioneel) wordt na de download tegen het
-     * bestand geverifieerd; mismatch = mislukt, geen installatie.
+     * [expectedSha256] moet geldige SHA-256-hex zijn en na de download
+     * overeenkomen met het bestand; anders volgt geen installatie.
      * [onResult] wordt op de main-thread aangeroepen met de uitkomst en,
      * bij een fout, een korte diagnosecode voor ondersteuning op afstand.
      */
@@ -64,6 +64,10 @@ object AppUpdater {
         onProgress: (Int) -> Unit = {},
         onResult: (UpdateOutcome) -> Unit = {},
     ) {
+        if (!ApkChecksum.isValid(expectedSha256)) {
+            onResult(UpdateOutcome(UpdateResult.IntegrityFailed, "HASH_INVALID"))
+            return
+        }
         val appContext = context.applicationContext
         if (!canInstallPackages(appContext)) {
             val settingsOpened = openInstallPermissionSettings(appContext)
@@ -194,7 +198,7 @@ object AppUpdater {
                     partial.copyTo(target, overwrite = true)
                     partial.delete()
                 }
-                if (checksumOk(context, expectedSha256)) {
+                if (ApkChecksum.matches(target, expectedSha256)) {
                     DownloadOutcome(DownloadResult.Success)
                 } else {
                     DownloadOutcome(DownloadResult.IntegrityFailed, "HASH_MISMATCH")
@@ -228,26 +232,6 @@ object AppUpdater {
                 ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
         }.isSuccess
-    }
-
-    /** True als er geen hash is meegegeven of het bestand exact klopt. */
-    private fun checksumOk(context: Context, expected: String?): Boolean {
-        if (expected.isNullOrBlank()) return true
-        return runCatching {
-            val file = updateFile(context)
-            val digest = MessageDigest.getInstance("SHA-256")
-            file.inputStream().use { input ->
-                val buffer = ByteArray(64 * 1024)
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read <= 0) break
-                    digest.update(buffer, 0, read)
-                }
-            }
-            digest.digest()
-                .joinToString("") { "%02x".format(it) }
-                .equals(expected.trim(), ignoreCase = true)
-        }.getOrDefault(false)
     }
 
     /** Null als de Android-installer daadwerkelijk is geopend, anders een foutcode. */
