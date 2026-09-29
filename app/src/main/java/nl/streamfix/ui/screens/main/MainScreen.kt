@@ -313,7 +313,15 @@ fun MainScreen(
                 actions = {
                     // Bij meerdere abonnementen: altijd zichtbaar welk
                     // abonnement actief is, op elk tabblad.
-                    if (state.accounts.size > 1) {
+                    //
+                    // Uitzondering: op tv heeft Live TV een eigen
+                    // providerknop die ook kan wisselen, en die verschijnt
+                    // onder exact dezelfde voorwaarde (meer dan een
+                    // provider). Twee labels naast elkaar voor hetzelfde is
+                    // ruis; bij een enkel abonnement staat er geen knop, dus
+                    // dan blijft dit label wel staan.
+                    val shownByLiveTv = isTv && tabs[selected] == Tab.LiveTv
+                    if (state.accounts.size > 1 && !shownByLiveTv) {
                         Text(
                             text = state.account?.displayName.orEmpty(),
                             style = MaterialTheme.typography.labelLarge,

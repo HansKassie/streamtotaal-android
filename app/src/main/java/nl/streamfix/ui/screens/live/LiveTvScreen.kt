@@ -579,7 +579,13 @@ private fun ChannelRow(
                         )
                     }
                 }
-                if (next != null) {
+                // Op tv niet in de rij: het paneel rechts toont voor de
+                // gefocuste zender al uitgebreider wat er komt, mét tijden.
+                // Weglaten scheelt een regel per zender en houdt de
+                // rijhoogte gelijk, wat tijdens navigeren rustiger oogt dan
+                // rijen die groeien en krimpen. Op telefoon en tablet blijft
+                // hij staan, want daar is geen paneel.
+                if (next != null && !isTv) {
                     Text(
                         text = stringResource(
                             R.string.live_upcoming_prefix, next.title,
