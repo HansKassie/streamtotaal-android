@@ -438,7 +438,10 @@ private fun EpgInfoPanel(
                                     (current.endMs - current.startMs))
                                     .coerceIn(0f, 1f)
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().height(2.dp),
+                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f),
+                            gapSize = 0.dp,
+                            drawStopIndicator = {},
                         )
                     }
                     if (current.description.isNotBlank()) {
@@ -505,6 +508,7 @@ private fun ChannelRow(
     focusRequester: FocusRequester? = null,
 ) {
     val now = System.currentTimeMillis()
+    val isTv = LocalIsTv.current
     val current = programmes?.firstOrNull { now in it.startMs until it.endMs }
     val next = programmes?.firstOrNull { it.startMs > now }
     val progress = current?.let {
@@ -518,7 +522,7 @@ private fun ChannelRow(
             .focusGroup()
             .padding(
                 horizontal = 16.dp,
-                vertical = if (LocalIsTv.current) 7.dp else 10.dp,
+                vertical = if (isTv) 3.dp else 10.dp,
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -534,7 +538,11 @@ private fun ChannelRow(
                 )
                 .onFocusChanged { if (it.isFocused) onFocused() }
                 .tvFocusable()
-                .clickable(onClick = onClick),
+                .clickable(onClick = onClick)
+                .padding(
+                    horizontal = if (isTv) 8.dp else 0.dp,
+                    vertical = if (isTv) 6.dp else 0.dp,
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AsyncImage(
@@ -563,7 +571,11 @@ private fun ChannelRow(
                             progress = { progress },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 2.dp, bottom = 2.dp),
+                                .padding(top = 4.dp, bottom = 4.dp)
+                                .height(2.dp),
+                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f),
+                            gapSize = 0.dp,
+                            drawStopIndicator = {},
                         )
                     }
                 }
