@@ -1,9 +1,9 @@
 {
-    "versionCode": 19,
-    "versionName": "1.0.18",
+    "versionCode": 20,
+    "versionName": "1.0.19",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-    "sha256": "e8973cc36aa5b78db70d7925de60fa6f1325917356623c9e9cf445f842b4f3d8",
-    "releaseNotes": "Bij een storing in Live TV probeert de app eerst automatisch te herstellen voordat een foutmelding verschijnt. Het herstel van live-streams en de bediening van foutmeldingen met de afstandsbediening zijn verbeterd. Een lege zenderlijst kun je opnieuw laden. Lokale spelerfouten verstoren de weergave tijdens casten niet meer. Updates worden strenger gecontroleerd en een lopende download wordt niet meer na drie minuten afgebroken.",
+    "sha256": "0ea8c8f4a9ecc97306020b31a13d75ba176f7dff4334d3363c296cacfcff23f0",
+    "releaseNotes": "Op telefoon en tablet blijft het scherm nu aan zolang er beeld speelt, zodat het niet meer uit zichzelf dimt tijdens het kijken. Pauzeer je, dan gaat het scherm gewoon uit. In Live TV op de televisie is de zenderlijst rustiger geworden: dunnere voortgangsbalken, meer zenders tegelijk in beeld, en de naam van je provider staat niet langer dubbel in beeld.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }
