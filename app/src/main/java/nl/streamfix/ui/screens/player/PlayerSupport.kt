@@ -31,6 +31,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -156,6 +157,44 @@ fun handleTvPlaybackKey(
             playerView?.dispatchKeyEvent(event) ?: false
         }
         else -> false
+    }
+}
+
+/**
+ * Houdt het scherm aan zolang er echt beeld speelt.
+ *
+ * Zonder dit dimt een telefoon tijdens het kijken gewoon na de ingestelde
+ * schermtime-out, want Android weet niet dat er video loopt. Bewust aan
+ * [Player.isPlaying] gekoppeld en niet aan "de speler staat open": bij een
+ * gepauzeerde film hoort het scherm gewoon uit te gaan. Tijdens casten
+ * blijft het scherm ook niet aan, want het beeld staat dan op de tv.
+ */
+@Composable
+fun KeepScreenOnWhilePlaying(cast: CastController) {
+    val view = LocalView.current
+    val player = cast.current
+    var playing by remember { mutableStateOf(false) }
+
+    DisposableEffect(player) {
+        playing = player.isPlaying
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                playing = isPlaying
+            }
+        }
+        player.addListener(listener)
+        onDispose {
+            player.removeListener(listener)
+            playing = false
+        }
+    }
+
+    val keepOn = playing && cast.isLocalActive
+    DisposableEffect(view, keepOn) {
+        view.keepScreenOn = keepOn
+        // Altijd loslaten bij het verlaten van de speler, anders blijft het
+        // scherm van de rest van de app ook wakker.
+        onDispose { view.keepScreenOn = false }
     }
 }
 

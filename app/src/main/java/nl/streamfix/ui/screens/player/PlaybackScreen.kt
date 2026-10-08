@@ -79,6 +79,7 @@ fun PlaybackScreen(
     // tussen die knoppen te bewegen, en spoelt de speler dus niet.
     val topBarFocused = remember { mutableStateOf(false) }
     PauseLocalWhenBackgrounded(cast, isLive = false)
+    KeepScreenOnWhilePlaying(cast)
 
     // Overlays die in het spelervenster zelf liggen en dus met de
     // afstandsbediening bereikbaar moeten blijven.

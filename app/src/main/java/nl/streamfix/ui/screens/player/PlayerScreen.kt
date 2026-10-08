@@ -115,6 +115,7 @@ fun PlayerScreen(
     val persistentError = errorPhase == PlaybackErrorPhase.Persistent
     val cast = rememberCastController(player)
     PauseLocalWhenBackgrounded(cast, isLive = true)
+    KeepScreenOnWhilePlaying(cast)
 
     // Alles wat bij een storing hoort in een klap opruimen, zodat er geen
     // vertraagde melding meer binnenvalt nadat het beeld alweer speelt.

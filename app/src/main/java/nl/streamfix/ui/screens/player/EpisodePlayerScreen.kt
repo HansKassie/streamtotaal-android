@@ -86,6 +86,7 @@ fun EpisodePlayerScreen(
     val topBarFocused = remember { mutableStateOf(false) }
     val countdownFocus = remember { FocusRequester() }
     PauseLocalWhenBackgrounded(cast, isLive = false)
+    KeepScreenOnWhilePlaying(cast)
 
     LaunchedEffect(countdown != null) {
         if (countdown == null) return@LaunchedEffect
