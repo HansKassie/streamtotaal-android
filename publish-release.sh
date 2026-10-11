@@ -25,7 +25,11 @@
 #                                   zonder purgegegevens stopt hij na de APK
 #   ./publish-release.sh apk        alleen de APK (plus purge)
 #   ./publish-release.sh manifest   alleen version.json (plus controle)
+#   ./publish-release.sh purge      alleen purgen en controleren, geen upload
 #   ./publish-release.sh verify     alleen controleren wat er live staat
+#
+# Met "purge" test je je Cloudflare-gegevens los van een uitrol: een bestand
+# purgen dat al goed is, is onschadelijk.
 
 set -euo pipefail
 
@@ -99,10 +103,16 @@ check_pair() {
     echo "Paar klopt: versie $(json_value versionName "$MANIFEST") (code $(json_value versionCode "$MANIFEST")), sha256 ${local_hash:0:12}..."
 }
 
+# Tweede argument "standalone" = losse controle, er is dan niets geupload.
 purge() {
-    local url="$1" payload response
+    local url="$1" context="${2:-upload}" payload response
     if [ -z "${CF_ZONE_ID:-}" ] || [ -z "${CF_PURGE_TOKEN:-}" ]; then
         echo
+        if [ "$context" = "standalone" ]; then
+            echo "Geen CF_ZONE_ID/CF_PURGE_TOKEN, dus er valt niets te testen."
+            echo "Vul cloudflare.properties, zie cloudflare.properties.example."
+            exit 2
+        fi
         echo "GESTOPT NA DE APK: geen CF_ZONE_ID/CF_PURGE_TOKEN, dus niet gepurged."
         echo
         echo "  Het manifest is NIET geupload, en dat is met opzet. Zolang dat"
@@ -130,7 +140,8 @@ purge() {
         -H "Authorization: Bearer ${CF_PURGE_TOKEN}" \
         -H "Content-Type: application/json" \
         --data "$payload")" || {
-        echo "FOUT: de purge-aanroep is mislukt. Het manifest is niet geupload." >&2
+        echo "FOUT: de purge-aanroep is mislukt." >&2
+        [ "$context" = "upload" ] && echo "Het manifest is niet geupload." >&2
         exit 1
     }
     case "$response" in
@@ -138,7 +149,7 @@ purge() {
         *)
             echo "FOUT: Cloudflare heeft de purge geweigerd:" >&2
             echo "  $response" >&2
-            echo "Het manifest is niet geupload." >&2
+            [ "$context" = "upload" ] && echo "Het manifest is niet geupload." >&2
             exit 1
             ;;
     esac
@@ -230,11 +241,18 @@ case "$mode" in
         upload_manifest
         verify
         ;;
+    purge)
+        # Losse controle van de Cloudflare-gegevens: niets uploaden, alleen
+        # purgen en daarna nagaan dat live nog klopt.
+        purge "$HOST/$APK" standalone
+        verify
+        ;;
     verify)
         verify
         ;;
     *)
-        echo "Onbekende modus: $mode (gebruik: all, apk, manifest of verify)" >&2
+        echo "Onbekende modus: $mode" >&2
+        echo "Gebruik: all, apk, manifest, purge of verify" >&2
         exit 1
         ;;
 esac
