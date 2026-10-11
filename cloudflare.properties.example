@@ -1,0 +1,14 @@
+# Kopieer naar cloudflare.properties (blijft buiten git) en vul in.
+# Alleen nodig om de edge-cache automatisch te purgen bij een uitrol;
+# zonder dit bestand purgt publish-release.sh niet en moet je dat zelf
+# in het Cloudflare-dashboard doen.
+#
+# CF_ZONE_ID staat in het dashboard bij het domein smarttv-solutions.xyz,
+# rechts op de Overview-pagina.
+#
+# CF_PURGE_TOKEN maak je aan via je profiel, API Tokens, Create Token,
+# sjabloon "Purge Cache", beperkt tot die ene zone. Gebruik NOOIT je
+# Global API Key: die mag alles op je hele account.
+
+CF_ZONE_ID=
+CF_PURGE_TOKEN=

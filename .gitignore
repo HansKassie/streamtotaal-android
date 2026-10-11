@@ -40,3 +40,6 @@ build_release_log.txt
 
 # Wrangler-werkmap (lokale state, hoort niet in git)
 .wrangler/
+
+# Cloudflare-purgegegevens (geheim, net als keystore.properties)
+cloudflare.properties

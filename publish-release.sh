@@ -7,9 +7,10 @@
 #   ./gradlew prepareSideloadRelease     (schrijft streamtotaal.apk + version.json)
 #   wrangler login                       (eenmalig)
 #
-# Optioneel, voor het leegmaken van de edge-cache:
-#   export CF_ZONE_ID=...
-#   export CF_PURGE_TOKEN=...
+# Voor het leegmaken van de edge-cache: zet CF_ZONE_ID en CF_PURGE_TOKEN in
+# cloudflare.properties naast dit script (buiten git, net als
+# keystore.properties). Zie cloudflare.properties.example. Omgevingsvariabelen
+# met dezelfde namen gaan voor, handig als je het ooit automatisch draait.
 # PURGEN IS VERPLICHT. De edge cachet de APK op die exacte URL, ook al meldt
 # een HEAD-verzoek "cf-cache-status: DYNAMIC". Dat is misleidend: een GET op
 # dezelfde URL geeft gewoon HIT met de oude bytes. Zonder purge serveert de
@@ -32,6 +33,24 @@ MANIFEST="version.json"
 APK_TYPE="application/vnd.android.package-archive"
 
 cd "$(dirname "$0")"
+
+SECRETS="cloudflare.properties"
+
+# Bewust regel voor regel uitlezen en niet sourcen: een bestand met geheimen
+# hoort data te zijn, geen code die we uitvoeren.
+read_secret() {
+    [ -f "$SECRETS" ] || return 0
+    sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*//p" "$SECRETS" | head -1 | sed 's/[[:space:]]*$//'
+}
+
+if [ -f "$SECRETS" ] && git ls-files --error-unmatch "$SECRETS" >/dev/null 2>&1; then
+    echo "FOUT: $SECRETS staat in git. Haal hem eruit voordat je verder gaat:" >&2
+    echo "  git rm --cached $SECRETS" >&2
+    exit 1
+fi
+
+CF_ZONE_ID="${CF_ZONE_ID:-$(read_secret CF_ZONE_ID)}"
+CF_PURGE_TOKEN="${CF_PURGE_TOKEN:-$(read_secret CF_PURGE_TOKEN)}"
 
 # Wrangler staat op Windows in APPDATA/npm en niet altijd op de PATH. Een
 # .cmd heeft daar geen uitvoerbit, dus testen op bestaan en niet op -x.
@@ -76,9 +95,10 @@ purge() {
     local url="$1"
     if [ -z "${CF_ZONE_ID:-}" ] || [ -z "${CF_PURGE_TOKEN:-}" ]; then
         echo "LET OP: geen CF_ZONE_ID/CF_PURGE_TOKEN, dus NIET gepurged."
-        echo "        Purge nu handmatig in het Cloudflare-dashboard:"
+        echo "        Zet ze in cloudflare.properties (zie cloudflare.properties.example),"
+        echo "        of purge handmatig in het Cloudflare-dashboard:"
         echo "          Caching, Configuration, Purge Cached Content, op URL:"
-        echo "          "
+        echo "          $url"
         echo "        De controle onderaan faalt tot dat gebeurd is."
         return 0
     fi
