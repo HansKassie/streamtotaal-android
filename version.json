@@ -1,9 +1,9 @@
 {
-    "versionCode": 21,
-    "versionName": "1.0.20",
+    "versionCode": 22,
+    "versionName": "1.0.21",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-    "sha256": "2a9d70a9798e395b23e7af0fc64f484a843d45c39905ef37156260b790b26d2a",
-    "releaseNotes": "Op telefoon en tablet verdwijnt de balk met de zendernaam en de terugknop nu samen met de bedieningsknoppen, in plaats van permanent in beeld te blijven. Tik op het beeld om ze terug te halen. Verder zijn de serveradressen van NETTV en TIVIONE bijgewerkt; dat geldt voor providers die je voortaan toevoegt.",
+    "sha256": "190100309f3447a8fd2935a509c71a82d515a97afc2dffa44ca59c8c377cae45",
+    "releaseNotes": "De netwerken heten voortaan Netwerk A tot en met D. Bij welk netwerk jij hoort, staat op je eigen account. Had je al een netwerk toegevoegd, dan krijgt dat automatisch de juiste naam; je hoeft zelf niets te doen en je blijft gewoon ingelogd.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }
