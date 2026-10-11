@@ -14,7 +14,7 @@ internal object ProviderCatalog {
     val BUNDLED: List<Provider> = listOf(
         Provider("PROMAX", "http://line.smarttelevision.xyz"),
         Provider("DIAMOND", "http://kassiee.clear-ocean.link"),
-        Provider("NETTV", "http://sales.vivotv.vip"),
-        Provider("TIVIONE", "http://line.tivi-ott.net"),
+        Provider("NETTV", "http://tv.allesoptv.live"),
+        Provider("TIVIONE", "http://line.teevee-online.org"),
     )
 }
