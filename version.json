@@ -1,9 +1,9 @@
 {
-    "versionCode": 20,
-    "versionName": "1.0.19",
+    "versionCode": 21,
+    "versionName": "1.0.20",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-    "sha256": "0ea8c8f4a9ecc97306020b31a13d75ba176f7dff4334d3363c296cacfcff23f0",
-    "releaseNotes": "Op telefoon en tablet blijft het scherm nu aan zolang er beeld speelt, zodat het niet meer uit zichzelf dimt tijdens het kijken. Pauzeer je, dan gaat het scherm gewoon uit. In Live TV op de televisie is de zenderlijst rustiger geworden: dunnere voortgangsbalken, meer zenders tegelijk in beeld, en de naam van je provider staat niet langer dubbel in beeld.",
+    "sha256": "2a9d70a9798e395b23e7af0fc64f484a843d45c39905ef37156260b790b26d2a",
+    "releaseNotes": "Op telefoon en tablet verdwijnt de balk met de zendernaam en de terugknop nu samen met de bedieningsknoppen, in plaats van permanent in beeld te blijven. Tik op het beeld om ze terug te halen. Verder zijn de serveradressen van NETTV en TIVIONE bijgewerkt; dat geldt voor providers die je voortaan toevoegt.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }
