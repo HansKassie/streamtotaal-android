@@ -100,16 +100,29 @@ fun rememberStreamFixExoPlayer(
     }
 }
 
-/** Tv-instellingen voor de speler-view van films en series. */
+/**
+ * Laat onze eigen balk bovenin meebewegen met de bediening van Media3.
+ *
+ * Zonder dit vervaagt de onderste helft van de bediening wel en blijft de
+ * bovenste helft met de titel en de terugknop staan. Op telefoon regelt
+ * Media3 zelf wanneer de bediening verschijnt en verdwijnt; wij volgen dat
+ * alleen.
+ */
 @androidx.annotation.OptIn(UnstableApi::class)
-fun PlayerView.applyTvControls(onChromeVisible: (Boolean) -> Unit) {
-    setControllerAutoShow(false)
-    setControllerShowTimeoutMs(4000)
+fun PlayerView.followControllerVisibility(onChromeVisible: (Boolean) -> Unit) {
     setControllerVisibilityListener(
         PlayerView.ControllerVisibilityListener { visibility ->
             onChromeVisible(visibility == android.view.View.VISIBLE)
         },
     )
+}
+
+/** Tv-instellingen voor de speler-view van films en series. */
+@androidx.annotation.OptIn(UnstableApi::class)
+fun PlayerView.applyTvControls(onChromeVisible: (Boolean) -> Unit) {
+    setControllerAutoShow(false)
+    setControllerShowTimeoutMs(4000)
+    followControllerVisibility(onChromeVisible)
 }
 
 /**

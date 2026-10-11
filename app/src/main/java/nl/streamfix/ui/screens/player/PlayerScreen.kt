@@ -300,6 +300,10 @@ fun PlayerScreen(
                         isFocusable = false
                     } else {
                         isFocusable = true
+                        // Titel en terugknop meebewegen met de bediening
+                        // van Media3, zodat ze samen verschijnen en samen
+                        // weer weggaan.
+                        followControllerVisibility { chromeVisible = it }
                         post { requestFocus() }
                     }
                 }
@@ -324,7 +328,10 @@ fun PlayerScreen(
             }
         }
 
-        if (!isTv || chromeVisible) Row(
+        // Ook op telefoon aan chromeVisible: die volgt daar de bediening van
+        // Media3. Begint op true, dus mocht die luisteraar niet afgaan, dan
+        // blijft de balk staan en blijft de terugknop bereikbaar.
+        if (chromeVisible) Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)

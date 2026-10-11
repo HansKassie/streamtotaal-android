@@ -66,7 +66,9 @@ fun EpisodePlayerScreen(
     val context = LocalContext.current
     val isTv = LocalIsTv.current
     val scope = rememberCoroutineScope()
-    var chromeVisible by remember { mutableStateOf(false) }
+    // Op telefoon begint de balk zichtbaar en volgt daarna de bediening
+    // van Media3; op tv begint hij verborgen en komt hij bij een toets.
+    var chromeVisible by remember { mutableStateOf(!isTv) }
 
     val player = rememberStreamFixExoPlayer(preferDutchSubtitles = true)
     var countdown by remember { mutableStateOf<Int?>(null) }
@@ -231,6 +233,7 @@ fun EpisodePlayerScreen(
                     setBackgroundColor(android.graphics.Color.BLACK)
                     isFocusable = true
                     if (isTv) applyTvControls { chromeVisible = it }
+                    else followControllerVisibility { chromeVisible = it }
                     post { requestFocus() }
                     playerView.value = this
                 }
@@ -240,7 +243,7 @@ fun EpisodePlayerScreen(
 
         // Blijft ook staan zolang hij de focus heeft, anders verdwijnt hij
         // onder je handen zodra de bediening na een paar seconden weggaat.
-        if (!isTv || chromeVisible || topBarFocused.value) Row(
+        if (chromeVisible || topBarFocused.value) Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)
