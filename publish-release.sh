@@ -11,12 +11,14 @@
 # cloudflare.properties naast dit script (buiten git, net als
 # keystore.properties). Zie cloudflare.properties.example. Omgevingsvariabelen
 # met dezelfde namen gaan voor, handig als je het ooit automatisch draait.
+#
 # PURGEN IS VERPLICHT. De edge cachet de APK op die exacte URL, ook al meldt
 # een HEAD-verzoek "cf-cache-status: DYNAMIC". Dat is misleidend: een GET op
 # dezelfde URL geeft gewoon HIT met de oude bytes. Zonder purge serveert de
 # edge de oude APK terwijl version.json al de nieuwe aankondigt, en slaat de
 # sha256-controle in de app terecht aan: klanten zien "De update is mislukt".
-# Vastgesteld bij 1.0.20 op 2026-10-11.
+# Vastgesteld bij 1.0.20 en 1.0.21 op 2026-10-11. Kan het script niet purgen,
+# dan stopt het na de APK en laat het het manifest bewust staan.
 #
 # Gebruik:
 #   ./publish-release.sh            alles: APK, purge, manifest, controle
@@ -73,6 +75,11 @@ json_value() {
     sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\{0,1\}\([^\",]*\)\"\{0,1\}.*/\1/p" "$2" | head -1
 }
 
+host_of() {
+    printf '%s' "$1" | sed -e 's|^[a-zA-Z]*://||' -e 's|[/?].*$||' -e 's|:.*$||' \
+        | tr '[:upper:]' '[:lower:]'
+}
+
 check_pair() {
     [ -f "$APK" ] || { echo "FOUT: $APK ontbreekt. Draai eerst prepareSideloadRelease." >&2; exit 1; }
     [ -f "$MANIFEST" ] || { echo "FOUT: $MANIFEST ontbreekt." >&2; exit 1; }
@@ -93,7 +100,7 @@ check_pair() {
 }
 
 purge() {
-    local url="$1"
+    local url="$1" payload response
     if [ -z "${CF_ZONE_ID:-}" ] || [ -z "${CF_PURGE_TOKEN:-}" ]; then
         echo
         echo "GESTOPT NA DE APK: geen CF_ZONE_ID/CF_PURGE_TOKEN, dus niet gepurged."
@@ -101,7 +108,7 @@ purge() {
         echo "  Het manifest is NIET geupload, en dat is met opzet. Zolang dat"
         echo "  nog de vorige versie aankondigt merkt niemand iets. Zou het er"
         echo "  nu al staan, dan kondigt de app een update aan terwijl de edge"
-        echo "  de oude APK serveert, en zien klanten "De update is mislukt"."
+        echo "  de oude APK serveert, en zien klanten dat de update mislukt."
         echo
         echo "  1. Purge in het Cloudflare-dashboard, Caching, Configuration,"
         echo "     Purge Cached Content, op URL:"
@@ -111,10 +118,32 @@ purge() {
         echo "  Of vul cloudflare.properties, dan gaat dit voortaan vanzelf."
         exit 2
     fi
+
+    # Met printf opgebouwd. Handmatig escapen in een dubbel aangehaalde string
+    # ging eerder mis en leverde {files:[...]} op, dus zonder aanhalingstekens,
+    # wat Cloudflare weigert. Die fout was onzichtbaar omdat de purge nooit
+    # gedraaid had.
+    payload="$(printf '{"files":["%s"]}' "$url")"
     echo "Purgen: $url"
-    curl -fsS -X POST         "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache"         -H "Authorization: Bearer ${CF_PURGE_TOKEN}"         -H "Content-Type: application/json"         --data "{"files":["${url}"]}" >/dev/null
-    echo "Purge verstuurd."
+    response="$(curl -fsS -X POST \
+        "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+        -H "Authorization: Bearer ${CF_PURGE_TOKEN}" \
+        -H "Content-Type: application/json" \
+        --data "$payload")" || {
+        echo "FOUT: de purge-aanroep is mislukt. Het manifest is niet geupload." >&2
+        exit 1
+    }
+    case "$response" in
+        *'"success":true'*) echo "Purge bevestigd door Cloudflare." ;;
+        *)
+            echo "FOUT: Cloudflare heeft de purge geweigerd:" >&2
+            echo "  $response" >&2
+            echo "Het manifest is niet geupload." >&2
+            exit 1
+            ;;
+    esac
 }
+
 upload_apk() {
     find_wrangler
     echo "Uploaden: $APK naar $BUCKET"
@@ -130,33 +159,59 @@ upload_manifest() {
         --file="$MANIFEST" --content-type="application/json" --remote
 }
 
+# Controleert wat de APP straks doet, en niet wat wij denken te hebben
+# geupload: het live manifest lezen, en de APK ophalen via de apkUrl en de
+# hash DAARUIT. Daarnaast vergelijken met het lokale manifest, zodat ook een
+# verkeerd geupload manifest wordt gezien.
 verify() {
     echo
     echo "Controle op wat er live staat"
-    local tmp live_code live_hash want_hash want_code
+    local tmp live_code live_hash live_url live_apk_hash want_code want_hash
     tmp="$(mktemp -d)"
     trap 'rm -rf "$tmp"' RETURN
 
-    curl -fsS "$HOST/$MANIFEST" -o "$tmp/version.json"
-    live_code="$(json_value versionCode "$tmp/version.json")"
+    curl -fsS "$HOST/$MANIFEST" -o "$tmp/live.json"
+    live_code="$(json_value versionCode "$tmp/live.json")"
+    live_hash="$(json_value sha256 "$tmp/live.json")"
+    live_url="$(json_value apkUrl "$tmp/live.json")"
     want_code="$(json_value versionCode "$MANIFEST")"
     want_hash="$(json_value sha256 "$MANIFEST")"
 
-    echo "  manifest live: versionCode $live_code (verwacht $want_code)"
-    [ "$live_code" = "$want_code" ] || { echo "FOUT: manifest live komt niet overeen." >&2; return 1; }
+    echo "  manifest live: versionCode $live_code (lokaal $want_code)"
+    if [ "$live_code" != "$want_code" ] || [ "$live_hash" != "$want_hash" ]; then
+        echo "FOUT: het live manifest is niet wat je wilde publiceren." >&2
+        echo "  live:   code $live_code, sha256 ${live_hash:0:12}..." >&2
+        echo "  lokaal: code $want_code, sha256 ${want_hash:0:12}..." >&2
+        return 1
+    fi
+
+    # De app weigert een apkUrl die niet via https op het eigen updatedomein
+    # staat. Dezelfde eis hier, anders keurt de controle iets goed dat de app
+    # nooit zou downloaden.
+    case "$live_url" in
+        https://*) ;;
+        *)
+            echo "FOUT: apkUrl in het live manifest is geen https: $live_url" >&2
+            return 1
+            ;;
+    esac
+    if [ "$(host_of "$live_url")" != "$(host_of "$HOST")" ]; then
+        echo "FOUT: apkUrl wijst naar een andere host: $live_url" >&2
+        return 1
+    fi
 
     # Niet alleen de headers lezen: de bytes echt ophalen en hashen.
-    curl -fsS "$HOST/$APK" -o "$tmp/live.apk"
-    live_hash="$(sha256sum "$tmp/live.apk" | cut -d' ' -f1)"
-    echo "  APK live:      ${live_hash:0:12}... (verwacht ${want_hash:0:12}...)"
-    [ "$live_hash" = "$want_hash" ] || {
-        echo "FOUT: de APK die de edge serveert is niet de nieuwe." >&2
-        echo "Purge $HOST/$APK en draai './publish-release.sh verify' opnieuw." >&2
+    curl -fsS "$live_url" -o "$tmp/live.apk"
+    live_apk_hash="$(sha256sum "$tmp/live.apk" | cut -d' ' -f1)"
+    echo "  APK via apkUrl: ${live_apk_hash:0:12}... (manifest zegt ${live_hash:0:12}...)"
+    if [ "$live_apk_hash" != "$live_hash" ]; then
+        echo "FOUT: de APK die de edge serveert hoort niet bij het live manifest." >&2
+        echo "Purge $live_url en draai './publish-release.sh verify' opnieuw." >&2
         return 1
-    }
+    fi
 
     echo
-    echo "In orde: klanten krijgen $(json_value versionName "$MANIFEST") en de sha256-controle slaagt."
+    echo "In orde: klanten krijgen $(json_value versionName "$tmp/live.json") en de sha256-controle slaagt."
 }
 
 case "$mode" in
