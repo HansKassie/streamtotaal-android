@@ -37,3 +37,6 @@ build_release_log.txt
 
 # Klantdocumentatie, bewust buiten git
 /StreamTotaal-Klantgids.txt
+
+# Wrangler-werkmap (lokale state, hoort niet in git)
+.wrangler/
