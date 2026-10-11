@@ -20,6 +20,7 @@
 #
 # Gebruik:
 #   ./publish-release.sh            alles: APK, purge, manifest, controle
+#                                   zonder purgegegevens stopt hij na de APK
 #   ./publish-release.sh apk        alleen de APK (plus purge)
 #   ./publish-release.sh manifest   alleen version.json (plus controle)
 #   ./publish-release.sh verify     alleen controleren wat er live staat
@@ -94,23 +95,26 @@ check_pair() {
 purge() {
     local url="$1"
     if [ -z "${CF_ZONE_ID:-}" ] || [ -z "${CF_PURGE_TOKEN:-}" ]; then
-        echo "LET OP: geen CF_ZONE_ID/CF_PURGE_TOKEN, dus NIET gepurged."
-        echo "        Zet ze in cloudflare.properties (zie cloudflare.properties.example),"
-        echo "        of purge handmatig in het Cloudflare-dashboard:"
-        echo "          Caching, Configuration, Purge Cached Content, op URL:"
-        echo "          $url"
-        echo "        De controle onderaan faalt tot dat gebeurd is."
-        return 0
+        echo
+        echo "GESTOPT NA DE APK: geen CF_ZONE_ID/CF_PURGE_TOKEN, dus niet gepurged."
+        echo
+        echo "  Het manifest is NIET geupload, en dat is met opzet. Zolang dat"
+        echo "  nog de vorige versie aankondigt merkt niemand iets. Zou het er"
+        echo "  nu al staan, dan kondigt de app een update aan terwijl de edge"
+        echo "  de oude APK serveert, en zien klanten "De update is mislukt"."
+        echo
+        echo "  1. Purge in het Cloudflare-dashboard, Caching, Configuration,"
+        echo "     Purge Cached Content, op URL:"
+        echo "       $url"
+        echo "  2. Draai daarna: ./publish-release.sh manifest"
+        echo
+        echo "  Of vul cloudflare.properties, dan gaat dit voortaan vanzelf."
+        exit 2
     fi
     echo "Purgen: $url"
-    curl -fsS -X POST \
-        "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
-        -H "Authorization: Bearer ${CF_PURGE_TOKEN}" \
-        -H "Content-Type: application/json" \
-        --data "{\"files\":[\"${url}\"]}" >/dev/null
+    curl -fsS -X POST         "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache"         -H "Authorization: Bearer ${CF_PURGE_TOKEN}"         -H "Content-Type: application/json"         --data "{"files":["${url}"]}" >/dev/null
     echo "Purge verstuurd."
 }
-
 upload_apk() {
     find_wrangler
     echo "Uploaden: $APK naar $BUCKET"
