@@ -45,6 +45,28 @@ class SecureCredentialStore @Inject constructor(
     fun allAccounts(): List<Account> =
         readState().accounts.mapNotNull { it.toDomain() }
 
+    /**
+     * Hernoemt opgeslagen accounts; geef null terug om er een te laten
+     * staan. Schrijft alleen als er echt iets verandert, zodat dit bij elke
+     * start kan draaien zonder de opslag onnodig aan te raken.
+     */
+    fun renameAccounts(newNameFor: (Account.Xtream) -> String?) {
+        val state = readState()
+        var changed = false
+        val updated = state.accounts.map { stored ->
+            val account = stored.toDomain() as? Account.Xtream
+                ?: return@map stored
+            val newName = newNameFor(account)
+            if (newName == null || newName == account.displayName) {
+                stored
+            } else {
+                changed = true
+                account.copy(displayName = newName).toStored()
+            }
+        }
+        if (changed) writeState(state.copy(accounts = updated))
+    }
+
     /** Maakt een reeds opgeslagen provider actief. */
     fun setActive(id: String) {
         val state = readState()
