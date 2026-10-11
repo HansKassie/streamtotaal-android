@@ -151,6 +151,14 @@ fun XtreamLoginScreen(
                         )
                     }
                 }
+                // De netwerknamen zijn bewust neutraal, dus zonder deze regel
+                // weet een klant niet welke van hem is en gaat hij gokken.
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.login_network_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Spacer(Modifier.height(fieldSpacing))
             }
 

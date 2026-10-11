@@ -28,6 +28,7 @@
     <string name="login_title">Xtream Codes</string>
     <string name="login_choose_provider_label">Kies je provider</string>
     <string name="login_choose_provider_placeholder">Kies provider</string>
+    <string name="login_network_hint">Weet je niet welk netwerk bij jou hoort? Dat staat op je account.</string>
     <string name="login_custom_provider">Overige</string>
     <string name="login_add_custom_provider">Overige</string>
     <string name="login_provider_name">Providernaam</string>

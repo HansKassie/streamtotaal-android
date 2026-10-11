@@ -27,6 +27,7 @@
     <string name="login_title">Xtream Codes</string>
     <string name="login_choose_provider_label">Choose your provider</string>
     <string name="login_choose_provider_placeholder">Choose provider</string>
+    <string name="login_network_hint">Not sure which network is yours? You can find it on your account.</string>
     <string name="login_custom_provider">Other</string>
     <string name="login_add_custom_provider">Other</string>
     <string name="login_provider_name">Provider name</string>
