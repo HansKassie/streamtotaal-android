@@ -1,9 +1,9 @@
 {
-    "versionCode": 22,
-    "versionName": "1.0.21",
+    "versionCode": 24,
+    "versionName": "1.0.23",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-    "sha256": "190100309f3447a8fd2935a509c71a82d515a97afc2dffa44ca59c8c377cae45",
-    "releaseNotes": "De zenderlijst begint weer waar je gebleven was. De groep van je laatst bekeken zender staat open en de lijst staat meteen bij die zender, op de telefoon en op de tv.",
+    "sha256": "a2ea7208af6474469120152e65e55c08b47c629f5a2a4b3a4913fe93052aa8d9",
+    "releaseNotes": "Kleine verbeteringen voor het kijkgemak.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }

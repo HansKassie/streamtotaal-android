@@ -84,6 +84,9 @@ fun PlayerScreen(
     val activity = context as? Activity
     var chromeVisible by remember { mutableStateOf(true) }
     var channelListOpen by remember { mutableStateOf(false) }
+    // Staat open tussen de KeyDown en de KeyUp van de OK-druk die de
+    // zenderlijst opende, zodat die KeyUp niet ook nog iets kiest.
+    var okOpenedList by remember { mutableStateOf(false) }
     var wakeTick by remember { mutableIntStateOf(0) }
     val chromeFocus = remember { FocusRequester() }
     LaunchedEffect(wakeTick, isTv) {
@@ -208,6 +211,17 @@ fun PlayerScreen(
                     .focusable()
                     .onPreviewKeyEvent { e ->
                         if (e.type != KeyEventType.KeyDown) {
+                            // De KeyUp van de OK-druk die de lijst opende
+                            // mag niet doorlekken: Compose activeert een
+                            // gefocust item op KeyUp, dus anders zou een
+                            // druk op OK de lijst openen en meteen de
+                            // gefocuste zender kiezen.
+                            if (okOpenedList &&
+                                isOkKeyCode(e.nativeKeyEvent.keyCode)
+                            ) {
+                                okOpenedList = false
+                                return@onPreviewKeyEvent true
+                            }
                             return@onPreviewKeyEvent false
                         }
                         if (channelListOpen) {
@@ -215,6 +229,12 @@ fun PlayerScreen(
                                 channelListOpen = false
                                 return@onPreviewKeyEvent true
                             }
+                            // Een volgende druk terwijl de lijst al open
+                            // staat: de druk die hem opende is afgehandeld,
+                            // dus de poort mag dicht. Blijft die anders
+                            // open doordat een KeyUp ons niet bereikte,
+                            // dan was er daarna geen zender meer te kiezen.
+                            okOpenedList = false
                             return@onPreviewKeyEvent false
                         }
                         // Ligt er een melding overheen, dan horen de toetsen
@@ -239,6 +259,16 @@ fun PlayerScreen(
                         ) {
                             viewModel.lastChannel()
                             zapTick++
+                            return@onPreviewKeyEvent true
+                        }
+                        // OK opent het zenderoverzicht, net als omhoog en
+                        // omlaag. Dat is wat kijkers van een settopbox
+                        // verwachten; OK liet hiervoor alleen de titelbalk
+                        // even zien en daar was de lijst niet mee te
+                        // bereiken.
+                        if (isOkKeyCode(ekc)) {
+                            channelListOpen = true
+                            okOpenedList = true
                             return@onPreviewKeyEvent true
                         }
                         when (e.key) {
