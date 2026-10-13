@@ -17,6 +17,7 @@ import nl.streamfix.domain.model.LiveChannel
 import nl.streamfix.domain.model.AppError
 import nl.streamfix.domain.repository.LiveRepository
 import nl.streamfix.domain.usecase.GetLiveCastUrlUseCase
+import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
 import nl.streamfix.domain.usecase.GetStreamUrlUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
@@ -39,15 +40,22 @@ private class FakeLiveRepository(
     /** Laat een trage laadpoging nabootsen, voor de race-test. */
     var loadDelayMs: Long = 0L
 
+    var categories: List<LiveCategory> = emptyList()
+
+    /** Zenders per groep, voor het wisselen van groep in het overzicht. */
+    var channelsByCategory: Map<String, List<LiveChannel>> = emptyMap()
+
     override suspend fun getCategories(): AppResult<List<LiveCategory>> =
-        AppResult.Success(emptyList())
+        AppResult.Success(categories)
 
     override suspend fun getChannels(
         categoryId: String?,
     ): AppResult<List<LiveChannel>> {
         // Bewust vooraf vastleggen: anders pakt een trage poging alsnog
         // het nieuwere antwoord op en valt er niets te racen.
-        val result = channelResult
+        val result = channelsByCategory[categoryId]
+            ?.let { AppResult.Success(it) }
+            ?: channelResult
         if (loadDelayMs > 0L) delay(loadDelayMs)
         return result
     }
@@ -115,6 +123,7 @@ class PlayerViewModelTest {
         return PlayerViewModel(
             savedStateHandle = handle,
             getChannels = GetLiveChannelsUseCase(repo),
+            getCategories = GetLiveCategoriesUseCase(repo),
             observeFavorites = ObserveFavoritesUseCase(repo),
             getStreamUrl = GetStreamUrlUseCase(repo),
             getCastUrl = GetLiveCastUrlUseCase(repo),
@@ -247,6 +256,125 @@ class PlayerViewModelTest {
         vm.next()
         assertEquals("cat1" to "c2", repo.remembered)
     }
+
+    /** Groep cat1 met c1..c3 plus een tweede groep cat2 met d1..d2. */
+    private fun twoGroupRepo(): FakeLiveRepository =
+        FakeLiveRepository(sample).apply {
+            categories = listOf(
+                LiveCategory("cat1", "Een"),
+                LiveCategory("cat2", "Twee"),
+            )
+            channelsByCategory = mapOf(
+                "cat1" to sample,
+                "cat2" to listOf(
+                    LiveChannel("d1", "Sport 1", null, "cat2", null),
+                    LiveChannel("d2", "Sport 2", null, "cat2", null),
+                ),
+            )
+        }
+
+    @Test
+    fun andereGroepBekijkenLaatHetBeeldStaan() = runTest(dispatcher) {
+        // De hele reden voor de scheiding tussen bekeken en spelende groep:
+        // rondkijken mag geen stream starten, want dat kost bij een
+        // verbindingslimiet een slot en toont iets dat niemand koos.
+        val vm = viewModel(startChannelId = "c1", repo = twoGroupRepo())
+        advanceUntilIdle()
+
+        vm.browseCategory("cat2")
+        advanceUntilIdle()
+
+        val s = vm.state.value
+        assertEquals("c1", s.currentChannelId)
+        assertEquals("stream://c1", s.streamUrl)
+        assertEquals("cat2", s.browseCategoryId)
+        assertEquals(listOf("d1", "d2"), s.channels.map { it.id })
+    }
+
+    @Test
+    fun zenderUitAndereGroepGaatSpelenEnZaptDaarVerder() = runTest(dispatcher) {
+        val vm = viewModel(startChannelId = "c1", repo = twoGroupRepo())
+        advanceUntilIdle()
+        vm.browseCategory("cat2")
+        advanceUntilIdle()
+
+        vm.playFromOverlay("d1")
+        assertEquals("d1", vm.state.value.currentChannelId)
+
+        // Zappen hoort nu in de nieuwe groep te gebeuren, niet in de oude.
+        vm.next()
+        assertEquals("d2", vm.state.value.currentChannelId)
+        assertFalse(vm.state.value.hasNext)
+    }
+
+    @Test
+    fun groepwisselVergeetDeVorigeZender() = runTest(dispatcher) {
+        // previousIndex wees in de oude lijst; zonder vergeten zou "vorige
+        // zender" een willekeurige andere zender aanwijzen.
+        val vm = viewModel(startChannelId = "c1", repo = twoGroupRepo())
+        advanceUntilIdle()
+        vm.selectChannel("c3")
+        assertTrue(vm.state.value.hasLast)
+
+        vm.browseCategory("cat2")
+        advanceUntilIdle()
+        vm.playFromOverlay("d2")
+
+        assertFalse(vm.state.value.hasLast)
+        assertEquals("d2", vm.state.value.currentChannelId)
+    }
+
+    @Test
+    fun nieuweGroepWordtOnthoudenVoorDeVolgendeStart() = runTest(dispatcher) {
+        val repo = twoGroupRepo()
+        val vm = viewModel(startChannelId = "c1", repo = repo)
+        advanceUntilIdle()
+        assertEquals("cat1" to "c1", repo.remembered)
+
+        vm.browseCategory("cat2")
+        advanceUntilIdle()
+        // Rondkijken onthoudt niets; alleen echt kijken.
+        assertEquals("cat1" to "c1", repo.remembered)
+
+        vm.playFromOverlay("d2")
+        assertEquals("cat2" to "d2", repo.remembered)
+    }
+
+    @Test
+    fun overzichtSluitenZetDeBekekenGroepTerug() = runTest(dispatcher) {
+        val vm = viewModel(startChannelId = "c1", repo = twoGroupRepo())
+        advanceUntilIdle()
+        vm.browseCategory("cat2")
+        advanceUntilIdle()
+
+        vm.resetBrowseToPlaying()
+
+        val s = vm.state.value
+        assertEquals("cat1", s.browseCategoryId)
+        assertEquals(listOf("c1", "c2", "c3"), s.channels.map { it.id })
+    }
+
+    @Test
+    fun mislukteGroepMeldtInHetOverzichtEnNietOverHetBeeld() =
+        runTest(dispatcher) {
+            // Een melding over het hele beeld zou onjuist zijn: er speelt
+            // gewoon iets, alleen de opgevraagde lijst kwam niet binnen.
+            val repo = twoGroupRepo().apply {
+                channelsByCategory = mapOf("cat1" to sample)
+                channelResult = AppResult.Failure(AppError.NetworkUnavailable)
+            }
+            val vm = viewModel(startChannelId = "c1", repo = repo)
+            advanceUntilIdle()
+
+            vm.browseCategory("cat2")
+            advanceUntilIdle()
+
+            val s = vm.state.value
+            assertTrue(s.browseFailed)
+            assertFalse(s.browseLoading)
+            assertFalse(s.channelLoadFailed)
+            assertEquals("c1", s.currentChannelId)
+        }
 
     @Test
     fun lastChannelWisseltHeenEnWeer() = runTest(dispatcher) {

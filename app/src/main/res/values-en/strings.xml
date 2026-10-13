@@ -157,6 +157,9 @@
     <string name="player_stop_playback">Stop</string>
     <string name="player_prev_channel_desc">Previous channel</string>
     <string name="player_next_channel_desc">Next channel</string>
+    <string name="player_overlay_groups">▣  Group: %1$s</string>
+    <string name="player_overlay_group_loading">Loading group…</string>
+    <string name="player_overlay_group_failed">Could not load this group.</string>
     <string name="player_overlay_tv_guide">☰  TV guide</string>
     <string name="player_overlay_last_channel">↩  Previous channel</string>
     <string name="player_next_episode_in">Next episode in %1$d s</string>

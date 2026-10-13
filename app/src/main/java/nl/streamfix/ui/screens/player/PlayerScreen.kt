@@ -65,6 +65,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import nl.streamfix.R
 import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.screens.live.FAVORITES_ID
 import nl.streamfix.ui.tvFocusable
 import kotlin.math.abs
 import kotlinx.coroutines.Job
@@ -87,6 +88,8 @@ fun PlayerScreen(
     // Staat open tussen de KeyDown en de KeyUp van de OK-druk die de
     // zenderlijst opende, zodat die KeyUp niet ook nog iets kiest.
     var okOpenedList by remember { mutableStateOf(false) }
+    // Tweede laag binnen het overzicht: de groepkeuze.
+    var groupPickerOpen by remember { mutableStateOf(false) }
     var wakeTick by remember { mutableIntStateOf(0) }
     val chromeFocus = remember { FocusRequester() }
     LaunchedEffect(wakeTick, isTv) {
@@ -98,6 +101,13 @@ fun PlayerScreen(
     LaunchedEffect(isTv) { if (isTv) chromeFocus.requestFocus() }
     LaunchedEffect(channelListOpen) {
         if (isTv && !channelListOpen) runCatching { chromeFocus.requestFocus() }
+        if (!channelListOpen) {
+            // Sluit het overzicht, dan hoort het bij heropenen weer de
+            // groep te laten zien die speelt, en niet de groep waar de
+            // kijker toevallig in rondkeek.
+            groupPickerOpen = false
+            viewModel.resetBrowseToPlaying()
+        }
     }
     var zapTick by remember { mutableIntStateOf(0) }
     var zapVisible by remember { mutableStateOf(false) }
@@ -195,7 +205,9 @@ fun PlayerScreen(
     // film- en seriespelers doen dit al; de live-speler was overgeslagen.
     BackHandler(enabled = channelListOpen || showError) {
         if (channelListOpen) {
-            channelListOpen = false
+            // Van binnen naar buiten afpellen: eerst de groepkeuze, dan het
+            // overzicht, en pas daarna de speler.
+            if (groupPickerOpen) groupPickerOpen = false else channelListOpen = false
         } else {
             errorTimer.dismiss()
         }
@@ -226,7 +238,11 @@ fun PlayerScreen(
                         }
                         if (channelListOpen) {
                             if (e.key == Key.Back) {
-                                channelListOpen = false
+                                if (groupPickerOpen) {
+                                    groupPickerOpen = false
+                                } else {
+                                    channelListOpen = false
+                                }
                                 return@onPreviewKeyEvent true
                             }
                             // Een volgende druk terwijl de lijst al open
@@ -451,11 +467,62 @@ fun PlayerScreen(
         if (isTv && channelListOpen) {
             val listState = rememberLazyListState()
             val currentFocus = remember { FocusRequester() }
-            LaunchedEffect(channelListOpen) {
+            val headerFocus = remember { FocusRequester() }
+            val groupFocus = remember { FocusRequester() }
+            val favoritesLabel = stringResource(R.string.common_favorites)
+            val groupPlaceholder =
+                stringResource(R.string.live_category_placeholder)
+            val groupLabel = when (state.browseCategoryId) {
+                FAVORITES_ID -> favoritesLabel
+                "" -> groupPlaceholder
+                else -> state.categories
+                    .find { it.id == state.browseCategoryId }?.name
+                    ?: groupPlaceholder
+            }
+            val groupEntries = remember(state.categories, favoritesLabel) {
+                listOf(FAVORITES_ID to favoritesLabel) +
+                    state.categories.map { it.id to it.name }
+            }
+            // Zelfde terugval als bij de zenders: staat de bekeken groep
+            // niet in de lijst (vanuit zoeken is er geen groep), dan moet
+            // de focus naar de eerste regel en niet nergens heen.
+            val groupFocusId = groupEntries
+                .firstOrNull { it.first == state.browseCategoryId }?.first
+                ?: groupEntries.firstOrNull()?.first
+            // Kop-items boven de zenders. De groepkeuze valt weg als de
+            // groepen niet opgehaald konden worden, dus meetellen en niet
+            // een vast getal gebruiken.
+            val headerCount = (if (state.categories.isEmpty()) 0 else 1) +
+                1 + (if (state.hasLast) 1 else 0)
+            // Waar de focus heen gaat: de spelende zender als die in deze
+            // lijst staat, anders de eerste. Zonder die terugval raakt de
+            // focus kwijt zodra je een andere groep opent (daar staat niets
+            // te spelen) en doet de afstandsbediening niets meer.
+            val focusRowId = state.currentChannelId
+                ?.takeIf { id -> state.channels.any { it.id == id } }
+                ?: state.channels.firstOrNull()?.id
+            LaunchedEffect(
+                groupPickerOpen,
+                state.browseCategoryId,
+                focusRowId,
+            ) {
+                if (groupPickerOpen) {
+                    withFrameNanos {}
+                    runCatching { groupFocus.requestFocus() }
+                    return@LaunchedEffect
+                }
+                if (focusRowId == null) {
+                    // Laden, mislukt of leeg: focus op de kop, zodat de
+                    // afstandsbediening blijft werken en de groepkeuze
+                    // bereikbaar is.
+                    withFrameNanos {}
+                    runCatching { headerFocus.requestFocus() }
+                    return@LaunchedEffect
+                }
                 val idx = state.channels
-                    .indexOfFirst { it.id == state.currentChannelId }
+                    .indexOfFirst { it.id == focusRowId }
                     .takeIf { it >= 0 } ?: 0
-                listState.scrollToItem(idx + if (state.hasLast) 2 else 1)
+                listState.scrollToItem(idx + headerCount)
                 withFrameNanos {}
                 runCatching { currentFocus.requestFocus() }
             }
@@ -466,10 +533,74 @@ fun PlayerScreen(
                     .width(360.dp)
                     .background(Color.Black.copy(alpha = 0.85f)),
             ) {
-                LazyColumn(
+                if (groupPickerOpen) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                    ) {
+                        items(groupEntries, key = { it.first }) { entry ->
+                            val isCurrent = entry.first == state.browseCategoryId
+                            Text(
+                                text = entry.second,
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .then(
+                                        if (entry.first == groupFocusId) {
+                                            Modifier.focusRequester(groupFocus)
+                                        } else {
+                                            Modifier
+                                        },
+                                    )
+                                    .tvFocusable()
+                                    .clickable {
+                                        groupPickerOpen = false
+                                        viewModel.browseCategory(entry.first)
+                                    }
+                                    .background(
+                                        if (isCurrent) {
+                                            MaterialTheme.colorScheme
+                                                .primaryContainer
+                                        } else {
+                                            Color.Transparent
+                                        },
+                                    )
+                                    .padding(
+                                        horizontal = 12.dp,
+                                        vertical = 10.dp,
+                                    ),
+                            )
+                        }
+                    }
+                } else LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize().padding(8.dp),
                 ) {
+                    if (state.categories.isNotEmpty()) {
+                        item(key = "__groups__") {
+                            Text(
+                                text = stringResource(
+                                    R.string.player_overlay_groups,
+                                    groupLabel,
+                                ),
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(headerFocus)
+                                    .tvFocusable()
+                                    .clickable { groupPickerOpen = true }
+                                    .padding(
+                                        horizontal = 12.dp,
+                                        vertical = 10.dp,
+                                    ),
+                            )
+                        }
+                    }
                     item(key = "__guide__") {
                         Text(
                             text = stringResource(R.string.player_overlay_tv_guide),
@@ -508,6 +639,25 @@ fun PlayerScreen(
                             )
                         }
                     }
+                    if (state.browseLoading || state.browseFailed) {
+                        item(key = "__browse_status__") {
+                            Text(
+                                text = stringResource(
+                                    if (state.browseFailed) {
+                                        R.string.player_overlay_group_failed
+                                    } else {
+                                        R.string.player_overlay_group_loading
+                                    },
+                                ),
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(
+                                    horizontal = 12.dp,
+                                    vertical = 10.dp,
+                                ),
+                            )
+                        }
+                    }
                     items(state.channels, key = { it.id }) { ch ->
                         val isCurrent = ch.id == state.currentChannelId
                         Text(
@@ -519,7 +669,7 @@ fun PlayerScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .then(
-                                    if (isCurrent) {
+                                    if (ch.id == focusRowId) {
                                         Modifier.focusRequester(currentFocus)
                                     } else {
                                         Modifier
@@ -527,7 +677,7 @@ fun PlayerScreen(
                                 )
                                 .tvFocusable()
                                 .clickable {
-                                    viewModel.selectChannel(ch.id)
+                                    viewModel.playFromOverlay(ch.id)
                                     channelListOpen = false
                                 }
                                 .background(
