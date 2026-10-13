@@ -26,6 +26,7 @@ import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
 import nl.streamfix.domain.usecase.SetFavoriteUseCase
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.ui.pickFocusTarget
+import nl.streamfix.ui.pickStartCategory
 import nl.streamfix.ui.uiMessage
 
 const val FAVORITES_ID = "__favorites__"
@@ -141,7 +142,7 @@ class LiveTvViewModel @Inject constructor(
                     _state.value = LiveUiState()
                     epgRequested.clear()
                     _epg.value = emptyMap()
-                    if (acc != null) loadCategories()
+                    if (acc != null) loadCategories(preferLastWatched = true)
                 }
             }
         }
@@ -155,7 +156,13 @@ class LiveTvViewModel @Inject constructor(
         }
     }
 
-    private fun loadCategories() {
+    /**
+     * [preferLastWatched] = openen in de groep waar de kijker gebleven was.
+     * Alleen bij een verse start of providerwissel. Bij het omzetten van het
+     * volwassen-filter laden we ook opnieuw, en dan zou terugspringen naar
+     * een oude groep de kijker juist wegslepen van waar hij net keek.
+     */
+    private fun loadCategories(preferLastWatched: Boolean = false) {
         val gen = loadGeneration
         categoriesJob?.cancel()
         _state.update { it.copy(isLoading = true, errorMessage = null) }
@@ -165,8 +172,14 @@ class LiveTvViewModel @Inject constructor(
             when (result) {
                 is AppResult.Success -> {
                     _state.update { it.copy(isLoading = false, categories = result.data) }
-                    val first = result.data.firstOrNull()?.id
-                    selectCategory(first ?: FAVORITES_ID)
+                    selectCategory(
+                        pickStartCategory(
+                            categoryIds = result.data.map { it.id },
+                            lastCategoryId =
+                                if (preferLastWatched) getLastWatched()?.first else null,
+                            favoritesId = FAVORITES_ID,
+                        ),
+                    )
                 }
                 is AppResult.Failure ->
                     _state.update {

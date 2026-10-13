@@ -3,7 +3,7 @@
     "versionName": "1.0.21",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
     "sha256": "190100309f3447a8fd2935a509c71a82d515a97afc2dffa44ca59c8c377cae45",
-    "releaseNotes": "De netwerken heten voortaan Netwerk A tot en met D. Bij welk netwerk jij hoort, staat op je eigen account. Had je al een netwerk toegevoegd, dan krijgt dat automatisch de juiste naam; je hoeft zelf niets te doen en je blijft gewoon ingelogd.",
+    "releaseNotes": "De zenderlijst begint weer waar je gebleven was. De groep van je laatst bekeken zender staat open en de lijst staat meteen bij die zender, op de telefoon en op de tv.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }

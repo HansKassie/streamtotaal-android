@@ -101,7 +101,7 @@ fun LiveTvScreen(
         state.selectedCategoryId,
         state.visibleChannels.isNotEmpty(),
     ) {
-        if (!isTv || state.visibleChannels.isEmpty()) {
+        if (state.visibleChannels.isEmpty()) {
             return@LaunchedEffect
         }
         val target = viewModel.focusTargetId(state.visibleChannels)
@@ -109,7 +109,10 @@ fun LiveTvScreen(
         val idx = state.visibleChannels
             .indexOfFirst { it.id == target }
             .coerceAtLeast(0)
+        // Ook op de telefoon scrollen: daar is geen focus, dus zonder dit
+        // begon de lijst bovenaan terwijl de onthouden zender verderop stond.
         listState.scrollToItem(idx)
+        if (!isTv) return@LaunchedEffect
         // Een frame wachten zodat de recompositie de FocusRequester aan de
         // juiste rij heeft gekoppeld voordat we focus vragen.
         withFrameNanos {}
