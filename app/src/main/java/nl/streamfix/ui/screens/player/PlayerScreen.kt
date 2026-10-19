@@ -442,7 +442,7 @@ fun PlayerScreen(
             )
         }
 
-        if (!isTv) Row(
+        if (!isTv && chromeVisible) Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp),
