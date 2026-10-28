@@ -27,8 +27,8 @@ android {
         applicationId = "nl.streamfix.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 32
-        versionName = "1.0.31"
+        versionCode = 35
+        versionName = "1.0.34"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

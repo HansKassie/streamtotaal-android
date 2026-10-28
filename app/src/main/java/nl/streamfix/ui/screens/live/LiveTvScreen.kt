@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -95,6 +96,18 @@ fun LiveTvScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val epgMap by viewModel.epg.collectAsStateWithLifecycle()
+    // Eén klok voor dit hele scherm. De rijen en het paneel rechts tonen
+    // allebei welk programma NU loopt; lazen die ieder hun eigen tijd, dan
+    // liep het paneel wel door en de rijen niet, want een rij leest de tijd
+    // alleen bij hertekening en die blijft uit zolang de gids ongewijzigd
+    // uit de cache komt. Zo verspringen ze samen of geen van beide.
+    var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(EPG_RECHECK_MS)
+            nowMs = System.currentTimeMillis()
+        }
+    }
     val focusManager = LocalFocusManager.current
     val isTv = LocalIsTv.current
     val rowFocus = remember { FocusRequester() }
@@ -334,6 +347,7 @@ fun LiveTvScreen(
                     ChannelRow(
                         channel = channel,
                         programmes = epgMap[channel.id],
+                        nowMs = nowMs,
                         isFavorite = state.favoriteIds.contains(channel.id),
                         focusRequester =
                             if (channel.id == targetId) rowFocus else null,
@@ -361,6 +375,7 @@ fun LiveTvScreen(
                 EpgInfoPanel(
                     channel = focusedChannel,
                     programmes = focusedChannel?.id?.let { epgMap[it] },
+                    nowMs = nowMs,
                     modifier = Modifier
                         .width(360.dp)
                         .padding(end = 24.dp, top = 4.dp, bottom = 16.dp),
@@ -382,15 +397,10 @@ fun LiveTvScreen(
 private fun EpgInfoPanel(
     channel: LiveChannel?,
     programmes: List<EpgProgramme>?,
+    /** Gedeelde klok van het scherm; zie LiveTvScreen. */
+    nowMs: Long,
     modifier: Modifier = Modifier,
 ) {
-    var nowMs by remember { mutableStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(30_000L)
-            nowMs = System.currentTimeMillis()
-        }
-    }
     val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
     Column(modifier = modifier) {
@@ -520,6 +530,8 @@ private fun EpgInfoPanel(
 private fun ChannelRow(
     channel: LiveChannel,
     programmes: List<EpgProgramme>?,
+    /** Gedeelde klok van het scherm; zie LiveTvScreen. */
+    nowMs: Long,
     isFavorite: Boolean,
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit,
@@ -527,7 +539,7 @@ private fun ChannelRow(
     onFocused: () -> Unit,
     focusRequester: FocusRequester? = null,
 ) {
-    val now = System.currentTimeMillis()
+    val now = nowMs
     val isTv = LocalIsTv.current
     val current = programmes?.firstOrNull { now in it.startMs until it.endMs }
     val next = programmes?.firstOrNull { it.startMs > now }
