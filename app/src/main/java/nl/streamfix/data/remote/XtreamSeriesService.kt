@@ -57,6 +57,7 @@ class XtreamSeriesService @Inject constructor(
                         name = dto.name?.ifBlank { "Serie $id" } ?: "Serie $id",
                         posterUrl = dto.cover?.takeIf { it.isNotBlank() },
                         categoryId = dto.categoryId ?: categoryId,
+                        rating = dto.rating,
                     )
                 },
             )
@@ -86,6 +87,7 @@ class XtreamSeriesService @Inject constructor(
                         name = dto.name?.ifBlank { "Serie $id" } ?: "Serie $id",
                         posterUrl = dto.cover?.takeIf { it.isNotBlank() },
                         categoryId = dto.categoryId,
+                        rating = dto.rating,
                     )
                 },
             )

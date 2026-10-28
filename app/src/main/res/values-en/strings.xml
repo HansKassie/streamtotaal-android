@@ -168,6 +168,7 @@
     <string name="epg_guide_title">Guide</string>
     <string name="epg_loading">Loading guide...</string>
     <string name="epg_no_guide">No guide</string>
+    <string name="rating_badge_description">Rating %1$s out of 10</string>
     <string name="epg_no_channels">No channels</string>
     <string name="epg_status_upcoming">Up next</string>
     <string name="epg_status_earlier">Earlier</string>

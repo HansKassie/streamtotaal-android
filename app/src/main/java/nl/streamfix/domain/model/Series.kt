@@ -5,6 +5,8 @@ data class SeriesItem(
     val name: String,
     val posterUrl: String?,
     val categoryId: String?,
+    /** Rauw providerveld; beoordeel het met MediaRating, toon het nooit los. */
+    val rating: String? = null,
 )
 
 data class Episode(

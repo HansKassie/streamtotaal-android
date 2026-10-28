@@ -56,6 +56,7 @@ class XtreamVodService @Inject constructor(
                         posterUrl = dto.streamIcon?.takeIf { it.isNotBlank() },
                         categoryId = dto.categoryId ?: categoryId,
                         containerExtension = dto.containerExtension,
+                        rating = dto.rating,
                     )
                 },
             )
@@ -86,6 +87,7 @@ class XtreamVodService @Inject constructor(
                         posterUrl = dto.streamIcon?.takeIf { it.isNotBlank() },
                         categoryId = dto.categoryId,
                         containerExtension = dto.containerExtension,
+                        rating = dto.rating,
                     )
                 },
             )

@@ -12,6 +12,7 @@ data class XtreamSeriesStreamDto(
     @SerialName("name") val name: String? = null,
     @SerialName("cover") val cover: String? = null,
     @SerialName("category_id") val categoryId: String? = null,
+    @SerialName("rating") val rating: String? = null,
 ) {
     val seriesIdValue: String? get() = seriesId?.jsonPrimitive?.contentOrNull
 }

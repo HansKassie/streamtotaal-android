@@ -1,7 +1,9 @@
 package nl.streamfix.ui.screens.vod
 
 import androidx.compose.foundation.clickable
+import nl.streamfix.domain.util.MediaRating
 import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.RatingBadge
 import nl.streamfix.ui.dpadExitField
 import nl.streamfix.ui.tvFocusable
 import androidx.compose.foundation.layout.Box
@@ -166,13 +168,27 @@ fun VodScreen(
                             .clickable { onOpenVod(item.id) },
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        AsyncImage(
-                            model = item.posterUrl,
-                            contentDescription = item.name,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f),
-                        )
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            AsyncImage(
+                                model = item.posterUrl,
+                                contentDescription = item.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(2f / 3f),
+                            )
+                            // Geen cijfer is geen badge. Bij netwerk B geldt
+                            // dat voor het hele filmaanbod.
+                            MediaRating.of(item.rating)?.let { cijfer ->
+                                RatingBadge(
+                                    rating = cijfer,
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        // Van de rand af, anders raakt hij
+                                        // de focusrand op tv.
+                                        .padding(4.dp),
+                                )
+                            }
+                        }
                         Spacer(Modifier.height(4.dp))
                         Text(
                             text = item.name,

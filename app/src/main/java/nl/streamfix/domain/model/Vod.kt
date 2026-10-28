@@ -6,6 +6,8 @@ data class VodItem(
     val posterUrl: String?,
     val categoryId: String?,
     val containerExtension: String?,
+    /** Rauw providerveld; beoordeel het met MediaRating, toon het nooit los. */
+    val rating: String? = null,
 )
 
 data class VodDetail(
