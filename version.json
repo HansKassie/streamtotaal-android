@@ -3,7 +3,7 @@
     "versionName": "1.0.36",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
     "sha256": "f6998a5e2ec5cc817f0f533da24ca3b18d3ac682b7257ed880bb37863609c98d",
-    "releaseNotes": "Programma-informatie in de zenderlijst wordt betrouwbaarder bijgewerkt. Op tv zie je met de OK-toets \u00e9n tijdens het zappen wat er nu speelt en wat er straks komt. Ook het zenderoverzicht tijdens het kijken toont daar bij elke zender het huidige programma.",
+    "releaseNotes": "Bij films en series staat nu de beoordeling op de poster.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }
