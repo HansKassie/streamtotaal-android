@@ -2,6 +2,8 @@ package nl.streamfix.ui.screens.player
 
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +18,9 @@ import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
 import nl.streamfix.domain.model.AppError
 import nl.streamfix.domain.repository.LiveRepository
+import nl.streamfix.domain.repository.EpgRepository
+import nl.streamfix.domain.model.EpgProgramme
+import nl.streamfix.domain.usecase.GetChannelEpgUseCase
 import nl.streamfix.domain.usecase.GetLiveCastUrlUseCase
 import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
@@ -27,6 +32,7 @@ import nl.streamfix.ui.navigation.Routes
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -89,6 +95,47 @@ private class FakeLiveRepository(
     override fun lastWatchedChannel(): Pair<String, String>? = remembered
 }
 
+/** Fake-gids: per zender een antwoord, met een regelbare vertraging. */
+private class FakeEpgRepository : EpgRepository {
+    var byChannel: Map<String, List<EpgProgramme>> = emptyMap()
+    var fail = false
+    var delayMs = 0L
+
+    /**
+     * Wacht niet-annuleerbaar. Bootst na dat het annuleren van de job nog
+     * niet is aangekomen: dat gebeurt pas op een suspension-punt. Alleen zo
+     * is de controle NA het ophalen te bewijzen en niet alleen het
+     * annuleren zelf.
+     */
+    var uncancellableDelay = false
+
+    /** Hoe vaak er echt is opgehaald, per zender. */
+    val requests = mutableListOf<String>()
+
+    override suspend fun getEpg(
+        streamId: String,
+    ): AppResult<List<EpgProgramme>> {
+        requests += streamId
+        val shouldFail = fail
+        if (delayMs > 0L) {
+            if (uncancellableDelay) {
+                withContext(NonCancellable) { delay(delayMs) }
+            } else {
+                delay(delayMs)
+            }
+        }
+        return if (shouldFail) {
+            AppResult.Failure(AppError.NetworkUnavailable)
+        } else {
+            AppResult.Success(byChannel[streamId].orEmpty())
+        }
+    }
+
+    override suspend fun getEpgTable(
+        streamId: String,
+    ): AppResult<List<EpgProgramme>> = AppResult.Success(emptyList())
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
 
@@ -113,6 +160,7 @@ class PlayerViewModelTest {
     private fun viewModel(
         startChannelId: String = "",
         repo: FakeLiveRepository = FakeLiveRepository(sample),
+        epg: FakeEpgRepository = FakeEpgRepository(),
     ): PlayerViewModel {
         val handle = SavedStateHandle(
             mapOf(
@@ -124,6 +172,7 @@ class PlayerViewModelTest {
             savedStateHandle = handle,
             getChannels = GetLiveChannelsUseCase(repo),
             getCategories = GetLiveCategoriesUseCase(repo),
+            getChannelEpg = GetChannelEpgUseCase(epg),
             observeFavorites = ObserveFavoritesUseCase(repo),
             getStreamUrl = GetStreamUrlUseCase(repo),
             getCastUrl = GetLiveCastUrlUseCase(repo),
@@ -375,6 +424,151 @@ class PlayerViewModelTest {
             assertFalse(s.channelLoadFailed)
             assertEquals("c1", s.currentChannelId)
         }
+
+    private fun prog(title: String, startMs: Long, endMs: Long) =
+        EpgProgramme(title, "", startMs, endMs)
+
+    @Test
+    fun gidsWordtPasOpVerzoekOpgehaald() = runTest(dispatcher) {
+        // Bij elke zender meteen ophalen zou doorzappen in een reeks
+        // aanvragen laten eindigen voor gidsen die niemand bekijkt.
+        val epg = FakeEpgRepository().apply {
+            byChannel = mapOf("c1" to listOf(prog("Journaal", 0, 1000)))
+        }
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+        assertTrue(epg.requests.isEmpty())
+
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+        assertEquals(listOf("c1"), epg.requests)
+        assertEquals(1, vm.state.value.epgProgrammes?.size)
+        assertFalse(vm.state.value.epgLoading)
+    }
+
+    @Test
+    fun tweedeKeerOpenenHaaltNietOpnieuwOp() = runTest(dispatcher) {
+        val epg = FakeEpgRepository().apply {
+            byChannel = mapOf("c1" to listOf(prog("Journaal", 0, 1000)))
+        }
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+        assertEquals(1, epg.requests.size)
+    }
+
+    @Test
+    fun zappenGooitDeGidsVanDeVorigeZenderWeg() = runTest(dispatcher) {
+        val epg = FakeEpgRepository().apply {
+            byChannel = mapOf("c1" to listOf(prog("Journaal", 0, 1000)))
+        }
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+        assertEquals(1, vm.state.value.epgProgrammes?.size)
+
+        vm.next()
+        assertNull(vm.state.value.epgProgrammes)
+        assertFalse(vm.state.value.epgLoading)
+        assertFalse(vm.state.value.epgFailed)
+    }
+
+    @Test
+    fun zappenAnnuleertEenLopendeGidsaanvraag() = runTest(dispatcher) {
+        val epg = FakeEpgRepository().apply {
+            byChannel = mapOf("c1" to listOf(prog("Journaal", 0, 1000)))
+            delayMs = 5_000L
+        }
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+        vm.loadEpgForCurrentChannel()
+        advanceTimeBy(1_000L)
+
+        vm.next()
+        assertEquals("c2", vm.state.value.currentChannelId)
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.epgProgrammes)
+        assertFalse(vm.state.value.epgFailed)
+    }
+
+    @Test
+    fun laatAntwoordNaZappenKomtNietBijDeNieuweZender() = runTest(dispatcher) {
+        // Het echte risico: je vraagt de gids van c1, zapt naar c2, en het
+        // trage antwoord van c1 landt daarna bij c2 in beeld.
+        //
+        // Hier wacht de fake NIET-annuleerbaar, want anders bewijst de test
+        // alleen dat zappen de job annuleert. Annuleren komt pas aan op een
+        // suspension-punt, dus de controle na het ophalen is de tweede slot
+        // op de deur en moet apart bewezen worden.
+        val epg = FakeEpgRepository().apply {
+            byChannel = mapOf("c1" to listOf(prog("Journaal", 0, 1000)))
+            delayMs = 5_000L
+            uncancellableDelay = true
+        }
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+        vm.loadEpgForCurrentChannel()
+        advanceTimeBy(1_000L)
+
+        vm.next()
+        assertEquals("c2", vm.state.value.currentChannelId)
+        advanceUntilIdle()
+
+        assertNull(vm.state.value.epgProgrammes)
+        assertFalse(vm.state.value.epgFailed)
+    }
+
+    @Test
+    fun mislukteGidsIsGeenGidsloosEnRaaktHetBeeldNiet() = runTest(dispatcher) {
+        // "Geen gids" tonen terwijl het ophalen faalde is onjuist, en een
+        // melding over het hele beeld hoort hier al helemaal niet.
+        val epg = FakeEpgRepository().apply { fail = true }
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+
+        val s = vm.state.value
+        assertTrue(s.epgFailed)
+        assertNull(s.epgProgrammes)
+        assertFalse(s.epgLoading)
+        assertFalse(s.channelLoadFailed)
+        assertEquals("c1", s.currentChannelId)
+    }
+
+    @Test
+    fun naEenMislukteGidsMagOpnieuwWordenGeprobeerd() = runTest(dispatcher) {
+        val epg = FakeEpgRepository().apply { fail = true }
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.epgFailed)
+
+        epg.fail = false
+        epg.byChannel = mapOf("c1" to listOf(prog("Journaal", 0, 1000)))
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+        assertFalse(vm.state.value.epgFailed)
+        assertEquals(1, vm.state.value.epgProgrammes?.size)
+    }
+
+    @Test
+    fun zenderZonderGidsGeeftEenLegeLijstEnGeenFout() = runTest(dispatcher) {
+        val epg = FakeEpgRepository()
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+
+        assertEquals(emptyList<EpgProgramme>(), vm.state.value.epgProgrammes)
+        assertFalse(vm.state.value.epgFailed)
+    }
 
     @Test
     fun lastChannelWisseltHeenEnWeer() = runTest(dispatcher) {

@@ -9,6 +9,10 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -28,6 +32,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,7 +68,12 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import nl.streamfix.R
+import nl.streamfix.domain.model.EpgProgramme
+import nl.streamfix.domain.util.EpgNowNext
 import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.screens.live.FAVORITES_ID
 import nl.streamfix.ui.tvFocusable
@@ -85,11 +95,17 @@ fun PlayerScreen(
     val activity = context as? Activity
     var chromeVisible by remember { mutableStateOf(true) }
     var channelListOpen by remember { mutableStateOf(false) }
-    // Staat open tussen de KeyDown en de KeyUp van de OK-druk die de
-    // zenderlijst opende, zodat die KeyUp niet ook nog iets kiest.
-    var okOpenedList by remember { mutableStateOf(false) }
+    // Staat open tussen de KeyDown en de KeyUp van een OK-druk die wij
+    // hebben afgehandeld, zodat die KeyUp niet alsnog iets anders doet.
+    var okConsumed by remember { mutableStateOf(false) }
     // Tweede laag binnen het overzicht: de groepkeuze.
     var groupPickerOpen by remember { mutableStateOf(false) }
+    // "Nu en straks" van de spelende zender; leest alleen, krijgt bewust
+    // geen focus, zodat de afstandsbediening normaal blijft werken.
+    var infoBarOpen by remember { mutableStateOf(false) }
+    // Hoogt op bij elke aanleiding om de balk te tonen, zodat de acht
+    // seconden opnieuw beginnen terwijl hij al open staat.
+    var infoTick by remember { mutableIntStateOf(0) }
     var wakeTick by remember { mutableIntStateOf(0) }
     val chromeFocus = remember { FocusRequester() }
     LaunchedEffect(wakeTick, isTv) {
@@ -109,13 +125,27 @@ fun PlayerScreen(
             viewModel.resetBrowseToPlaying()
         }
     }
-    var zapTick by remember { mutableIntStateOf(0) }
-    var zapVisible by remember { mutableStateOf(false) }
-    LaunchedEffect(zapTick) {
-        if (zapTick == 0) return@LaunchedEffect
-        zapVisible = true
-        delay(2500)
-        zapVisible = false
+    // Acht seconden, ruimer dan de vier van de bedieningsbalk: twee
+    // programmatitels lezen kost meer tijd dan een zendernaam. Opnieuw
+    // openen begint de tijd van voren.
+    LaunchedEffect(infoBarOpen, infoTick) {
+        if (!infoBarOpen) return@LaunchedEffect
+        delay(8000)
+        infoBarOpen = false
+    }
+    // Elke zenderwissel laat de balk kort zien, zoals een settopbox doet:
+    // na het zappen wil je weten wat je nu kijkt. Dit verving de losse
+    // zendernaam linksboven, die dezelfde naam nog eens toonde maar zonder
+    // het programma erbij.
+    LaunchedEffect(state.currentChannelId) {
+        if (!isTv || state.currentChannelId == null) return@LaunchedEffect
+        infoBarOpen = true
+        infoTick++
+        // Even wachten met ophalen. Wie doorzapt vuurt anders voor elke
+        // tussenliggende zender een gidsaanvraag af die hij nooit ziet;
+        // deze effect wordt bij de volgende wissel afgebroken.
+        delay(400)
+        viewModel.loadEpgForCurrentChannel()
     }
     val scope = rememberCoroutineScope()
 
@@ -126,6 +156,9 @@ fun PlayerScreen(
     val errorPhase by errorTimer.phase.collectAsStateWithLifecycle()
     val showError = errorPhase != PlaybackErrorPhase.Hidden
     val persistentError = errorPhase == PlaybackErrorPhase.Persistent
+    // Een foutmelding beslaat het hele beeld; de balk eronder zou alleen
+    // maar in de weg zitten.
+    LaunchedEffect(showError) { if (showError) infoBarOpen = false }
     val cast = rememberCastController(player)
     PauseLocalWhenBackgrounded(cast, isLive = true)
     KeepScreenOnWhilePlaying(cast)
@@ -203,11 +236,13 @@ fun PlayerScreen(
 
     // Terug sluit eerst wat eroverheen ligt en pas daarna de speler. De
     // film- en seriespelers doen dit al; de live-speler was overgeslagen.
-    BackHandler(enabled = channelListOpen || showError) {
+    BackHandler(enabled = channelListOpen || infoBarOpen || showError) {
         if (channelListOpen) {
             // Van binnen naar buiten afpellen: eerst de groepkeuze, dan het
-            // overzicht, en pas daarna de speler.
+            // overzicht, dan de informatiebalk, en pas daarna de speler.
             if (groupPickerOpen) groupPickerOpen = false else channelListOpen = false
+        } else if (infoBarOpen) {
+            infoBarOpen = false
         } else {
             errorTimer.dismiss()
         }
@@ -223,15 +258,16 @@ fun PlayerScreen(
                     .focusable()
                     .onPreviewKeyEvent { e ->
                         if (e.type != KeyEventType.KeyDown) {
-                            // De KeyUp van de OK-druk die de lijst opende
-                            // mag niet doorlekken: Compose activeert een
-                            // gefocust item op KeyUp, dus anders zou een
-                            // druk op OK de lijst openen en meteen de
-                            // gefocuste zender kiezen.
-                            if (okOpenedList &&
+                            // De KeyUp van een door ons afgehandelde
+                            // OK-druk mag niet doorlekken. Compose
+                            // activeert een gefocust item namelijk op
+                            // KeyUp, en Media3 zou zijn bedieningsbalk
+                            // openen; anders doet een druk op OK twee
+                            // dingen tegelijk.
+                            if (okConsumed &&
                                 isOkKeyCode(e.nativeKeyEvent.keyCode)
                             ) {
-                                okOpenedList = false
+                                okConsumed = false
                                 return@onPreviewKeyEvent true
                             }
                             return@onPreviewKeyEvent false
@@ -250,7 +286,7 @@ fun PlayerScreen(
                             // dus de poort mag dicht. Blijft die anders
                             // open doordat een KeyUp ons niet bereikte,
                             // dan was er daarna geen zender meer te kiezen.
-                            okOpenedList = false
+                            okConsumed = false
                             return@onPreviewKeyEvent false
                         }
                         // Ligt er een melding overheen, dan horen de toetsen
@@ -274,31 +310,47 @@ fun PlayerScreen(
                             android.view.KeyEvent.KEYCODE_LAST_CHANNEL
                         ) {
                             viewModel.lastChannel()
-                            zapTick++
                             return@onPreviewKeyEvent true
                         }
-                        // OK opent het zenderoverzicht, net als omhoog en
-                        // omlaag. Dat is wat kijkers van een settopbox
-                        // verwachten; OK liet hiervoor alleen de titelbalk
-                        // even zien en daar was de lijst niet mee te
-                        // bereiken.
+                        // OK opent de "Nu en straks"-balk. Zo blijft de
+                        // uitzending zichtbaar, en op een settopbox is OK
+                        // de infotoets. Het zenderoverzicht blijft op
+                        // omhoog en omlaag staan, de volledige gids op de
+                        // gele toets en GUIDE.
+                        //
+                        // Dit pad wordt alleen bereikt tijdens gewoon
+                        // kijken: ligt het overzicht, de groepkeuze of een
+                        // foutmelding eroverheen, dan is hierboven al
+                        // teruggegeven zodat OK de gefocuste knop bedient.
                         if (isOkKeyCode(ekc)) {
-                            channelListOpen = true
-                            okOpenedList = true
+                            // Een ingedrukt gehouden OK stuurt herhalingen;
+                            // zonder deze grens sluit de balk zich meteen
+                            // weer via de tweede druk.
+                            if (e.nativeKeyEvent.repeatCount == 0) {
+                                if (infoBarOpen) {
+                                    infoBarOpen = false
+                                } else {
+                                    infoBarOpen = true
+                                    infoTick++
+                                    viewModel.loadEpgForCurrentChannel()
+                                }
+                            }
+                            okConsumed = true
                             return@onPreviewKeyEvent true
                         }
+                        // Zappen en het overzicht sluiten de balk: anders
+                        // blijven de gegevens van de vorige zender staan.
                         when (e.key) {
                             Key.DirectionRight -> {
                                 if (state.hasNext) viewModel.next()
-                                zapTick++
                                 return@onPreviewKeyEvent true
                             }
                             Key.DirectionLeft -> {
                                 if (state.hasPrevious) viewModel.previous()
-                                zapTick++
                                 return@onPreviewKeyEvent true
                             }
                             Key.DirectionUp, Key.DirectionDown -> {
+                                infoBarOpen = false
                                 channelListOpen = true
                                 return@onPreviewKeyEvent true
                             }
@@ -357,22 +409,6 @@ fun PlayerScreen(
             update = { if (it.player !== cast.current) it.player = cast.current },
         )
 
-        if (isTv && zapVisible && !chromeVisible) {
-            Box(
-                modifier = Modifier
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(16.dp),
-            ) {
-                Text(
-                    text = state.title,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-        }
 
         // Ook op telefoon aan chromeVisible: die volgt daar de bediening van
         // Media3. Begint op true, dus mocht die luisteraar niet afgaan, dan
@@ -462,6 +498,22 @@ fun PlayerScreen(
                     tint = Color.White,
                 )
             }
+        }
+
+        if (isTv && infoBarOpen && !channelListOpen) {
+            NowNextBar(
+                channelId = state.currentChannelId,
+                channelTitle = state.title,
+                programmes = state.epgProgrammes,
+                loading = state.epgLoading,
+                failed = state.epgFailed,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.85f))
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(horizontal = 32.dp, vertical = 20.dp),
+            )
         }
 
         if (isTv && channelListOpen) {
@@ -720,6 +772,102 @@ private fun adjustVolume(context: android.content.Context, step: Float) {
             target.coerceIn(0, max),
             0,
         )
+    }
+}
+
+/**
+ * "Nu en straks" van de spelende zender, onderin over het beeld.
+ *
+ * Krijgt bewust geen focus en geen knoppen: lezen kan zonder, en elk
+ * focusbaar element in de speler moet daarna met de d-pad bereikbaar
+ * blijven. Laden, geen gids en mislukt zijn drie verschillende meldingen,
+ * want "geen gids" terwijl het ophalen gewoon faalde is onjuist en zet een
+ * kijker op het verkeerde been.
+ */
+@Composable
+private fun NowNextBar(
+    channelId: String?,
+    channelTitle: String,
+    programmes: List<EpgProgramme>?,
+    loading: Boolean,
+    failed: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    // Per zender vastgezet. Een tikkende klok zou alleen onrust in de
+    // voortgangsbalk geven, maar doorzappen houdt de balk wel open, en dan
+    // moet de tijd wel bij de nieuwe zender horen.
+    val nowMs = remember(channelId) { System.currentTimeMillis() }
+    val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val nowNext = remember(programmes, nowMs) {
+        EpgNowNext.of(programmes.orEmpty(), nowMs)
+    }
+
+    Column(modifier = modifier) {
+        Text(
+            text = channelTitle,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(8.dp))
+
+        val statusRes = when {
+            failed -> R.string.epg_load_failed
+            // null betekent nog niet binnen. Dat is tijdens het zappen het
+            // normale geval, en dan is "Geen gids" tonen onjuist: er is nog
+            // niets gevraagd.
+            loading || programmes == null -> R.string.epg_loading
+            nowNext.now == null && nowNext.next == null -> R.string.epg_no_guide
+            else -> null
+        }
+        if (statusRes != null) {
+            Text(
+                text = stringResource(statusRes),
+                color = Color.White.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            return@Column
+        }
+
+        nowNext.now?.let { current ->
+            Text(
+                text = stringResource(R.string.common_now) + "  " +
+                    timeFmt.format(Date(current.startMs)) + " - " +
+                    timeFmt.format(Date(current.endMs)) + "   " +
+                    current.title,
+                color = Color.White,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (current.endMs > current.startMs) {
+                Spacer(Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = {
+                        ((nowMs - current.startMs).toFloat() /
+                            (current.endMs - current.startMs)).coerceIn(0f, 1f)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(2.dp),
+                    color = Color.White,
+                    trackColor = Color.White.copy(alpha = 0.24f),
+                    gapSize = 0.dp,
+                    drawStopIndicator = {},
+                )
+            }
+        }
+        nowNext.next?.let { upcoming ->
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.epg_status_upcoming) + "  " +
+                    timeFmt.format(Date(upcoming.startMs)) + "   " +
+                    upcoming.title,
+                color = Color.White.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

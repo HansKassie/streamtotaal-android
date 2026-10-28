@@ -173,6 +173,7 @@
     <string name="epg_status_upcoming">Straks</string>
     <string name="epg_status_earlier">Eerder</string>
     <string name="epg_no_programme_guide">Geen programmagids beschikbaar</string>
+    <string name="epg_load_failed">Gids kon niet geladen worden</string>
 
     <!-- ===== Tabs en topbar. ===== -->
     <string name="tab_live_tv">Live TV</string>

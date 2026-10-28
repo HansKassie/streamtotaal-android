@@ -15,6 +15,7 @@ import nl.streamfix.domain.model.AppError
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.repository.EpgRepository
 import nl.streamfix.domain.util.AppResult
+import nl.streamfix.domain.util.EpgNowNext
 
 @Singleton
 class EpgRepositoryImpl @Inject constructor(
@@ -44,7 +45,21 @@ class EpgRepositoryImpl @Inject constructor(
         val cached = dao.get(acc.id, streamId)
         val now = System.currentTimeMillis()
         if (cached != null && now - cached.fetchedAt < TTL_MS) {
-            return AppResult.Success(decode(cached.payload))
+            // Vers op ophaaltijd is niet hetzelfde als bruikbaar. De korte
+            // gids beslaat maar een paar programma's, dus een lijst van
+            // 10:00 kan om 12:00 helemaal in het verleden liggen en toch
+            // binnen de TTL vallen. Dan toont "Nu en straks" oude titels of
+            // ten onrechte geen gids, terwijl opnieuw ophalen het wel weet.
+            //
+            // Een LEGE lijst blijft wel geldig: die betekent dat deze zender
+            // geen gids heeft, en elke keer opnieuw vragen levert een reeks
+            // zinloze aanvragen op zonder ooit een ander antwoord.
+            val programmes = decode(cached.payload)
+            if (programmes.isEmpty() ||
+                EpgNowNext.stillRelevant(programmes, now)
+            ) {
+                return AppResult.Success(programmes)
+            }
         }
 
         return when (

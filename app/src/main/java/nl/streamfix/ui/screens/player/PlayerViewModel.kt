@@ -13,8 +13,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
+import nl.streamfix.domain.usecase.GetChannelEpgUseCase
 import nl.streamfix.domain.usecase.GetLiveCastUrlUseCase
 import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
@@ -53,6 +55,16 @@ data class PlayerUiState(
      */
     val browseLoading: Boolean = false,
     val browseFailed: Boolean = false,
+    /**
+     * Gids van de SPELENDE zender voor de "Nu en straks"-balk. null = nog
+     * niet opgevraagd of weggegooid na een zenderwissel; een lege lijst
+     * betekent dat deze zender geen gids heeft. Drie losse toestanden,
+     * zodat de balk "laden", "geen gids" en "ophalen mislukt" kan
+     * onderscheiden; de uitzending loopt in alle drie gewoon door.
+     */
+    val epgProgrammes: List<EpgProgramme>? = null,
+    val epgLoading: Boolean = false,
+    val epgFailed: Boolean = false,
 )
 
 private sealed interface ChannelLoadResult {
@@ -65,6 +77,7 @@ class PlayerViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getChannels: GetLiveChannelsUseCase,
     private val getCategories: GetLiveCategoriesUseCase,
+    private val getChannelEpg: GetChannelEpgUseCase,
     private val observeFavorites: ObserveFavoritesUseCase,
     private val getStreamUrl: GetStreamUrlUseCase,
     private val getCastUrl: GetLiveCastUrlUseCase,
@@ -267,11 +280,65 @@ class PlayerViewModel @Inject constructor(
         emitCurrent()
     }
 
+    private var epgJob: Job? = null
+
+    /** Zender waar de gids in de state bij hoort. */
+    private var epgChannelId: String? = null
+
+    /**
+     * Haalt de gids van de spelende zender op.
+     *
+     * Het scherm roept dit aan bij het openen van de balk en na een
+     * zenderwissel, in dat laatste geval met een korte vertraging. Zonder
+     * die vertraging vuurt doorzappen een aanvraag af voor elke zender
+     * waar je langs komt en waarvan niemand de gids te zien krijgt.
+     */
+    fun loadEpgForCurrentChannel() {
+        val channelId = _state.value.currentChannelId ?: return
+        val s = _state.value
+        // Al in huis of al onderweg voor deze zender: niets te doen. Een
+        // mislukte poging mag wel opnieuw.
+        if (epgChannelId == channelId && (s.epgProgrammes != null || s.epgLoading)) {
+            return
+        }
+        epgJob?.cancel()
+        epgChannelId = channelId
+        _state.update {
+            it.copy(epgLoading = true, epgFailed = false, epgProgrammes = null)
+        }
+        epgJob = viewModelScope.launch {
+            val result = getChannelEpg(channelId)
+            // Kwam het antwoord pas binnen nadat de kijker doorzapte, dan
+            // hoort het bij een zender die niet meer speelt. Dan weggooien:
+            // anders staat de gids van de vorige zender bij de nieuwe.
+            if (epgChannelId != channelId ||
+                _state.value.currentChannelId != channelId
+            ) {
+                return@launch
+            }
+            when (result) {
+                is AppResult.Success -> _state.update {
+                    it.copy(epgLoading = false, epgProgrammes = result.data)
+                }
+                is AppResult.Failure -> _state.update {
+                    it.copy(epgLoading = false, epgFailed = true)
+                }
+            }
+        }
+    }
+
     private fun emitCurrent() {
         val channel = playedChannels.getOrNull(index)
         if (channel == null) {
             _state.update { it.copy(streamUrl = null) }
             return
+        }
+        // Een gids hoort bij een zender. Bij een wissel de lopende aanvraag
+        // annuleren en de gegevens weggooien.
+        val channelChanged = _state.value.currentChannelId != channel.id
+        if (channelChanged) {
+            epgJob?.cancel()
+            epgChannelId = null
         }
         // Voor "start met laatste zender"; volwassen kanalen worden in de
         // repository overgeslagen. Wisselde de kijker van groep, dan hoort
@@ -289,6 +356,9 @@ class PlayerViewModel @Inject constructor(
                 currentChannelId = channel.id,
                 hasLast = previousIndex in playedChannels.indices &&
                     previousIndex != index,
+                epgProgrammes = if (channelChanged) null else it.epgProgrammes,
+                epgLoading = if (channelChanged) false else it.epgLoading,
+                epgFailed = if (channelChanged) false else it.epgFailed,
             )
         }
     }

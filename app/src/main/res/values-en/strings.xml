@@ -172,6 +172,7 @@
     <string name="epg_status_upcoming">Up next</string>
     <string name="epg_status_earlier">Earlier</string>
     <string name="epg_no_programme_guide">No programme guide available</string>
+    <string name="epg_load_failed">Could not load the guide</string>
 
     <!-- ===== Tabs and top bar. ===== -->
     <string name="tab_live_tv">Live TV</string>
