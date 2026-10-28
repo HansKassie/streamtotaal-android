@@ -311,6 +311,28 @@ class PlayerViewModel @Inject constructor(
     /** Zender waar de gids in de state bij hoort. */
     private var epgChannelId: String? = null
 
+    /** Wanneer die gids binnenkwam; alleen nodig voor een leeg antwoord. */
+    private var epgFetchedAt: Long = 0L
+
+    /**
+     * Zegt deze gids nog iets, of is opnieuw ophalen beter?
+     *
+     * Dezelfde drie regels als [EpgRequestGate], maar de balk kan die poort
+     * niet gebruiken: die houdt één zender tegelijk bij en gooit zijn
+     * gegevens weg bij een zenderwissel, terwijl de poort zou blijven
+     * zeggen "al opgehaald". Daarom hier met de hand.
+     *
+     * Leeg betekent dat de zender geen gids heeft; dat blijft staan tot de
+     * cache-TTL, want elke keer opnieuw vragen levert toch hetzelfde op.
+     * Een gevulde gids geldt zolang hij iets over nu of later zegt.
+     */
+    private fun stillUsable(programmes: List<EpgProgramme>, nowMs: Long) =
+        if (programmes.isEmpty()) {
+            nowMs - epgFetchedAt < EpgRequestGate.STALE_AFTER_MS
+        } else {
+            EpgNowNext.stillRelevant(programmes, nowMs)
+        }
+
     /**
      * Haalt de gids van de spelende zender op.
      *
@@ -322,9 +344,18 @@ class PlayerViewModel @Inject constructor(
     fun loadEpgForCurrentChannel() {
         val channelId = _state.value.currentChannelId ?: return
         val s = _state.value
-        // Al in huis of al onderweg voor deze zender: niets te doen. Een
-        // mislukte poging mag wel opnieuw.
-        if (epgChannelId == channelId && (s.epgProgrammes != null || s.epgLoading)) {
+        // Al onderweg voor deze zender: niets te doen.
+        if (epgChannelId == channelId && s.epgLoading) return
+        // Al in huis EN nog bruikbaar: ook niets te doen. "Niet null" is
+        // daarvoor geen goede maat. Blijf je lang op dezelfde zender, dan
+        // raakt de korte gids op en zou de balk bij elke druk op OK "Geen
+        // gids" tonen, terwijl opnieuw ophalen het antwoord wel geeft. Een
+        // mislukte poging mag sowieso opnieuw: die stond hier op null en
+        // valt dus buiten deze controle.
+        if (epgChannelId == channelId &&
+            s.epgProgrammes != null &&
+            stillUsable(s.epgProgrammes, System.currentTimeMillis())
+        ) {
             return
         }
         epgJob?.cancel()
@@ -343,8 +374,11 @@ class PlayerViewModel @Inject constructor(
                 return@launch
             }
             when (result) {
-                is AppResult.Success -> _state.update {
-                    it.copy(epgLoading = false, epgProgrammes = result.data)
+                is AppResult.Success -> {
+                    epgFetchedAt = System.currentTimeMillis()
+                    _state.update {
+                        it.copy(epgLoading = false, epgProgrammes = result.data)
+                    }
                 }
                 is AppResult.Failure -> _state.update {
                     it.copy(epgLoading = false, epgFailed = true)

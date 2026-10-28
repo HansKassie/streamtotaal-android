@@ -442,6 +442,18 @@ class PlayerViewModelTest {
     private fun prog(title: String, startMs: Long, endMs: Long) =
         EpgProgramme(title, "", startMs, endMs)
 
+    /**
+     * Een uitzending die NU bezig is. Nodig waar het erom gaat dat een
+     * bruikbare gids niet opnieuw opgehaald wordt: met een programma uit
+     * 1970 is de gids altijd verlopen, en dan slaagt zo'n test om de
+     * verkeerde reden.
+     */
+    private fun lopendProg(title: String): EpgProgramme {
+        val nu = System.currentTimeMillis()
+        val uur = 60 * 60 * 1000L
+        return EpgProgramme(title, "", nu - uur, nu + uur)
+    }
+
     @Test
     fun gidsWordtPasOpVerzoekOpgehaald() = runTest(dispatcher) {
         // Bij elke zender meteen ophalen zou doorzappen in een reeks
@@ -463,7 +475,7 @@ class PlayerViewModelTest {
     @Test
     fun tweedeKeerOpenenHaaltNietOpnieuwOp() = runTest(dispatcher) {
         val epg = FakeEpgRepository().apply {
-            byChannel = mapOf("c1" to listOf(prog("Journaal", 0, 1000)))
+            byChannel = mapOf("c1" to listOf(lopendProg("Journaal")))
         }
         val vm = viewModel(startChannelId = "c1", epg = epg)
         advanceUntilIdle()
@@ -765,6 +777,52 @@ class PlayerViewModelTest {
 
         assertEquals("Nieuw", vm.overlayEpg.value["c2"]?.first()?.title)
         assertEquals(listOf("c2", "c2"), epg.requests)
+    }
+
+    @Test
+    fun deBalkHaaltEenAfgelopenGidsOpnieuwOp() = runTest(dispatcher) {
+        val nu = System.currentTimeMillis()
+        val uur = 60 * 60 * 1000L
+        val epg = FakeEpgRepository()
+        epg.byChannel = mapOf(
+            "c1" to listOf(EpgProgramme("Oud", "", nu - 2 * uur, nu - uur)),
+        )
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+        assertEquals("Oud", vm.state.value.epgProgrammes?.first()?.title)
+
+        // Blijf je op dezelfde zender tot alle opgeslagen programma's
+        // afgelopen zijn, dan zou de balk bij elke druk op OK "Geen gids"
+        // tonen terwijl opnieuw ophalen het antwoord wel geeft. "Al in
+        // huis" is daarom geen geldige reden om te blijven zwijgen.
+        epg.byChannel = mapOf(
+            "c1" to listOf(EpgProgramme("Nieuw", "", nu - uur, nu + uur)),
+        )
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+
+        assertEquals("Nieuw", vm.state.value.epgProgrammes?.first()?.title)
+        assertEquals(listOf("c1", "c1"), epg.requests)
+    }
+
+    @Test
+    fun deBalkVraagtEenLegeGidsNietMeteenOpnieuw() = runTest(dispatcher) {
+        // Leeg betekent: deze zender heeft geen gids. Dat blijft staan tot
+        // de cache-TTL, anders levert elke druk op OK een aanvraag op die
+        // toch hetzelfde teruggeeft.
+        val epg = FakeEpgRepository() // byChannel leeg = geslaagd maar leeg
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+        vm.loadEpgForCurrentChannel()
+        advanceUntilIdle()
+
+        assertEquals(listOf("c1"), epg.requests)
     }
 
     @Test
