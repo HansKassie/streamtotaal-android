@@ -27,8 +27,8 @@ android {
         applicationId = "nl.streamfix.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 36
-        versionName = "1.0.35"
+        versionCode = 37
+        versionName = "1.0.36"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -69,16 +69,36 @@ android {
         }
     }
 
-    // Twee distributiekanalen vanuit een gedeelde codebase.
+    // Drie distributiekanalen vanuit een gedeelde codebase.
     // - sideload  = bestaande klanten via R2 + in-app updater + preset-providers.
     // - playstore = Google Play; geen self-updater (verboden door beleid),
     //               geen preset-providers, gebruiker tikt zelf een URL in.
+    // - reseller  = collega-reseller; zelfde app, alleen zijn eigen netwerk en
+    //               een eigen updatekanaal. Eigen applicationId, anders zou
+    //               zijn uitvoering die van ons overschrijven op hetzelfde
+    //               toestel.
+    //
+    // sideload en reseller delen src/distributable: de updater en de
+    // netwerkhernoeming staan daar EEN keer. Zonder die gedeelde map zou een
+    // derde flavor een kopie van echte logica betekenen, en die lopen uiteen.
+    // Alleen ProviderCatalog verschilt nog per flavor, plus de twee
+    // buildConfigFields hieronder.
     flavorDimensions += "distribution"
     productFlavors {
         create("sideload") {
             dimension = "distribution"
             buildConfigField("boolean", "HAS_UPDATER", "true")
             buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "true")
+            buildConfigField(
+                "String",
+                "UPDATE_HOST",
+                "\"updates.smarttv-solutions.xyz\"",
+            )
+            buildConfigField(
+                "String",
+                "UPDATE_MANIFEST_URL",
+                "\"https://updates.smarttv-solutions.xyz/version.json\"",
+            )
         }
         create("playstore") {
             dimension = "distribution"
@@ -86,6 +106,33 @@ android {
             buildConfigField("boolean", "HAS_UPDATER", "false")
             buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "false")
         }
+        create("reseller") {
+            dimension = "distribution"
+            applicationIdSuffix = ".e"
+            buildConfigField("boolean", "HAS_UPDATER", "true")
+            buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "true")
+            buildConfigField(
+                "String",
+                "UPDATE_HOST",
+                "\"updates.smarttv-solutions.xyz\"",
+            )
+            // Eigen manifest. Zou dit naar version.json wijzen, dan
+            // installeert zijn app bij de volgende update onze volledige
+            // uitvoering, inclusief alle netwerken.
+            buildConfigField(
+                "String",
+                "UPDATE_MANIFEST_URL",
+                "\"https://updates.smarttv-solutions.xyz/version-e.json\"",
+            )
+        }
+    }
+
+    // De updater en de netwerkhernoeming horen bij allebei de sideloadbare
+    // varianten, maar NIET bij de Play Store-build: zelfupdate-code hoort
+    // daar helemaal niet in te zitten.
+    sourceSets {
+        getByName("sideload") { java.srcDir("src/distributable/java") }
+        getByName("reseller") { java.srcDir("src/distributable/java") }
     }
 
     compileOptions {

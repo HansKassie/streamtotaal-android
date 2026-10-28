@@ -41,10 +41,14 @@ class UpdateRepositoryImpl @Inject constructor(
     }
 
     private companion object {
-        // version.json in de Cloudflare R2-bucket. Vervang het object om
-        // een update uit te rollen. Leeg maken = updatecheck uit.
-        const val UPDATE_HOST = "updates.smarttv-solutions.xyz"
-        const val UPDATE_MANIFEST_URL =
-            "https://updates.smarttv-solutions.xyz/version.json"
+        // Het manifest in de Cloudflare R2-bucket. Vervang dat object om een
+        // update uit te rollen. Leeg maken = updatecheck uit.
+        //
+        // Staat per flavor in build.gradle.kts en niet hier, want sideload en
+        // reseller delen dit bestand maar hebben elk een eigen kanaal. Wezen
+        // die naar hetzelfde manifest, dan zou de reseller-uitvoering bij de
+        // volgende update onze volledige app installeren.
+        val UPDATE_HOST: String = BuildConfig.UPDATE_HOST
+        val UPDATE_MANIFEST_URL: String = BuildConfig.UPDATE_MANIFEST_URL
     }
 }

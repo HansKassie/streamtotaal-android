@@ -1,0 +1,9 @@
+{
+    "versionCode": 37,
+    "versionName": "1.0.36",
+    "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal-e.apk",
+    "sha256": "d1b44ea1c9707b2edff2fcce36d7a79159215da0a7a3b146c0fddc8bcff37cfa",
+    "releaseNotes": "Kleine verbeteringen voor het kijkgemak.",
+    "minSupportedVersionCode": 1,
+    "forceUpdate": false
+}

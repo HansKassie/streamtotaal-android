@@ -21,7 +21,12 @@ internal object ProviderCatalog {
      * ooit een netwerk bijkomt of wegvalt: een nieuw netwerk krijgt de
      * volgende vrije letter, en een vervallen letter wordt niet hergebruikt.
      *
-     *   A = Diamond   B = Nettv   C = Promax   D = TiviOne   E = Avi
+     *   A = Diamond   B = Nettv   C = Promax   D = TiviOne
+     *
+     * E = Avi is per 2026-10-28 naar de reseller-flavor gegaan; dat netwerk
+     * is van een collega en zijn klanten horen onze netwerken niet te zien,
+     * en onze klanten het zijne niet. Die letter blijft bezet en wordt niet
+     * hergebruikt.
      */
     /**
      * Elk adres dat ooit bij een netwerk hoorde, OOK de vervallen adressen.
@@ -35,6 +40,10 @@ internal object ProviderCatalog {
         "line.smarttelevision.xyz" to "Netwerk C",
         "line.teevee-online.org" to "Netwerk D",
         "line.tivi-ott.net" to "Netwerk D",
+        // Staat niet meer in BUNDLED, maar blijft hier staan: wie dit adres
+        // al opgeslagen had ziet anders de kale hostnaam in plaats van een
+        // netwerknaam. Zie de regel hierboven dat ELK adres dat ooit bij een
+        // netwerk hoorde hier blijft.
         "line.trxdnscloud.ru" to "Netwerk E",
     )
 
@@ -43,6 +52,5 @@ internal object ProviderCatalog {
         Provider("Netwerk B", "http://tv.allesoptv.live"),
         Provider("Netwerk C", "http://line.smarttelevision.xyz"),
         Provider("Netwerk D", "http://line.teevee-online.org"),
-        Provider("Netwerk E", "http://line.trxdnscloud.ru"),
     )
 }

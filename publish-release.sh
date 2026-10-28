@@ -5,6 +5,7 @@
 #
 # Vooraf:
 #   ./gradlew prepareSideloadRelease     (schrijft streamtotaal.apk + version.json)
+#   ./gradlew prepareResellerRelease     (schrijft streamtotaal-e.apk + version-e.json)
 #   wrangler login                       (eenmalig)
 #
 # Voor het leegmaken van de edge-cache: zet CF_ZONE_ID en CF_PURGE_TOKEN in
@@ -24,9 +25,19 @@
 #   ./publish-release.sh            alles: APK, purge, manifest, controle
 #                                   zonder purgegegevens stopt hij na de APK
 #   ./publish-release.sh apk        alleen de APK (plus purge)
-#   ./publish-release.sh manifest   alleen version.json (plus controle)
+#   ./publish-release.sh manifest   alleen het manifest (plus controle)
 #   ./publish-release.sh purge      alleen purgen en controleren, geen upload
 #   ./publish-release.sh verify     alleen controleren wat er live staat
+#
+# TWEE UITVOERINGEN. Zonder tweede argument gaat het over onze eigen app.
+# Met "reseller" erachter over die van de collega-reseller, die een eigen
+# APK en een eigen manifest heeft:
+#
+#   ./publish-release.sh all reseller
+#   ./publish-release.sh verify reseller
+#
+# Die twee delen niets behalve dit script en de bucket. Een release van de
+# een raakt de ander dus niet, en je purgt ze allebei apart.
 #
 # Met "purge" test je je Cloudflare-gegevens los van een uitrol: een bestand
 # purgen dat al goed is, is onschadelijk.
@@ -35,8 +46,26 @@ set -euo pipefail
 
 BUCKET="streamtotaal-updates"
 HOST="https://updates.smarttv-solutions.xyz"
-APK="streamtotaal.apk"
-MANIFEST="version.json"
+
+# Welke uitvoering. Standaard de onze; "reseller" voor die van de collega.
+variant="${2:-eigen}"
+case "$variant" in
+    eigen)
+        APK="streamtotaal.apk"
+        MANIFEST="version.json"
+        GRADLE_TAAK="prepareSideloadRelease"
+        ;;
+    reseller)
+        APK="streamtotaal-e.apk"
+        MANIFEST="version-e.json"
+        GRADLE_TAAK="prepareResellerRelease"
+        ;;
+    *)
+        echo "Onbekende uitvoering: $variant" >&2
+        echo "Gebruik: eigen (standaard) of reseller" >&2
+        exit 1
+        ;;
+esac
 APK_TYPE="application/vnd.android.package-archive"
 
 cd "$(dirname "$0")"
@@ -85,7 +114,7 @@ host_of() {
 }
 
 check_pair() {
-    [ -f "$APK" ] || { echo "FOUT: $APK ontbreekt. Draai eerst prepareSideloadRelease." >&2; exit 1; }
+    [ -f "$APK" ] || { echo "FOUT: $APK ontbreekt. Draai eerst $GRADLE_TAAK." >&2; exit 1; }
     [ -f "$MANIFEST" ] || { echo "FOUT: $MANIFEST ontbreekt." >&2; exit 1; }
 
     local local_hash manifest_hash
@@ -97,7 +126,7 @@ check_pair() {
         echo "  APK:      $local_hash" >&2
         echo "  manifest: $manifest_hash" >&2
         echo "Release-builds zijn niet byte-reproduceerbaar, dus beide bestanden" >&2
-        echo "moeten uit dezelfde prepareSideloadRelease-run komen." >&2
+        echo "moeten uit dezelfde $GRADLE_TAAK-run komen." >&2
         exit 1
     fi
     echo "Paar klopt: versie $(json_value versionName "$MANIFEST") (code $(json_value versionCode "$MANIFEST")), sha256 ${local_hash:0:12}..."
@@ -123,7 +152,7 @@ purge() {
         echo "  1. Purge in het Cloudflare-dashboard, Caching, Configuration,"
         echo "     Purge Cached Content, op URL:"
         echo "       $url"
-        echo "  2. Draai daarna: ./publish-release.sh manifest"
+        echo "  2. Draai daarna: ./publish-release.sh manifest $variant"
         echo
         echo "  Of vul cloudflare.properties, dan gaat dit voortaan vanzelf."
         exit 2
@@ -181,7 +210,15 @@ verify() {
     tmp="$(mktemp -d)"
     trap 'rm -rf "$tmp"' RETURN
 
-    curl -fsS "$HOST/$MANIFEST" -o "$tmp/live.json"
+    # Een kale curl-fout zegt hier weinig. Bij een variant die nog nooit
+    # gepubliceerd is staat er simpelweg nog geen manifest, en dat is geen
+    # storing maar een beginsituatie.
+    if ! curl -fsS "$HOST/$MANIFEST" -o "$tmp/live.json" 2>/dev/null; then
+        echo "FOUT: $HOST/$MANIFEST is niet op te halen." >&2
+        echo "  Is deze uitvoering al eens gepubliceerd? Zo niet, draai dan" >&2
+        echo "  eerst './publish-release.sh all $variant'." >&2
+        return 1
+    fi
     live_code="$(json_value versionCode "$tmp/live.json")"
     live_hash="$(json_value sha256 "$tmp/live.json")"
     live_url="$(json_value apkUrl "$tmp/live.json")"
@@ -217,7 +254,7 @@ verify() {
     echo "  APK via apkUrl: ${live_apk_hash:0:12}... (manifest zegt ${live_hash:0:12}...)"
     if [ "$live_apk_hash" != "$live_hash" ]; then
         echo "FOUT: de APK die de edge serveert hoort niet bij het live manifest." >&2
-        echo "Purge $live_url en draai './publish-release.sh verify' opnieuw." >&2
+        echo "Purge $live_url en draai './publish-release.sh verify $variant' opnieuw." >&2
         return 1
     fi
 

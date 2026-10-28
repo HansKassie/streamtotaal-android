@@ -12,13 +12,23 @@ plugins {
 }
 
 /**
- * Bouwt alleen de sideload-release en maakt de twee uploadbestanden gereed:
- * streamtotaal.apk en version.json met versiegegevens en SHA-256 uit die APK.
+ * Bouwt een sideloadbare release en maakt de twee uploadbestanden gereed: de
+ * APK en het manifest met versiegegevens en de SHA-256 uit diezelfde APK.
+ *
+ * Twee uitvoeringen, want er zijn twee updatekanalen. Beide doorlopen
+ * dezelfde controles; het verschil zit alleen in de flavor en de
+ * bestandsnamen. Een kopie van deze taak zou betekenen dat een controle
+ * hierboven wel wordt aangescherpt en die hieronder niet.
  */
-tasks.register("prepareSideloadRelease") {
+fun registreerReleaseTaak(
+    taakNaam: String,
+    flavor: String,
+    apkNaam: String,
+    manifestNaam: String,
+) = tasks.register(taakNaam) {
     group = "distribution"
-    description = "Builds and prepares the signed sideload release for upload."
-    dependsOn(":app:assembleSideloadRelease")
+    description = "Builds and prepares the signed $flavor release for upload."
+    dependsOn(":app:assemble${flavor.replaceFirstChar { it.uppercase() }}Release")
 
     doLast {
         // Zonder keystore.properties slaat het app-project de release-signing
@@ -33,12 +43,12 @@ tasks.register("prepareSideloadRelease") {
             )
         }
 
-        val releaseDir = file("app/build/outputs/apk/sideload/release")
+        val releaseDir = file("app/build/outputs/apk/$flavor/release")
         val metadataFile = releaseDir.resolve("output-metadata.json")
         val metadata = JsonSlurper().parse(metadataFile) as Map<*, *>
         val element = (metadata["elements"] as List<*>).single() as Map<*, *>
         val sourceApk = releaseDir.resolve(element["outputFile"] as String)
-        val uploadApk = file("streamtotaal.apk")
+        val uploadApk = file(apkNaam)
         sourceApk.copyTo(uploadApk, overwrite = true)
 
         val digest = MessageDigest.getInstance("SHA-256")
@@ -52,7 +62,7 @@ tasks.register("prepareSideloadRelease") {
         }
         val sha256 = digest.digest().joinToString("") { "%02x".format(it) }
 
-        val manifestFile = file("version.json")
+        val manifestFile = file(manifestNaam)
         @Suppress("UNCHECKED_CAST")
         val manifest = LinkedHashMap(
             JsonSlurper().parse(manifestFile) as Map<String, Any?>,
@@ -64,7 +74,27 @@ tasks.register("prepareSideloadRelease") {
             JsonOutput.prettyPrint(JsonOutput.toJson(manifest)) + "\n",
         )
 
-        logger.lifecycle("Sideload release ready: ${uploadApk.absolutePath}")
+        logger.lifecycle("Release ($flavor) ready: ${uploadApk.absolutePath}")
+        logger.lifecycle("Manifest: ${manifestFile.name}")
         logger.lifecycle("SHA-256: $sha256")
     }
 }
+
+// Onze eigen uitvoering. De naam blijft ongewijzigd, want SETUP.md en
+// publish-release.sh verwijzen ernaar.
+registreerReleaseTaak(
+    taakNaam = "prepareSideloadRelease",
+    flavor = "sideload",
+    apkNaam = "streamtotaal.apk",
+    manifestNaam = "version.json",
+)
+
+// De uitvoering voor de collega-reseller. Eigen APK en eigen manifest, want
+// een gedeeld manifest zou bij de volgende update onze volledige app op zijn
+// toestellen installeren.
+registreerReleaseTaak(
+    taakNaam = "prepareResellerRelease",
+    flavor = "reseller",
+    apkNaam = "streamtotaal-e.apk",
+    manifestNaam = "version-e.json",
+)
