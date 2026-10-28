@@ -30,11 +30,11 @@ private val VALID_STARTUP_TABS = setOf(
 @Singleton
 class AppSettingsStore @Inject constructor(
     @ApplicationContext context: Context,
-) {
+) : AdultVisibility {
     private val prefs: SharedPreferences = createSecurePrefs(context, PREFS_FILE)
 
     private val _adultState = MutableStateFlow(readAdultState())
-    val adultState: StateFlow<AdultState> = _adultState.asStateFlow()
+    override val adultState: StateFlow<AdultState> = _adultState.asStateFlow()
 
     // "auto" | "tv" | "phone" - weergavemodus-override.
     private val _tvMode =

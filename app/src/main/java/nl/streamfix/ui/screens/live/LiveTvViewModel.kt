@@ -2,9 +2,7 @@ package nl.streamfix.ui.screens.live
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import nl.streamfix.data.local.AppSettingsStore
+import nl.streamfix.data.local.AdultVisibility
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
@@ -29,9 +27,9 @@ import nl.streamfix.domain.usecase.SetFavoriteUseCase
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.domain.util.EpgNowNext
 import nl.streamfix.domain.util.EpgRequestGate
+import nl.streamfix.ui.ErrorTexts
 import nl.streamfix.ui.pickFocusTarget
 import nl.streamfix.ui.pickStartCategory
-import nl.streamfix.ui.uiMessage
 
 const val FAVORITES_ID = "__favorites__"
 
@@ -59,8 +57,8 @@ class LiveTvViewModel @Inject constructor(
     private val epgGate: EpgRequestGate,
     private val getActiveAccount: GetActiveAccountUseCase,
     private val getLastWatched: GetLastWatchedChannelUseCase,
-    private val appSettings: AppSettingsStore,
-    @ApplicationContext private val context: Context,
+    private val adultVisibility: AdultVisibility,
+    private val errorTexts: ErrorTexts,
 ) : ViewModel() {
 
     /**
@@ -98,6 +96,9 @@ class LiveTvViewModel @Inject constructor(
 
     /** Zie [EpgRequestGate]: rem tegen tientallen aanvragen bij scrollen. */
     private val epgSlots = Semaphore(MAX_PARALLEL_EPG)
+
+    /** Hoogt op bij elke netwerkwissel; zie [ensureEpg]. */
+    private var epgGeneration = 0
 
     private var favorites: List<LiveChannel> = emptyList()
 
@@ -149,6 +150,14 @@ class LiveTvViewModel @Inject constructor(
                     _state.value = LiveUiState()
                     epgGate.clear()
                     _epg.value = emptyMap()
+                    // Een gidsaanvraag die nu nog onderweg is hoort bij het
+                    // VORIGE netwerk. Leegmaken is niet genoeg: zo'n
+                    // aanvraag schrijft na terugkomst gewoon in de verse
+                    // map, en dan staat er bij een zender van netwerk B een
+                    // programma van netwerk A. Annuleren alleen helpt ook
+                    // niet, want tussen het antwoord en het wegschrijven zit
+                    // geen opschortpunt waar annulering kan landen.
+                    epgGeneration++
                     if (acc != null) loadCategories(preferLastWatched = true)
                 }
             }
@@ -156,7 +165,7 @@ class LiveTvViewModel @Inject constructor(
         // Volwassen-zichtbaarheid gewijzigd: categorieen opnieuw laden
         // (gefilterd); favorieten blijven, zelfde provider.
         viewModelScope.launch {
-            appSettings.adultState.drop(1).collect {
+            adultVisibility.adultState.drop(1).collect {
                 startFreshLoad()
                 loadCategories()
             }
@@ -192,7 +201,7 @@ class LiveTvViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = result.error.uiMessage(context),
+                            errorMessage = errorTexts.of(result.error),
                         )
                     }
             }
@@ -226,7 +235,7 @@ class LiveTvViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = result.error.uiMessage(context),
+                            errorMessage = errorTexts.of(result.error),
                             channels = emptyList(),
                         )
                     }
@@ -251,6 +260,7 @@ class LiveTvViewModel @Inject constructor(
      */
     suspend fun ensureEpg(channelId: String) {
         val now = System.currentTimeMillis()
+        val generation = epgGeneration
         // Zie PlayerViewModel.loadOverlayEpg: een gids die helemaal in het
         // verleden ligt mag de poort niet laten blokkeren. Lege antwoorden
         // komen hier niet in _epg terecht, dus die vallen er vanzelf buiten.
@@ -261,7 +271,16 @@ class LiveTvViewModel @Inject constructor(
         var settled = false
         try {
             epgSlots.withPermit {
-                when (val result = getChannelEpg(channelId)) {
+                val result = getChannelEpg(channelId)
+                // Intussen van netwerk gewisseld? Dan hoort dit antwoord
+                // bij een provider die niet meer actief is. Niets opslaan
+                // en ook de poort niet bijwerken: die is leeggemaakt en mag
+                // niet alsnog een mark uit de vorige sessie krijgen.
+                if (generation != epgGeneration) {
+                    settled = true
+                    return@withPermit
+                }
+                when (result) {
                     is AppResult.Success -> {
                         epgGate.markDone(
                             channelId,

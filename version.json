@@ -1,8 +1,8 @@
 {
-    "versionCode": 30,
-    "versionName": "1.0.29",
+    "versionCode": 31,
+    "versionName": "1.0.30",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-    "sha256": "058b5815db4bbcd3357bb21abc315f4cccc118b8fe152493611040495947f606",
+    "sha256": "d007a85f12c8f97b2dcd99e087ca8ce08761ccdbee0f8f1b240510719fe8d0c3",
     "releaseNotes": "Kleine verbeteringen voor het kijkgemak.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
