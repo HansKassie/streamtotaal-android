@@ -16,6 +16,7 @@ import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.repository.EpgRepository
 import nl.streamfix.domain.util.AppResult
 import nl.streamfix.domain.util.EpgNowNext
+import nl.streamfix.domain.util.EpgRequestGate
 
 @Singleton
 class EpgRepositoryImpl @Inject constructor(
@@ -139,7 +140,12 @@ class EpgRepositoryImpl @Inject constructor(
         }.getOrDefault(emptyList())
 
     private companion object {
-        const val TTL_MS = 3 * 60 * 60 * 1000L // 3 uur
+        // Eén getal voor twee lagen: EpgRequestGate laat een rij pas na
+        // dezelfde tijd opnieuw vragen. Liepen ze uiteen, dan vraagt de
+        // lijst om een antwoord dat deze cache toch uit zijn eigen
+        // voorraad teruggeeft, of blijft een rij leeg terwijl de cache
+        // allang bereid is opnieuw op te halen.
+        const val TTL_MS = EpgRequestGate.STALE_AFTER_MS // 3 uur
         const val TABLE_TTL_MS = 60 * 60 * 1000L // 1 uur (catch-up-tabel)
         const val PRUNE_AGE_MS = 48 * 60 * 60 * 1000L // 48 uur
     }

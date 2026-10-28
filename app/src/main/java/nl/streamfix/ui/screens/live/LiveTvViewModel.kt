@@ -13,6 +13,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveCategory
@@ -25,6 +27,8 @@ import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
 import nl.streamfix.domain.usecase.SetFavoriteUseCase
 import nl.streamfix.domain.util.AppResult
+import nl.streamfix.domain.util.EpgNowNext
+import nl.streamfix.domain.util.EpgRequestGate
 import nl.streamfix.ui.pickFocusTarget
 import nl.streamfix.ui.pickStartCategory
 import nl.streamfix.ui.uiMessage
@@ -52,6 +56,7 @@ class LiveTvViewModel @Inject constructor(
     private val observeFavorites: ObserveFavoritesUseCase,
     private val setFavorite: SetFavoriteUseCase,
     private val getChannelEpg: GetChannelEpgUseCase,
+    private val epgGate: EpgRequestGate,
     private val getActiveAccount: GetActiveAccountUseCase,
     private val getLastWatched: GetLastWatchedChannelUseCase,
     private val appSettings: AppSettingsStore,
@@ -90,7 +95,9 @@ class LiveTvViewModel @Inject constructor(
     /** Per kanaal-id de (gecachte) programma's; gevuld zodra een rij erom vraagt. */
     val epg: StateFlow<Map<String, List<EpgProgramme>>> = _epg.asStateFlow()
 
-    private val epgRequested = mutableSetOf<String>()
+
+    /** Zie [EpgRequestGate]: rem tegen tientallen aanvragen bij scrollen. */
+    private val epgSlots = Semaphore(MAX_PARALLEL_EPG)
 
     private var favorites: List<LiveChannel> = emptyList()
 
@@ -140,7 +147,7 @@ class LiveTvViewModel @Inject constructor(
                     lastId = id
                     startFreshLoad()
                     _state.value = LiveUiState()
-                    epgRequested.clear()
+                    epgGate.clear()
                     _epg.value = emptyMap()
                     if (acc != null) loadCategories(preferLastWatched = true)
                 }
@@ -227,17 +234,60 @@ class LiveTvViewModel @Inject constructor(
         }
     }
 
-    /** Laadt EPG voor een kanaal eenmalig (lazy, vanuit de zichtbare rij). */
-    fun ensureEpg(channelId: String) {
-        if (!epgRequested.add(channelId)) return
-        viewModelScope.launch {
-            val result = getChannelEpg(channelId)
-            if (result is AppResult.Success && result.data.isNotEmpty()) {
-                _epg.update { it + (channelId to result.data) }
+    /**
+     * Laadt de gids voor een kanaal, lazy vanuit de zichtbare rij.
+     *
+     * Hield eerder simpelweg bij welke kanalen al gevraagd waren, om een
+     * reeks aanvragen te voorkomen bij scrollen langs kanalen zonder EPG.
+     * Dat ging te ver: ook een MISLUKTE aanvraag telde als afgehandeld, dus
+     * één hapering liet die zender de rest van de sessie zonder
+     * programma-informatie staan. [EpgRequestGate] scheidt die twee: leeg
+     * maar geslaagd blijft definitief, een fout krijgt na een wachttijd een
+     * nieuwe kans.
+     *
+     * Suspend en geen launch in viewModelScope, zodat wegscrollen de
+     * aanvraag afbreekt in plaats van hem alsnog af te werken voor een rij
+     * die niemand meer ziet.
+     */
+    suspend fun ensureEpg(channelId: String) {
+        val now = System.currentTimeMillis()
+        // Zie PlayerViewModel.loadOverlayEpg: een gids die helemaal in het
+        // verleden ligt mag de poort niet laten blokkeren. Lege antwoorden
+        // komen hier niet in _epg terecht, dus die vallen er vanzelf buiten.
+        val known = _epg.value[channelId]
+        val exhausted = known != null && known.isNotEmpty() &&
+            !EpgNowNext.stillRelevant(known, now)
+        if (!epgGate.claim(channelId, now, exhausted)) return
+        var settled = false
+        try {
+            epgSlots.withPermit {
+                when (val result = getChannelEpg(channelId)) {
+                    is AppResult.Success -> {
+                        epgGate.markDone(
+                            channelId,
+                            System.currentTimeMillis(),
+                        )
+                        settled = true
+                        // Leeg niet opslaan: de rij en het paneel lezen een
+                        // ontbrekende sleutel al als "niets te melden", en
+                        // de poort zorgt dat er niet opnieuw gevraagd wordt.
+                        if (result.data.isNotEmpty()) {
+                            _epg.update { it + (channelId to result.data) }
+                        }
+                    }
+                    is AppResult.Failure -> {
+                        epgGate.markFailed(
+                            channelId,
+                            System.currentTimeMillis(),
+                        )
+                        settled = true
+                    }
+                }
             }
-            // Bewust niet opnieuw aanvragen bij leeg/fout: anders een
-            // fetch-storm bij scrollen langs kanalen zonder EPG. De
-            // EpgRepository-cache (TTL) regelt versheid per sessie.
+        } finally {
+            // Afgebroken zonder uitkomst: reservering terug, anders blijft
+            // deze rij leeg zodra je terugscrolt.
+            if (!settled) epgGate.release(channelId)
         }
     }
 
@@ -247,5 +297,9 @@ class LiveTvViewModel @Inject constructor(
     fun toggleFavorite(channel: LiveChannel) {
         val isFav = _state.value.favoriteIds.contains(channel.id)
         viewModelScope.launch { setFavorite(channel, !isFav) }
+    }
+
+    private companion object {
+        const val MAX_PARALLEL_EPG = 4
     }
 }

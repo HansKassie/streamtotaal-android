@@ -71,6 +71,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Hoe vaak een zichtbare rij opnieuw om zijn gids vraagt. Zelfde tempo als
+ * de klok van het infopaneel. De poort in het ViewModel bepaalt of dat ook
+ * echt een aanvraag wordt; meestal is het niets meer dan een opzoeking.
+ */
+private const val EPG_RECHECK_MS = 30_000L
+
 // kotlin.OptIn: focusProperties.enter is een echte Compose-experimentele API
 // (anders dan Media3's UnstableApi, dat om androidx.annotation.OptIn vraagt).
 @OptIn(ExperimentalComposeUiApi::class)
@@ -313,7 +320,17 @@ fun LiveTvScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(state.visibleChannels, key = { it.id }) { channel ->
-                    LaunchedEffect(channel.id) { viewModel.ensureEpg(channel.id) }
+                    // Herhalen zolang de rij in beeld staat, niet eenmalig.
+                    // De poort in het ViewModel laat een verlopen antwoord
+                    // weer toe, maar dat helpt alleen als er ook opnieuw
+                    // gevraagd wordt; een rij die blijft staan zou anders
+                    // voorgoed op zijn eerste antwoord blijven zitten.
+                    LaunchedEffect(channel.id) {
+                        while (true) {
+                            viewModel.ensureEpg(channel.id)
+                            delay(EPG_RECHECK_MS)
+                        }
+                    }
                     ChannelRow(
                         channel = channel,
                         programmes = epgMap[channel.id],

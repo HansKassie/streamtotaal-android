@@ -26,6 +26,7 @@ import nl.streamfix.domain.usecase.GetStreamUrlUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
 import nl.streamfix.domain.usecase.RememberLastChannelUseCase
 import nl.streamfix.domain.util.AppResult
+import nl.streamfix.domain.util.EpgNowNext
 import nl.streamfix.domain.util.EpgRequestGate
 import nl.streamfix.ui.navigation.Routes
 import nl.streamfix.ui.screens.live.FAVORITES_ID
@@ -81,6 +82,7 @@ class PlayerViewModel @Inject constructor(
     private val getChannels: GetLiveChannelsUseCase,
     private val getCategories: GetLiveCategoriesUseCase,
     private val getChannelEpg: GetChannelEpgUseCase,
+    private val overlayGate: EpgRequestGate,
     private val observeFavorites: ObserveFavoritesUseCase,
     private val getStreamUrl: GetStreamUrlUseCase,
     private val getCastUrl: GetLiveCastUrlUseCase,
@@ -129,8 +131,6 @@ class PlayerViewModel @Inject constructor(
         MutableStateFlow<Map<String, List<EpgProgramme>>>(emptyMap())
     val overlayEpg: StateFlow<Map<String, List<EpgProgramme>>> =
         _overlayEpg.asStateFlow()
-
-    private val overlayGate = EpgRequestGate()
 
     /**
      * Hoeveel gidsaanvragen tegelijk onderweg mogen zijn.
@@ -427,13 +427,24 @@ class PlayerViewModel @Inject constructor(
      * geen rij werk staan voor zenders die de kijker allang voorbij is.
      */
     suspend fun loadOverlayEpg(channelId: String) {
-        if (!overlayGate.claim(channelId, System.currentTimeMillis())) return
+        val now = System.currentTimeMillis()
+        // Wat we al hebben kan intussen verlopen zijn: de korte gids beslaat
+        // maar een paar uitzendingen. Is alles afgelopen, dan mag de poort
+        // niet blijven blokkeren op "dit is al opgehaald". Leeg telt hier
+        // niet als verlopen; dat is een zender zonder gids.
+        val known = _overlayEpg.value[channelId]
+        val exhausted = known != null && known.isNotEmpty() &&
+            !EpgNowNext.stillRelevant(known, now)
+        if (!overlayGate.claim(channelId, now, exhausted)) return
         var settled = false
         try {
             overlaySlots.withPermit {
                 when (val result = getChannelEpg(channelId)) {
                     is AppResult.Success -> {
-                        overlayGate.markDone(channelId)
+                        overlayGate.markDone(
+                            channelId,
+                            System.currentTimeMillis(),
+                        )
                         settled = true
                         _overlayEpg.update { it + (channelId to result.data) }
                     }

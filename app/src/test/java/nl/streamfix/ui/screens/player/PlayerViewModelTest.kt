@@ -29,6 +29,7 @@ import nl.streamfix.domain.usecase.GetStreamUrlUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
 import nl.streamfix.domain.usecase.RememberLastChannelUseCase
 import nl.streamfix.domain.util.AppResult
+import nl.streamfix.domain.util.EpgRequestGate
 import nl.streamfix.ui.navigation.Routes
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -172,6 +173,7 @@ class PlayerViewModelTest {
         startChannelId: String = "",
         repo: FakeLiveRepository = FakeLiveRepository(sample),
         epg: FakeEpgRepository = FakeEpgRepository(),
+        gate: EpgRequestGate = EpgRequestGate(),
     ): PlayerViewModel {
         val handle = SavedStateHandle(
             mapOf(
@@ -184,6 +186,7 @@ class PlayerViewModelTest {
             getChannels = GetLiveChannelsUseCase(repo),
             getCategories = GetLiveCategoriesUseCase(repo),
             getChannelEpg = GetChannelEpgUseCase(epg),
+            overlayGate = gate,
             observeFavorites = ObserveFavoritesUseCase(repo),
             getStreamUrl = GetStreamUrlUseCase(repo),
             getCastUrl = GetLiveCastUrlUseCase(repo),
@@ -695,11 +698,96 @@ class PlayerViewModelTest {
         vm.loadOverlayEpg("c2")
         advanceUntilIdle()
 
-        // Geen melding per rij: een lijst vol foutregels is onleesbaar, en
-        // het beeld loopt gewoon door. Dat een fout later een nieuwe kans
-        // krijgt is vastgelegd in EpgRequestGateTest; hier is de klok niet
-        // te sturen.
+        // Geen melding per rij: een lijst vol foutregels is onleesbaar en
+        // het beeld loopt gewoon door.
         assertNull(vm.overlayEpg.value["c2"])
+    }
+
+    @Test
+    fun naEenFoutVerschijntHetProgrammaAlsnog() = runTest(dispatcher) {
+        val epg = FakeEpgRepository()
+        epg.byChannel = mapOf("c2" to listOf(programma("Journaal")))
+        epg.fail = true
+        // Wachttijd nul: de poort staat een nieuwe poging meteen toe, zodat
+        // dit zonder klok te sturen is. Dat de wachttijd zelf klopt staat
+        // in EpgRequestGateTest.
+        val vm = viewModel(
+            startChannelId = "c1",
+            epg = epg,
+            gate = EpgRequestGate(retryAfterMs = 0L),
+        )
+        advanceUntilIdle()
+
+        // De aanvraag mislukt: de rij blijft leeg.
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+        assertNull(vm.overlayEpg.value["c2"])
+
+        // De provider herstelt en de rij komt opnieuw in beeld.
+        epg.fail = false
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+
+        // Dan hoort het programma er alsnog te staan. Eén hapering mag geen
+        // zender opleveren die tot het afsluiten van de app leeg blijft.
+        assertEquals("Journaal", vm.overlayEpg.value["c2"]?.first()?.title)
+        assertEquals(listOf("c2", "c2"), epg.requests)
+    }
+
+    @Test
+    fun eenAfgelopenGidsWordtVernieuwd() = runTest(dispatcher) {
+        val nu = System.currentTimeMillis()
+        val uur = 60 * 60 * 1000L
+        val epg = FakeEpgRepository()
+        // Alles al afgelopen: de korte gids beslaat maar een paar
+        // uitzendingen en kan dus helemaal in het verleden liggen.
+        epg.byChannel = mapOf(
+            "c2" to listOf(EpgProgramme("Oud", "", nu - 2 * uur, nu - uur)),
+        )
+        val vm = viewModel(
+            startChannelId = "c1",
+            epg = epg,
+            gate = EpgRequestGate(retryAfterMs = 0L),
+        )
+        advanceUntilIdle()
+
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+        assertEquals("Oud", vm.overlayEpg.value["c2"]?.first()?.title)
+
+        // De rij staat in beeld en vraagt het opnieuw. "Al opgehaald" mag
+        // dan niet blijven blokkeren, want wat er ligt zegt niets over nu.
+        epg.byChannel = mapOf(
+            "c2" to listOf(EpgProgramme("Nieuw", "", nu - uur, nu + uur)),
+        )
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+
+        assertEquals("Nieuw", vm.overlayEpg.value["c2"]?.first()?.title)
+        assertEquals(listOf("c2", "c2"), epg.requests)
+    }
+
+    @Test
+    fun eenZenderZonderGidsTeltNietAlsVerlopen() = runTest(dispatcher) {
+        // Zelfs met wachttijd nul mag een leeg antwoord geen herhaling
+        // uitlokken. Leeg is geen verouderde gids maar een zender zonder
+        // gids, en de rij vraagt het elke 30 seconden opnieuw; zou leeg wel
+        // als verlopen tellen, dan is dat bij een provider zonder EPG een
+        // aanvraag per zichtbare rij per halve minuut, eindeloos.
+        val epg = FakeEpgRepository() // byChannel leeg = geslaagd maar leeg
+        val vm = viewModel(
+            startChannelId = "c1",
+            epg = epg,
+            gate = EpgRequestGate(retryAfterMs = 0L),
+        )
+        advanceUntilIdle()
+
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+
+        assertEquals(listOf("c2"), epg.requests)
     }
 }
 

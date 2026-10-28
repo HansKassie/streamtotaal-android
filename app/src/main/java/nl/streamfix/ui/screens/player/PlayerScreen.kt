@@ -741,8 +741,20 @@ fun PlayerScreen(
                         // vooraf: zo vraagt het overzicht alleen de gids op
                         // van wat echt in beeld komt, en breekt scrollen de
                         // aanvragen af van rijen die alweer weg zijn.
+                        //
+                        // En niet één keer maar zolang de rij in beeld
+                        // blijft. Een vervaltijd in de poort doet niets als
+                        // niemand opnieuw vraagt: een rij die uit beeld
+                        // scrolt en terugkomt vraagt vanzelf opnieuw, maar
+                        // een rij die gewoon blijft staan zou voor altijd op
+                        // zijn eerste antwoord blijven zitten. De poort maakt
+                        // de herhaling goedkoop: tot er iets verlopen is, is
+                        // dit niet meer dan het opzoeken van een sleutel.
                         LaunchedEffect(ch.id) {
-                            viewModel.loadOverlayEpg(ch.id)
+                            while (true) {
+                                viewModel.loadOverlayEpg(ch.id)
+                                delay(CLOCK_TICK_MS)
+                            }
                         }
                         val isCurrent = ch.id == state.currentChannelId
                         val nowTitle = overlayEpg[ch.id]

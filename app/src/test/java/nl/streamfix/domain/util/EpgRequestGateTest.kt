@@ -29,24 +29,76 @@ class EpgRequestGateTest {
     }
 
     @Test
-    fun naEenAntwoordNooitMeer() {
+    fun naEenAntwoordNietMeteenOpnieuw() {
         val gate = EpgRequestGate()
         gate.claim("1", 0L)
-        gate.markDone("1")
+        gate.markDone("1", 0L)
         assertFalse(gate.claim("1", 10 * minuut))
     }
 
     @Test
     fun eenLeegAntwoordTeltOokAlsAntwoord() {
         // De poort weet niet of de lijst leeg was; de aanroeper meldt beide
-        // als klaar. Leeg betekent "deze zender heeft geen gids", en dat
-        // verandert niet door het nog eens te vragen. Deze test legt die
-        // afspraak vast, want juist bij een provider zonder EPG zou de
-        // andere keuze elke scrollbeweging in aanvragen laten ontaarden.
+        // als klaar. Leeg betekent "deze zender heeft geen gids", en bij
+        // een provider zonder EPG zou de andere keuze elke scrollbeweging
+        // in aanvragen laten ontaarden.
         val gate = EpgRequestGate()
         gate.claim("1", 0L)
-        gate.markDone("1")
-        assertFalse(gate.claim("1", 24 * 60 * minuut))
+        gate.markDone("1", 0L)
+        assertFalse(gate.claim("1", 60 * minuut))
+    }
+
+    @Test
+    fun naDeCacheTtlMagEenAntwoordWelOpnieuw() {
+        // "Klaar" is niet voor altijd. Een provider kan de gids later
+        // alsnog aanleveren, en dit scherm heeft geen verversknop; zonder
+        // deze grens blijft zo'n zender leeg zolang het scherm openstaat.
+        // De grens ligt op de TTL van de EPG-cache: eerder vragen levert
+        // toch hetzelfde gecachte antwoord op.
+        val gate = EpgRequestGate()
+        gate.claim("1", 0L)
+        gate.markDone("1", 0L)
+        assertTrue(gate.claim("1", EpgRequestGate.STALE_AFTER_MS))
+    }
+
+    @Test
+    fun eenVerlopenGidsMagNaDeKorteWachttijdOpnieuw() {
+        // Niet de TTL maar de korte wachttijd, want een gids die helemaal
+        // in het verleden ligt zegt niets meer over nu. Anders blijft een
+        // rij uren op afgelopen titels staan.
+        val gate = EpgRequestGate(retryAfterMs = minuut)
+        gate.claim("1", 0L)
+        gate.markDone("1", 0L)
+        assertTrue(gate.claim("1", minuut, exhausted = true))
+    }
+
+    @Test
+    fun eenVerlopenGidsNogNietBinnenDeKorteWachttijd() {
+        // De rij vraagt het elke 30 seconden opnieuw zolang hij in beeld
+        // staat. Zonder deze wachttijd zou dat voor een zender waarvan de
+        // gids echt op is een aanvraag per halve minuut betekenen.
+        val gate = EpgRequestGate(retryAfterMs = minuut)
+        gate.claim("1", 0L)
+        gate.markDone("1", 0L)
+        assertFalse(gate.claim("1", minuut - 1, exhausted = true))
+    }
+
+    @Test
+    fun zonderVerlopenGidsGeldtDeLangeGrens() {
+        // Hetzelfde moment, maar nu met een antwoord dat nog wel ergens
+        // over gaat: dan blijft de TTL gelden en niet de korte wachttijd.
+        val gate = EpgRequestGate(retryAfterMs = minuut)
+        gate.claim("1", 0L)
+        gate.markDone("1", 0L)
+        assertFalse(gate.claim("1", minuut, exhausted = false))
+    }
+
+    @Test
+    fun vlakVoorDeCacheTtlNogNiet() {
+        val gate = EpgRequestGate()
+        gate.claim("1", 0L)
+        gate.markDone("1", 0L)
+        assertFalse(gate.claim("1", EpgRequestGate.STALE_AFTER_MS - 1))
     }
 
     @Test
@@ -92,7 +144,7 @@ class EpgRequestGateTest {
     fun afbrekenWistGeenAfgerondAntwoord() {
         val gate = EpgRequestGate()
         gate.claim("1", 0L)
-        gate.markDone("1")
+        gate.markDone("1", 0L)
         gate.release("1")
         assertFalse(gate.claim("1", 0L))
     }
@@ -111,7 +163,7 @@ class EpgRequestGateTest {
     fun zendersStaanLosVanElkaar() {
         val gate = EpgRequestGate()
         gate.claim("1", 0L)
-        gate.markDone("1")
+        gate.markDone("1", 0L)
         assertTrue(gate.claim("2", 0L))
     }
 
@@ -119,7 +171,7 @@ class EpgRequestGateTest {
     fun clearVergeetAlles() {
         val gate = EpgRequestGate()
         gate.claim("1", 0L)
-        gate.markDone("1")
+        gate.markDone("1", 0L)
         gate.clear()
         assertTrue(gate.claim("1", 0L))
     }
