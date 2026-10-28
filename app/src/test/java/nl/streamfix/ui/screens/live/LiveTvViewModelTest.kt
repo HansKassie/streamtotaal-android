@@ -228,6 +228,64 @@ class LiveTvViewModelTest {
     }
 
     @Test
+    fun wegscrollenVoorHetAntwoordLaatEenNieuwePogingToe() =
+        runTest(dispatcher) {
+            val epg = FakeEpgRepository()
+            epg.delayMs = 1000
+            val vm = viewModel(epg = epg)
+            advanceUntilIdle()
+
+            val job = launch { vm.ensureEpg("c1") }
+            advanceTimeBy(10)
+            // De rij scrolt uit beeld voordat het antwoord er is.
+            job.cancel()
+            advanceTimeBy(10)
+
+            // Zonder netwerkwissel hoort de reservering gewoon terug te
+            // komen, anders blijft deze rij leeg zodra je terugscrolt.
+            epg.delayMs = 0
+            vm.ensureEpg("c1")
+            advanceUntilIdle()
+
+            assertEquals(listOf("c1", "c1"), epg.requests)
+        }
+
+    @Test
+    fun opruimenVanEenOudeAanvraagRaaktDeNieuweNiet() = runTest(dispatcher) {
+        val epg = FakeEpgRepository()
+        epg.delayMs = 1000
+        val auth = FakeAuthRepository(account("a"))
+        val vm = viewModel(epg = epg, auth = auth)
+        advanceUntilIdle()
+
+        // Aanvraag A loopt bij netwerk A en heeft c1 gereserveerd.
+        val a = launch { vm.ensureEpg("c1") }
+        advanceTimeBy(10)
+        assertEquals(1, epg.requests.size)
+
+        // Netwerkwissel: de poort wordt leeggemaakt.
+        auth.active.value = account("b")
+        advanceTimeBy(10)
+
+        // Netwerk B reserveert hetzelfde kanaal-id en gaat ophalen.
+        launch { vm.ensureEpg("c1") }
+        advanceTimeBy(10)
+        assertEquals(2, epg.requests.size)
+
+        // Pas nu wordt A opgeruimd. Die opruiming mag de reservering van B
+        // niet weghalen: release kan niet zien van wie een reservering is,
+        // dus zonder generatiecontrole geeft A de reservering van B terug.
+        a.cancel()
+        advanceTimeBy(10)
+
+        // Is dat gebeurd, dan staat c1 weer vrij en start een derde
+        // aanvraag terwijl B nog gewoon onderweg is.
+        vm.ensureEpg("c1")
+        advanceTimeBy(10)
+        assertEquals(2, epg.requests.size)
+    }
+
+    @Test
     fun eenLaadfoutLevertDeTekstVanDeVertaler() = runTest(dispatcher) {
         val live = FakeLiveRepository()
         live.channelResult = AppResult.Failure(AppError.ServerUnreachable)

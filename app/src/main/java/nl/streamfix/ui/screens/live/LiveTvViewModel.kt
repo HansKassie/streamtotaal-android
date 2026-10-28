@@ -306,7 +306,18 @@ class LiveTvViewModel @Inject constructor(
         } finally {
             // Afgebroken zonder uitkomst: reservering terug, anders blijft
             // deze rij leeg zodra je terugscrolt.
-            if (!settled) epgGate.release(channelId)
+            //
+            // Maar alleen als er intussen geen netwerkwissel was. De poort
+            // kent geen eigenaar: release ziet enkel dat er iets voor dit
+            // kanaal-id loopt. Was de poort leeggemaakt en heeft het nieuwe
+            // netwerk hetzelfde id alweer gereserveerd, dan zou deze
+            // opruiming de reservering van DAT netwerk teruggeven, en start
+            // er een tweede aanvraag terwijl de eerste nog loopt. Na een
+            // wissel valt er sowieso niets terug te geven; de poort is dan
+            // al leeg.
+            if (!settled && generation == epgGeneration) {
+                epgGate.release(channelId)
+            }
         }
     }
 
