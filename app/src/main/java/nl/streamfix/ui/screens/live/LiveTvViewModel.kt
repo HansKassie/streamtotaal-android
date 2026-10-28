@@ -287,12 +287,14 @@ class LiveTvViewModel @Inject constructor(
                             System.currentTimeMillis(),
                         )
                         settled = true
-                        // Leeg niet opslaan: de rij en het paneel lezen een
-                        // ontbrekende sleutel al als "niets te melden", en
-                        // de poort zorgt dat er niet opnieuw gevraagd wordt.
-                        if (result.data.isNotEmpty()) {
-                            _epg.update { it + (channelId to result.data) }
-                        }
+                        // Ook een leeg antwoord opslaan. Het paneel rechts
+                        // leest een ONTBREKENDE sleutel als "Gids laden..."
+                        // en een LEGE lijst als "Geen gids"; door leeg weg
+                        // te laten bleef een zender zonder gids daar voor
+                        // altijd aan het laden. De rijen zelf merken geen
+                        // verschil, en de controle op een verlopen gids
+                        // slaat lege lijsten al over.
+                        _epg.update { it + (channelId to result.data) }
                     }
                     is AppResult.Failure -> {
                         epgGate.markFailed(

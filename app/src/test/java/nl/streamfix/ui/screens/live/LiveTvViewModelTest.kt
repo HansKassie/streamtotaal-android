@@ -228,6 +228,23 @@ class LiveTvViewModelTest {
     }
 
     @Test
+    fun eenZenderZonderGidsLevertEenLegeLijstEnGeenNull() =
+        runTest(dispatcher) {
+            val epg = FakeEpgRepository() // byChannel leeg = geen gids
+            val vm = viewModel(epg = epg)
+            advanceUntilIdle()
+
+            vm.ensureEpg("c1")
+            advanceUntilIdle()
+
+            // Het paneel rechts leest een ONTBREKENDE sleutel als
+            // "Gids laden..." en een LEGE lijst als "Geen gids". Werd leeg
+            // niet opgeslagen, dan bleef zo'n zender daar voor altijd aan
+            // het laden.
+            assertEquals(emptyList<EpgProgramme>(), vm.epg.value["c1"])
+        }
+
+    @Test
     fun wegscrollenVoorHetAntwoordLaatEenNieuwePogingToe() =
         runTest(dispatcher) {
             val epg = FakeEpgRepository()

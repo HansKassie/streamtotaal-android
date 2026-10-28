@@ -15,7 +15,7 @@ import nl.streamfix.domain.model.AppError
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.repository.EpgRepository
 import nl.streamfix.domain.util.AppResult
-import nl.streamfix.domain.util.EpgNowNext
+import nl.streamfix.domain.util.EpgCachePolicy
 import nl.streamfix.domain.util.EpgRequestGate
 
 @Singleton
@@ -45,20 +45,11 @@ class EpgRepositoryImpl @Inject constructor(
 
         val cached = dao.get(acc.id, streamId)
         val now = System.currentTimeMillis()
-        if (cached != null && now - cached.fetchedAt < TTL_MS) {
-            // Vers op ophaaltijd is niet hetzelfde als bruikbaar. De korte
-            // gids beslaat maar een paar programma's, dus een lijst van
-            // 10:00 kan om 12:00 helemaal in het verleden liggen en toch
-            // binnen de TTL vallen. Dan toont "Nu en straks" oude titels of
-            // ten onrechte geen gids, terwijl opnieuw ophalen het wel weet.
-            //
-            // Een LEGE lijst blijft wel geldig: die betekent dat deze zender
-            // geen gids heeft, en elke keer opnieuw vragen levert een reeks
-            // zinloze aanvragen op zonder ooit een ander antwoord.
+        // Beide cachebeslissingen staan in EpgCachePolicy, met de redenen
+        // erbij en met tests op de randgevallen.
+        if (cached != null) {
             val programmes = decode(cached.payload)
-            if (programmes.isEmpty() ||
-                EpgNowNext.stillRelevant(programmes, now)
-            ) {
+            if (EpgCachePolicy.usable(programmes, cached.fetchedAt, now, TTL_MS)) {
                 return AppResult.Success(programmes)
             }
         }
@@ -81,10 +72,13 @@ class EpgRepositoryImpl @Inject constructor(
                 }
                 r
             }
-            is AppResult.Failure ->
-                // Offline-val terug op (verlopen) cache als die er is.
-                if (cached != null) AppResult.Success(decode(cached.payload))
-                else r
+            is AppResult.Failure -> {
+                val fallback = EpgCachePolicy.failureFallback(
+                    cached?.let { decode(it.payload) },
+                    now,
+                )
+                if (fallback != null) AppResult.Success(fallback) else r
+            }
         }
     }
 
