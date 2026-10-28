@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -112,17 +113,27 @@ private class FakeEpgRepository : EpgRepository {
     /** Hoe vaak er echt is opgehaald, per zender. */
     val requests = mutableListOf<String>()
 
+    /** Hoogste aantal aanvragen dat tegelijk onderweg was. */
+    var maxInFlight = 0
+    private var inFlight = 0
+
     override suspend fun getEpg(
         streamId: String,
     ): AppResult<List<EpgProgramme>> {
         requests += streamId
         val shouldFail = fail
-        if (delayMs > 0L) {
-            if (uncancellableDelay) {
-                withContext(NonCancellable) { delay(delayMs) }
-            } else {
-                delay(delayMs)
+        inFlight++
+        if (inFlight > maxInFlight) maxInFlight = inFlight
+        try {
+            if (delayMs > 0L) {
+                if (uncancellableDelay) {
+                    withContext(NonCancellable) { delay(delayMs) }
+                } else {
+                    delay(delayMs)
+                }
             }
+        } finally {
+            inFlight--
         }
         return if (shouldFail) {
             AppResult.Failure(AppError.NetworkUnavailable)
@@ -587,4 +598,110 @@ class PlayerViewModelTest {
         vm.lastChannel()
         assertEquals("c3", vm.state.value.currentChannelId)
     }
+
+    @Test
+    fun overzichtVultDeGidsPerZender() = runTest(dispatcher) {
+        val epg = FakeEpgRepository()
+        epg.byChannel = mapOf("c2" to listOf(programma("Journaal")))
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+
+        assertEquals("Journaal", vm.overlayEpg.value["c2"]?.first()?.title)
+        // De spelende zender blijft ongemoeid: de rijen en de balk hebben
+        // ieder hun eigen toestand.
+        assertNull(vm.state.value.epgProgrammes)
+    }
+
+    @Test
+    fun dezelfdeRijVraagtDeGidsMaarEenKeerOp() = runTest(dispatcher) {
+        val epg = FakeEpgRepository()
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+        // Heen en weer scrollen laat dezelfde rij opnieuw in beeld komen.
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+
+        assertEquals(listOf("c2"), epg.requests)
+    }
+
+    @Test
+    fun eenZenderZonderGidsWordtNietNogEensGevraagd() = runTest(dispatcher) {
+        val epg = FakeEpgRepository() // byChannel leeg = geslaagd maar leeg
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+
+        // Bij een provider zonder EPG zou elke scrollbeweging anders een
+        // reeks aanvragen opleveren die nooit iets anders teruggeeft.
+        assertEquals(listOf("c2"), epg.requests)
+    }
+
+    @Test
+    fun wegscrollenVoorHetAntwoordLaatEenNieuwePogingToe() =
+        runTest(dispatcher) {
+            val epg = FakeEpgRepository()
+            epg.delayMs = 1000
+            val vm = viewModel(startChannelId = "c1", epg = epg)
+            advanceUntilIdle()
+
+            val job = launch { vm.loadOverlayEpg("c2") }
+            advanceTimeBy(100)
+            // De rij scrolt uit beeld voordat het antwoord er is.
+            job.cancel()
+            advanceUntilIdle()
+            assertNull(vm.overlayEpg.value["c2"])
+
+            // Terugscrollen moet het gewoon opnieuw proberen. Zonder het
+            // teruggeven van de reservering blijft deze rij voorgoed leeg.
+            epg.delayMs = 0
+            vm.loadOverlayEpg("c2")
+            advanceUntilIdle()
+
+            assertEquals(listOf("c2", "c2"), epg.requests)
+        }
+
+    @Test
+    fun hoogstensVierAanvragenTegelijk() = runTest(dispatcher) {
+        val epg = FakeEpgRepository()
+        epg.delayMs = 1000
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+
+        // Snel doorscrollen: twintig rijen komen vlak na elkaar in beeld.
+        repeat(20) { i -> launch { vm.loadOverlayEpg("kanaal$i") } }
+        advanceUntilIdle()
+
+        assertEquals(20, epg.requests.size)
+        assertEquals(4, epg.maxInFlight)
+    }
+
+    @Test
+    fun eenMislukteAanvraagLaatDeRijLeeg() = runTest(dispatcher) {
+        val epg = FakeEpgRepository()
+        epg.fail = true
+        val vm = viewModel(startChannelId = "c1", epg = epg)
+        advanceUntilIdle()
+
+        vm.loadOverlayEpg("c2")
+        advanceUntilIdle()
+
+        // Geen melding per rij: een lijst vol foutregels is onleesbaar, en
+        // het beeld loopt gewoon door. Dat een fout later een nieuwe kans
+        // krijgt is vastgelegd in EpgRequestGateTest; hier is de klok niet
+        // te sturen.
+        assertNull(vm.overlayEpg.value["c2"])
+    }
 }
+
+private fun programma(title: String) =
+    EpgProgramme(title, "", 0L, 60_000L)

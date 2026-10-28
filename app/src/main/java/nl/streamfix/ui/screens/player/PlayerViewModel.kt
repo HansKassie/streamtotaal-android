@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
@@ -24,6 +26,7 @@ import nl.streamfix.domain.usecase.GetStreamUrlUseCase
 import nl.streamfix.domain.usecase.ObserveFavoritesUseCase
 import nl.streamfix.domain.usecase.RememberLastChannelUseCase
 import nl.streamfix.domain.util.AppResult
+import nl.streamfix.domain.util.EpgRequestGate
 import nl.streamfix.ui.navigation.Routes
 import nl.streamfix.ui.screens.live.FAVORITES_ID
 
@@ -114,6 +117,29 @@ class PlayerViewModel @Inject constructor(
     private val _state =
         MutableStateFlow(PlayerUiState(browseCategoryId = startCategoryId))
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
+
+    /**
+     * Gids per zender voor de rijen in het zenderoverzicht, los van de
+     * "Nu en straks"-balk. Die balk heeft laden en mislukt nodig om drie
+     * meldingen te kunnen tonen; een rij heeft dat niet en blijft gewoon
+     * leeg. Beide lezen uit dezelfde cache in EpgRepository, dus een zender
+     * die in de lijst opgehaald is kost de balk niets meer, en andersom.
+     */
+    private val _overlayEpg =
+        MutableStateFlow<Map<String, List<EpgProgramme>>>(emptyMap())
+    val overlayEpg: StateFlow<Map<String, List<EpgProgramme>>> =
+        _overlayEpg.asStateFlow()
+
+    private val overlayGate = EpgRequestGate()
+
+    /**
+     * Hoeveel gidsaanvragen tegelijk onderweg mogen zijn.
+     *
+     * Alleen zichtbare rijen opvragen houdt het aantal beperkt, maar bij
+     * doorscrollen komen tientallen rijen vlak na elkaar in beeld. Zonder
+     * deze rem staan die allemaal tegelijk bij het panel aan te kloppen.
+     */
+    private val overlaySlots = Semaphore(MAX_PARALLEL_EPG)
 
     init {
         load()
@@ -390,5 +416,45 @@ class PlayerViewModel @Inject constructor(
             previousIndex = current
             emitCurrent()
         }
+    }
+
+    /**
+     * Haalt de gids op voor een rij in het zenderoverzicht.
+     *
+     * Opzettelijk een suspend-functie en geen launch in viewModelScope: het
+     * scherm roept hem aan vanuit de rij zelf, dus scrolt die rij uit beeld
+     * dan wordt deze aanvraag afgebroken. Bij snel doorscrollen blijft er zo
+     * geen rij werk staan voor zenders die de kijker allang voorbij is.
+     */
+    suspend fun loadOverlayEpg(channelId: String) {
+        if (!overlayGate.claim(channelId, System.currentTimeMillis())) return
+        var settled = false
+        try {
+            overlaySlots.withPermit {
+                when (val result = getChannelEpg(channelId)) {
+                    is AppResult.Success -> {
+                        overlayGate.markDone(channelId)
+                        settled = true
+                        _overlayEpg.update { it + (channelId to result.data) }
+                    }
+                    is AppResult.Failure -> {
+                        overlayGate.markFailed(
+                            channelId,
+                            System.currentTimeMillis(),
+                        )
+                        settled = true
+                    }
+                }
+            }
+        } finally {
+            // Afgebroken voordat er een uitkomst was: de reservering
+            // teruggeven. Blijft die staan, dan vraagt niemand deze zender
+            // ooit nog op en blijft de rij leeg zodra je terugscrolt.
+            if (!settled) overlayGate.release(channelId)
+        }
+    }
+
+    private companion object {
+        const val MAX_PARALLEL_EPG = 4
     }
 }

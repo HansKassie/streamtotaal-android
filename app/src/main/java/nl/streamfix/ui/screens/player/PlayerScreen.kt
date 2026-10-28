@@ -41,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,6 +83,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/**
+ * Hoe vaak het zenderoverzicht opnieuw bepaalt welk programma nu loopt.
+ * Dertig seconden is fijn genoeg om een programmawissel niet te missen en
+ * grof genoeg om niets te kosten; er gaat geen aanvraag mee gemoeid.
+ */
+private const val CLOCK_TICK_MS = 30_000L
+
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(
@@ -90,6 +98,7 @@ fun PlayerScreen(
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val overlayEpg by viewModel.overlayEpg.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val isTv = LocalIsTv.current
     val activity = context as? Activity
@@ -517,6 +526,23 @@ fun PlayerScreen(
         }
 
         if (isTv && channelListOpen) {
+            // Eén klok voor alle rijen samen. Welk programma "nu" loopt
+            // verandert vanzelf terwijl het overzicht openstaat, en zonder
+            // deze tik blijft een rij de titel tonen van een uitzending die
+            // allang is afgelopen. Dit kost geen enkele aanvraag: de
+            // opgehaalde gids loopt ver genoeg vooruit, er wordt alleen
+            // opnieuw bepaald welk programma erin aan de beurt is. Eén klok
+            // en niet een timer per rij, anders verspringen de rijen los van
+            // elkaar. Hij leeft precies zolang het overzicht open is.
+            var nowMs by remember {
+                mutableLongStateOf(System.currentTimeMillis())
+            }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    delay(CLOCK_TICK_MS)
+                    nowMs = System.currentTimeMillis()
+                }
+            }
             val listState = rememberLazyListState()
             val currentFocus = remember { FocusRequester() }
             val headerFocus = remember { FocusRequester() }
@@ -711,13 +737,18 @@ fun PlayerScreen(
                         }
                     }
                     items(state.channels, key = { it.id }) { ch ->
+                        // Aanroepen vanuit de rij en niet vanuit een lijst
+                        // vooraf: zo vraagt het overzicht alleen de gids op
+                        // van wat echt in beeld komt, en breekt scrollen de
+                        // aanvragen af van rijen die alweer weg zijn.
+                        LaunchedEffect(ch.id) {
+                            viewModel.loadOverlayEpg(ch.id)
+                        }
                         val isCurrent = ch.id == state.currentChannelId
-                        Text(
-                            text = ch.name,
-                            color = Color.White,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyLarge,
+                        val nowTitle = overlayEpg[ch.id]
+                            ?.let { EpgNowNext.of(it, nowMs).now?.title }
+                            .orEmpty()
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .then(
@@ -742,9 +773,38 @@ fun PlayerScreen(
                                 )
                                 .padding(
                                     horizontal = 12.dp,
-                                    vertical = 10.dp,
+                                    vertical = 8.dp,
                                 ),
-                        )
+                        ) {
+                            Text(
+                                text = ch.name,
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            // minLines houdt deze regel ook leeg op hoogte.
+                            // Zonder dat groeien de rijen zodra de gids
+                            // binnendruppelt en verspringt de hele lijst
+                            // onder je handen, precies terwijl je aan het
+                            // kiezen bent.
+                            Text(
+                                text = nowTitle,
+                                // Op de oranje balk is gedempt wit te flauw
+                                // (ongeveer 3:1); daar dus vol wit. Op de
+                                // zwarte achtergrond mag het rustiger, zodat
+                                // de zendernaam de regel blijft die opvalt.
+                                color = if (isCurrent) {
+                                    Color.White
+                                } else {
+                                    Color.White.copy(alpha = 0.7f)
+                                },
+                                minLines = 1,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
                     }
                 }
             }
