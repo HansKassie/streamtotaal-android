@@ -21,7 +21,7 @@ internal object ProviderCatalog {
      * ooit een netwerk bijkomt of wegvalt: een nieuw netwerk krijgt de
      * volgende vrije letter, en een vervallen letter wordt niet hergebruikt.
      *
-     *   A = Diamond   B = Nettv   C = Promax   D = TiviOne
+     *   A = Diamond   B = Nettv   C = Promax   D = TiviOne   E = Avi
      */
     /**
      * Elk adres dat ooit bij een netwerk hoorde, OOK de vervallen adressen.
@@ -35,6 +35,7 @@ internal object ProviderCatalog {
         "line.smarttelevision.xyz" to "Netwerk C",
         "line.teevee-online.org" to "Netwerk D",
         "line.tivi-ott.net" to "Netwerk D",
+        "line.trxdnscloud.ru" to "Netwerk E",
     )
 
     val BUNDLED: List<Provider> = listOf(
@@ -42,5 +43,6 @@ internal object ProviderCatalog {
         Provider("Netwerk B", "http://tv.allesoptv.live"),
         Provider("Netwerk C", "http://line.smarttelevision.xyz"),
         Provider("Netwerk D", "http://line.teevee-online.org"),
+        Provider("Netwerk E", "http://line.trxdnscloud.ru"),
     )
 }
