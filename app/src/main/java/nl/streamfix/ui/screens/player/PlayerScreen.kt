@@ -76,6 +76,7 @@ import nl.streamfix.R
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.util.EpgNowNext
 import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.pickPageTarget
 import nl.streamfix.ui.screens.live.FAVORITES_ID
 import nl.streamfix.ui.tvFocusable
 import kotlin.math.abs
@@ -89,6 +90,19 @@ import kotlinx.coroutines.launch
  * grof genoeg om niets te kosten; er gaat geen aanvraag mee gemoeid.
  */
 private const val CLOCK_TICK_MS = 30_000L
+
+/**
+ * De kopregels boven de zenders in het overzicht. Nodig om te tellen hoeveel
+ * ZENDERS er zichtbaar zijn: dat is de sprongafstand van links en rechts, en
+ * de koppen tellen daar niet in mee. Blijft deze verzameling achter bij de
+ * lijst, dan springt hij een paar rijen te ver.
+ */
+private val overzichtKopSleutels = setOf(
+    "__groups__",
+    "__guide__",
+    "__last__",
+    "__browse_status__",
+)
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
@@ -109,6 +123,21 @@ fun PlayerScreen(
     var okConsumed by remember { mutableStateOf(false) }
     // Tweede laag binnen het overzicht: de groepkeuze.
     var groupPickerOpen by remember { mutableStateOf(false) }
+    // Zender waar de focus in het overzicht naartoe gesprongen is met links
+    // of rechts. null = volg de spelende zender, zoals bij het openen.
+    var paginaFocusId by remember { mutableStateOf<String?>(null) }
+    // Hier en niet in het overzicht zelf, want de toetsafhandeling hieronder
+    // moet weten hoeveel rijen er passen om een schermvol te kunnen springen.
+    val channelListState = rememberLazyListState()
+    // Waar de focus in het overzicht hoort te staan: een gesprongen zender,
+    // anders de spelende, anders de eerste. Zonder die laatste terugval
+    // raakt de focus kwijt zodra je een groep opent waar niets speelt, en
+    // dan doet de afstandsbediening niets meer.
+    val focusRowId = paginaFocusId
+        ?.takeIf { id -> state.channels.any { it.id == id } }
+        ?: state.currentChannelId
+            ?.takeIf { id -> state.channels.any { it.id == id } }
+        ?: state.channels.firstOrNull()?.id
     // "Nu en straks" van de spelende zender; leest alleen, krijgt bewust
     // geen focus, zodat de afstandsbediening normaal blijft werken.
     var infoBarOpen by remember { mutableStateOf(false) }
@@ -129,8 +158,11 @@ fun PlayerScreen(
         if (!channelListOpen) {
             // Sluit het overzicht, dan hoort het bij heropenen weer de
             // groep te laten zien die speelt, en niet de groep waar de
-            // kijker toevallig in rondkeek.
+            // kijker toevallig in rondkeek. Een sprong met links of rechts
+            // vervalt om dezelfde reden: heropenen begint weer bij de
+            // zender die speelt.
             groupPickerOpen = false
+            paginaFocusId = null
             viewModel.resetBrowseToPlaying()
         }
     }
@@ -287,6 +319,36 @@ fun PlayerScreen(
                                     groupPickerOpen = false
                                 } else {
                                     channelListOpen = false
+                                }
+                                return@onPreviewKeyEvent true
+                            }
+                            // Links en rechts springen een schermvol door de
+                            // zenderlijst. In een groep van honderden
+                            // zenders is omlaag tikken geen doen, en deze
+                            // twee toetsen deden hier nog niets: naast een
+                            // rij valt niets te focussen, dus ze liepen dood.
+                            //
+                            // Niet in de groepkeuze: die is kort en daar is
+                            // springen alleen verwarrend.
+                            val paginaToets = e.key == Key.DirectionRight ||
+                                e.key == Key.DirectionLeft
+                            if (!groupPickerOpen && paginaToets) {
+                                // Hoeveel rijen er passen meten we en
+                                // rekenen we niet uit: dat hangt af van de
+                                // schermhoogte en van hoeveel kopregels er
+                                // boven staan.
+                                val stap = channelListState.layoutInfo
+                                    .visibleItemsInfo
+                                    .count { it.key !in overzichtKopSleutels }
+                                val doel = pickPageTarget(
+                                    currentIndex = state.channels
+                                        .indexOfFirst { it.id == focusRowId },
+                                    itemCount = state.channels.size,
+                                    step = stap,
+                                    forward = e.key == Key.DirectionRight,
+                                )
+                                if (doel != null) {
+                                    paginaFocusId = state.channels[doel].id
                                 }
                                 return@onPreviewKeyEvent true
                             }
@@ -543,7 +605,7 @@ fun PlayerScreen(
                     nowMs = System.currentTimeMillis()
                 }
             }
-            val listState = rememberLazyListState()
+            val listState = channelListState
             val currentFocus = remember { FocusRequester() }
             val headerFocus = remember { FocusRequester() }
             val groupFocus = remember { FocusRequester() }
@@ -576,9 +638,9 @@ fun PlayerScreen(
             // lijst staat, anders de eerste. Zonder die terugval raakt de
             // focus kwijt zodra je een andere groep opent (daar staat niets
             // te spelen) en doet de afstandsbediening niets meer.
-            val focusRowId = state.currentChannelId
-                ?.takeIf { id -> state.channels.any { it.id == id } }
-                ?: state.channels.firstOrNull()?.id
+            //
+            // focusRowId staat hierboven, bij paginaFocusId: de
+            // toetsafhandeling heeft hem ook nodig.
             LaunchedEffect(
                 groupPickerOpen,
                 state.browseCategoryId,
@@ -635,6 +697,10 @@ fun PlayerScreen(
                                     .tvFocusable()
                                     .clickable {
                                         groupPickerOpen = false
+                                        // Een gesprongen positie hoort bij
+                                        // de vorige groep; in de nieuwe
+                                        // begint de focus weer bovenaan.
+                                        paginaFocusId = null
                                         viewModel.browseCategory(entry.first)
                                     }
                                     .background(
