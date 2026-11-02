@@ -1,7 +1,9 @@
 package nl.streamfix.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -86,5 +88,35 @@ class PageStepTest {
         // springen vanaf de laatste doet niets.
         assertNull(pickPageTarget(500, 100, 10, forward = true))
         assertEquals(89, pickPageTarget(500, 100, 10, forward = false))
+    }
+
+    @Test
+    fun eenNieuweBestemmingVraagtDeFocusAltijdAan() {
+        assertTrue(pageJumpNeedsRequest("b", "a", isRepeat = false))
+        // Ook bij een ingedrukte toets: dan is de vorige sprong al geland,
+        // anders had de herhaling dezelfde bestemming berekend.
+        assertTrue(pageJumpNeedsRequest("b", "a", isRepeat = true))
+    }
+
+    @Test
+    fun eenEersteSprongVraagtDeFocusAan() {
+        // Ook als de bestemming de spelende zender is en focusRowId dus niet
+        // verandert: drie rijen omlaag en dan links, terug naar de eerste.
+        assertTrue(pageJumpNeedsRequest("a", null, isRepeat = false))
+        assertTrue(pageJumpNeedsRequest("a", null, isRepeat = true))
+    }
+
+    @Test
+    fun eenNieuweDrukNaarDezelfdeBestemmingVraagtDeFocusOpnieuwAan() {
+        // Naar de laatste gesprongen, een rij omhoog, en weer rechts. De
+        // bestemming is gelijk, maar de focus staat er niet meer.
+        assertTrue(pageJumpNeedsRequest("a", "a", isRepeat = false))
+    }
+
+    @Test
+    fun eenHerhalingNaarDezelfdeBestemmingLaatDeLopendeAanvraagMetRust() {
+        // Toets ingedrukt en de focus nog onderweg: opnieuw aanvragen breekt
+        // de lopende aanvraag af.
+        assertFalse(pageJumpNeedsRequest("a", "a", isRepeat = true))
     }
 }

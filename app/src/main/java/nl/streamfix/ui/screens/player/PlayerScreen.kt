@@ -77,6 +77,7 @@ import nl.streamfix.R
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.util.EpgNowNext
 import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.pageJumpNeedsRequest
 import nl.streamfix.ui.pickPageTarget
 import nl.streamfix.ui.screens.live.FAVORITES_ID
 import nl.streamfix.ui.tvFocusable
@@ -127,9 +128,15 @@ fun PlayerScreen(
     // Twee verschillende dingen, en die moeten uit elkaar blijven.
     //
     // paginaFocusId is waar de focus NAARTOE moet: gezet door een sprong met
-    // links of rechts, en het enige dat scrollen en focus aanvragen in gang
-    // zet. null = volg de spelende zender, zoals bij het openen.
+    // links of rechts. null = volg de spelende zender, zoals bij het openen.
     var paginaFocusId by remember { mutableStateOf<String?>(null) }
+    // Hoogt op bij elke sprong die de focus moet verplaatsen, en is samen met
+    // de groep het enige dat scrollen en focus aanvragen in gang zet. Op
+    // paginaFocusId alleen kan dat niet: is de bestemming de rij die daar al
+    // staat, of de spelende zender, dan verandert er niets en bleef de focus
+    // staan waar hij stond. Zo deed links niets als je een paar rijen onder
+    // de eerste zender stond. Hoeft nooit terug naar nul.
+    var paginaSprong by remember { mutableIntStateOf(0) }
     // gefocusteRijId is waar de focus NU STAAT, bijgehouden door de rijen
     // zelf. Omhoog en omlaag worden door Compose afgehandeld en komen hier
     // nooit langs, dus zonder dit zou een sprong blijven rekenen vanaf de
@@ -364,7 +371,17 @@ fun PlayerScreen(
                                     forward = e.key == Key.DirectionRight,
                                 )
                                 if (doel != null) {
-                                    paginaFocusId = state.channels[doel].id
+                                    val doelId = state.channels[doel].id
+                                    if (pageJumpNeedsRequest(
+                                            targetId = doelId,
+                                            pendingTargetId = paginaFocusId,
+                                            isRepeat = e.nativeKeyEvent
+                                                .repeatCount > 0,
+                                        )
+                                    ) {
+                                        paginaSprong++
+                                    }
+                                    paginaFocusId = doelId
                                 }
                                 return@onPreviewKeyEvent true
                             }
@@ -661,6 +678,7 @@ fun PlayerScreen(
                 groupPickerOpen,
                 state.browseCategoryId,
                 focusRowId,
+                paginaSprong,
             ) {
                 if (groupPickerOpen) {
                     withFrameNanos {}

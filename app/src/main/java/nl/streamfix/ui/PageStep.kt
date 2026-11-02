@@ -35,3 +35,21 @@ fun pickPageTarget(
     val begrensd = doel.coerceIn(0, itemCount - 1)
     return begrensd.takeIf { it != vanaf }
 }
+
+/**
+ * Moet een sprong naar [targetId] de focus opnieuw aanvragen?
+ *
+ * Een nieuwe bestemming altijd. Een nieuwe druk ook als de bestemming gelijk
+ * is aan de vorige: spring je naar de laatste zender, ga je een rij omhoog en
+ * druk je weer rechts, dan is dat dezelfde bestemming maar staat de focus er
+ * niet meer.
+ *
+ * Alleen een herhaling van een ingedrukte toets naar dezelfde bestemming
+ * niet. Dan is de focus nog onderweg, en elke nieuwe aanvraag breekt de
+ * lopende af. Op een trage tv zou hij dan niet landen tot je de toets loslaat.
+ */
+fun pageJumpNeedsRequest(
+    targetId: String,
+    pendingTargetId: String?,
+    isRepeat: Boolean,
+): Boolean = targetId != pendingTargetId || !isRepeat
