@@ -51,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -123,9 +124,20 @@ fun PlayerScreen(
     var okConsumed by remember { mutableStateOf(false) }
     // Tweede laag binnen het overzicht: de groepkeuze.
     var groupPickerOpen by remember { mutableStateOf(false) }
-    // Zender waar de focus in het overzicht naartoe gesprongen is met links
-    // of rechts. null = volg de spelende zender, zoals bij het openen.
+    // Twee verschillende dingen, en die moeten uit elkaar blijven.
+    //
+    // paginaFocusId is waar de focus NAARTOE moet: gezet door een sprong met
+    // links of rechts, en het enige dat scrollen en focus aanvragen in gang
+    // zet. null = volg de spelende zender, zoals bij het openen.
     var paginaFocusId by remember { mutableStateOf<String?>(null) }
+    // gefocusteRijId is waar de focus NU STAAT, bijgehouden door de rijen
+    // zelf. Omhoog en omlaag worden door Compose afgehandeld en komen hier
+    // nooit langs, dus zonder dit zou een sprong blijven rekenen vanaf de
+    // zender die speelt: ga je van 10 naar 15 en druk je rechts, dan kwam je
+    // op 20 uit in plaats van op 25. Alleen lezen bij het springen; zou dit
+    // ook de focus aanvragen, dan sprong de lijst bij elke druk omlaag terug
+    // naar de bovenkant.
+    var gefocusteRijId by remember { mutableStateOf<String?>(null) }
     // Hier en niet in het overzicht zelf, want de toetsafhandeling hieronder
     // moet weten hoeveel rijen er passen om een schermvol te kunnen springen.
     val channelListState = rememberLazyListState()
@@ -163,6 +175,7 @@ fun PlayerScreen(
             // zender die speelt.
             groupPickerOpen = false
             paginaFocusId = null
+            gefocusteRijId = null
             viewModel.resetBrowseToPlaying()
         }
     }
@@ -340,9 +353,12 @@ fun PlayerScreen(
                                 val stap = channelListState.layoutInfo
                                     .visibleItemsInfo
                                     .count { it.key !in overzichtKopSleutels }
+                                // Vanaf waar de focus STAAT, niet vanaf waar
+                                // hij voor het laatst heen gezet is.
+                                val vanaf = gefocusteRijId ?: focusRowId
                                 val doel = pickPageTarget(
                                     currentIndex = state.channels
-                                        .indexOfFirst { it.id == focusRowId },
+                                        .indexOfFirst { it.id == vanaf },
                                     itemCount = state.channels.size,
                                     step = stap,
                                     forward = e.key == Key.DirectionRight,
@@ -701,6 +717,7 @@ fun PlayerScreen(
                                         // de vorige groep; in de nieuwe
                                         // begint de focus weer bovenaan.
                                         paginaFocusId = null
+                                        gefocusteRijId = null
                                         viewModel.browseCategory(entry.first)
                                     }
                                     .background(
@@ -836,6 +853,14 @@ fun PlayerScreen(
                                         Modifier
                                     },
                                 )
+                                // Melden waar de focus staat, zodat een
+                                // sprong met links of rechts vanaf hier
+                                // rekent. Omhoog en omlaag worden door
+                                // Compose afgehandeld en komen nergens
+                                // anders langs.
+                                .onFocusChanged {
+                                    if (it.isFocused) gefocusteRijId = ch.id
+                                }
                                 .tvFocusable()
                                 .clickable {
                                     viewModel.playFromOverlay(ch.id)

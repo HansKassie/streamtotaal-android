@@ -1,8 +1,8 @@
 {
-    "versionCode": 38,
-    "versionName": "1.0.37",
+    "versionCode": 39,
+    "versionName": "1.0.38",
     "apkUrl": "https://updates.smarttv-solutions.xyz/streamtotaal.apk",
-    "sha256": "4d3a74d99ee229b80aeeddd39bc3f70de835ad2e48d9284400b4a1ad225517e8",
+    "sha256": "27405d1a8ba57e059102a4bdf4dc7615e33d6702503e5ef8ab2d32bc1d78af5e",
     "releaseNotes": "Op tv blader je sneller door het zenderoverzicht: links en rechts springen een hele pagina door de lijst.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
