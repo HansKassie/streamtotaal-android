@@ -35,6 +35,7 @@ build_release_log.txt
 /test*.apk
 /streamtotaal.apk
 /streamtotaal-e.apk
+/zelviro-player.apk
 
 # Klantdocumentatie, bewust buiten git
 /StreamTotaal-Klantgids.txt

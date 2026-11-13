@@ -125,6 +125,29 @@ android {
                 "\"https://updates.smarttv-solutions.xyz/version-e.json\"",
             )
         }
+        // ZelViro Player: de algemene speler (geen eigen zenders; klanten
+        // koppelen hun afspeellijst via zelviro-player.com). Een eigen app,
+        // dus een eigen applicationId en een eigen updatekanaal: zo komt hij
+        // nooit als update op de toestellen van StreamTotaal-klanten, en
+        // andersom. Eigen versienummering, los van StreamTotaal.
+        create("zelviro") {
+            dimension = "distribution"
+            applicationId = "com.zelviro.player"
+            versionCode = 1
+            versionName = "1.0.0"
+            buildConfigField("boolean", "HAS_UPDATER", "true")
+            buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "false")
+            buildConfigField(
+                "String",
+                "UPDATE_HOST",
+                "\"updates.smarttv-solutions.xyz\"",
+            )
+            buildConfigField(
+                "String",
+                "UPDATE_MANIFEST_URL",
+                "\"https://updates.smarttv-solutions.xyz/zelviro.json\"",
+            )
+        }
     }
 
     // De updater en de netwerkhernoeming horen bij allebei de sideloadbare
@@ -133,6 +156,13 @@ android {
     sourceSets {
         getByName("sideload") { java.srcDir("src/distributable/java") }
         getByName("reseller") { java.srcDir("src/distributable/java") }
+        // ZelViro deelt de updater, en het manifest met de installatie-
+        // toestemming en de FileProvider van sideload (geen kopie).
+        getByName("zelviro") {
+            java.srcDir("src/distributable/java")
+            manifest.srcFile("src/sideload/AndroidManifest.xml")
+            res.srcDir("src/sideload/res")
+        }
     }
 
     compileOptions {

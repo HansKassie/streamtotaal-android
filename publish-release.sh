@@ -36,6 +36,10 @@
 #   ./publish-release.sh all reseller
 #   ./publish-release.sh verify reseller
 #
+# En met "zelviro" over ZelViro Player (./gradlew prepareZelviroRelease):
+#
+#   ./publish-release.sh all zelviro
+#
 # Die twee delen niets behalve dit script en de bucket. Een release van de
 # een raakt de ander dus niet, en je purgt ze allebei apart.
 #
@@ -60,9 +64,15 @@ case "$variant" in
         MANIFEST="version-e.json"
         GRADLE_TAAK="prepareResellerRelease"
         ;;
+    zelviro)
+        # ZelViro Player: eigen app (com.zelviro.player), eigen kanaal.
+        APK="zelviro-player.apk"
+        MANIFEST="zelviro.json"
+        GRADLE_TAAK="prepareZelviroRelease"
+        ;;
     *)
         echo "Onbekende uitvoering: $variant" >&2
-        echo "Gebruik: eigen (standaard) of reseller" >&2
+        echo "Gebruik: eigen (standaard), reseller of zelviro" >&2
         exit 1
         ;;
 esac

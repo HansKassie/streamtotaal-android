@@ -98,3 +98,12 @@ registreerReleaseTaak(
     apkNaam = "streamtotaal-e.apk",
     manifestNaam = "version-e.json",
 )
+
+// ZelViro Player: een eigen app (com.zelviro.player) met een eigen
+// updatekanaal, los van StreamTotaal.
+registreerReleaseTaak(
+    taakNaam = "prepareZelviroRelease",
+    flavor = "zelviro",
+    apkNaam = "zelviro-player.apk",
+    manifestNaam = "zelviro.json",
+)

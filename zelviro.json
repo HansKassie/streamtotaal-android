@@ -1,0 +1,9 @@
+{
+    "versionCode": 1,
+    "versionName": "1.0.0",
+    "apkUrl": "https://updates.smarttv-solutions.xyz/zelviro-player.apk",
+    "sha256": "5b5a8592f3504ed9f96ec03c73c0bd913f26a3cd6c84886225f8066b148459f0",
+    "releaseNotes": "First release of ZelViro Player for Android, Android TV and Google TV.",
+    "minSupportedVersionCode": 1,
+    "forceUpdate": false
+}
