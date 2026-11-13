@@ -10,7 +10,6 @@ import nl.streamfix.ui.screens.catchup.CatchupChannelScreen
 import nl.streamfix.ui.screens.connectiontest.ConnectionTestScreen
 import nl.streamfix.ui.screens.nowontv.NowOnTvScreen
 import nl.streamfix.ui.screens.search.SearchScreen
-import nl.streamfix.ui.screens.login.XtreamLoginScreen
 import nl.streamfix.ui.screens.main.MainScreen
 import nl.streamfix.ui.screens.epg.ChannelEpgScreen
 import nl.streamfix.ui.screens.history.PlaybackTarget
@@ -20,7 +19,7 @@ import nl.streamfix.ui.screens.player.PlaybackScreen
 import nl.streamfix.ui.screens.player.PlayerScreen
 import nl.streamfix.ui.screens.series.SeriesDetailScreen
 import nl.streamfix.ui.screens.vod.VodDetailScreen
-import nl.streamfix.ui.screens.welcome.WelcomeScreen
+import nl.streamfix.ui.screens.activation.ActivationScreen
 
 /** Route voor een afspeelbron; nooit een complete stream-URL. */
 private fun routeFor(target: PlaybackTarget): String = when (target.type) {
@@ -46,9 +45,9 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
     NavHost(navController = navController, startDestination = start) {
 
         composable(Routes.WELCOME) {
-            WelcomeScreen(
-                onChooseXtream = { navController.navigate(Routes.LOGIN_XTREAM) },
-                onProviderChosen = {
+            ActivationScreen(
+                onBack = null,
+                onActivated = {
                     navController.navigate(Routes.MAIN) {
                         popUpTo(navController.graph.id) { inclusive = true }
                         launchSingleTop = true
@@ -57,13 +56,12 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
             )
         }
 
-        composable(Routes.LOGIN_XTREAM) {
-            XtreamLoginScreen(
+        composable(Routes.PORTAL) {
+            ActivationScreen(
                 onBack = { navController.popBackStack() },
-                onLoggedIn = {
-                    // Werkt zowel vanaf het welkomscherm als vanuit
-                    // "Provider toevoegen": hele backstack leeg, MAIN als enige.
-                    navController.navigate(Routes.MAIN) {
+                onActivated = {},
+                onActivationLost = {
+                    navController.navigate(Routes.WELCOME) {
                         popUpTo(navController.graph.id) { inclusive = true }
                         launchSingleTop = true
                     }
@@ -79,7 +77,7 @@ fun StreamFixNavHost(startLoggedIn: Boolean, deviceIsTv: Boolean) {
                         launchSingleTop = true
                     }
                 },
-                onAddProvider = { navController.navigate(Routes.LOGIN_XTREAM) },
+                onAddProvider = { navController.navigate(Routes.PORTAL) },
                 onOpenChannel = { categoryId, channelId ->
                     navController.navigate(Routes.player(categoryId, channelId))
                 },

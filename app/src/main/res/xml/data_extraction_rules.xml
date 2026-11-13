@@ -2,8 +2,10 @@
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="streamfix_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="streamfix_portal_device.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="streamfix_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="streamfix_portal_device.xml" />
     </device-transfer>
 </data-extraction-rules>

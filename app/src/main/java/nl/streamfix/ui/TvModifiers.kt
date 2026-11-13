@@ -1,5 +1,6 @@
 package nl.streamfix.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.compositionLocalOf
@@ -19,6 +20,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
+import nl.streamfix.ui.theme.StreamFixAccentDark
 
 /** App-breed: draait de UI in tv-modus (afstandsbediening, groot scherm). */
 val LocalIsTv = compositionLocalOf { false }
@@ -43,17 +45,19 @@ fun Modifier.dpadExitField(focusManager: FocusManager): Modifier =
     }
 
 /**
- * Zichtbare focus-rand voor afstandsbediening (D-pad). Plaats VOOR
+ * Zichtbaar focusvlak voor afstandsbediening (D-pad). Plaats VOOR
  * `clickable`, zodat dezelfde focus-node wordt waargenomen. Op aanraken
  * (telefoon) gebeurt er niets, want dan is er geen focus.
  */
 fun Modifier.tvFocusable(): Modifier = composed {
     var focused by remember { mutableStateOf(false) }
     val color = MaterialTheme.colorScheme.primary
+    val shape = RoundedCornerShape(6.dp)
     onFocusChanged { focused = it.isFocused }
         .then(
             if (focused) {
-                Modifier.border(2.dp, color, RoundedCornerShape(6.dp))
+                Modifier.background(StreamFixAccentDark.copy(alpha = 0.55f), shape)
+                    .border(2.dp, color, shape)
             } else {
                 Modifier
             },

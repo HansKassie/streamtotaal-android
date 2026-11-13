@@ -11,9 +11,9 @@ import androidx.core.view.WindowCompat
 
 private val DarkColors = darkColorScheme(
     primary = StreamFixAccent,
-    onPrimary = OnSurfaceDark,
+    onPrimary = BackgroundDark,
     primaryContainer = StreamFixAccentDark,
-    onPrimaryContainer = OnSurfaceDark,
+    onPrimaryContainer = BackgroundDark,
     secondary = StreamFixAccentLight,
     background = BackgroundDark,
     onBackground = OnSurfaceDark,

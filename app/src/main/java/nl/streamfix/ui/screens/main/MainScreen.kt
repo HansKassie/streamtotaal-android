@@ -4,9 +4,13 @@ import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -23,7 +27,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
@@ -47,8 +50,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -83,6 +84,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -105,6 +108,7 @@ import nl.streamfix.domain.model.Account
 import nl.streamfix.ui.dpadExitField
 import nl.streamfix.ui.formatXtreamExpiry
 import nl.streamfix.ui.LocalIsTv
+import nl.streamfix.ui.tvFocusable
 import nl.streamfix.ui.screens.catchup.CatchupScreen
 import nl.streamfix.ui.screens.favorites.FavoritesScreen
 import nl.streamfix.ui.screens.history.HistoryScreen
@@ -284,7 +288,6 @@ fun MainScreen(
                 tvMode = tvMode,
                 startupTab = startupTab,
                 onSwitchProvider = viewModel::onSwitchProvider,
-                onRemoveProvider = viewModel::onRemoveProvider,
                 onSetStreamFormat = viewModel::onSetStreamFormat,
                 onSetAdultPin = viewModel::onSetAdultPin,
                 onUnlockAdult = viewModel::onUnlockAdult,
@@ -306,122 +309,135 @@ fun MainScreen(
     }
 
     CompositionLocalProvider(LocalIsTv provides isTv) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(tabs[selected].labelRes)) },
-                actions = {
-                    // Bij meerdere abonnementen: altijd zichtbaar welk
-                    // abonnement actief is, op elk tabblad.
-                    //
-                    // Uitzondering: op tv heeft Live TV een eigen
-                    // providerknop die ook kan wisselen, en die verschijnt
-                    // onder exact dezelfde voorwaarde (meer dan een
-                    // provider). Twee labels naast elkaar voor hetzelfde is
-                    // ruis; bij een enkel abonnement staat er geen knop, dus
-                    // dan blijft dit label wel staan.
-                    val shownByLiveTv = isTv && tabs[selected] == Tab.LiveTv
-                    if (state.accounts.size > 1 && !shownByLiveTv) {
-                        Text(
-                            text = state.account?.displayName.orEmpty(),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .widthIn(max = 200.dp)
-                                .padding(end = 8.dp),
-                        )
-                    }
-                    IconButton(onClick = onOpenNowOnTv) {
-                        Icon(
-                            Icons.Filled.Schedule,
-                            contentDescription =
-                                stringResource(R.string.topbar_now_on_tv),
-                        )
-                    }
-                    IconButton(onClick = onOpenSearch) {
-                        Icon(
-                            Icons.Filled.Search,
-                            contentDescription =
-                                stringResource(R.string.topbar_search),
-                        )
-                    }
-                },
-            )
-        },
-        bottomBar = {
-            if (!isTv) {
-                NavigationBar {
-                    tabs.forEachIndexed { index, tab ->
-                        NavigationBarItem(
-                            selected = selected == index,
-                            onClick = { selected = index },
-                            icon = {
-                                Icon(
-                                    tab.icon,
-                                    contentDescription =
-                                        stringResource(tab.labelRes),
-                                )
-                            },
-                            label = {
-                                Text(stringResource(tab.labelRes), maxLines = 1)
-                            },
-                        )
-                    }
-                }
-            }
-        },
-    ) { padding ->
-        if (isTv) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(padding),
-            ) {
-                // Links-drukken vanuit de inhoud hoort terug te komen op het
-                // ACTIEVE tabblad. Standaard kiest focus-search het rail-item
-                // dat geometrisch het dichtstbij is (onderin Meer beland je
-                // dan op Films/Gemist). De onEnter-redirect dwingt af dat
-                // binnenkomen van de rail altijd op de actieve tab landt;
-                // omhoog/omlaag binnen de rail blijft gewoon werken.
-                val railFocus = remember { List(tabs.size) { FocusRequester() } }
-                NavigationRail(
+        val actions: @Composable (Boolean) -> Unit = { showAccount ->
+            val shownByLiveTv = isTv && tabs[selected] == Tab.LiveTv
+            if (state.accounts.size > 1 && !shownByLiveTv && showAccount) {
+                Text(
+                    text = state.account?.displayName.orEmpty(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
-                        .focusProperties {
-                            enter = { railFocus[selected] }
+                        .widthIn(max = 200.dp)
+                        .padding(end = 8.dp),
+                )
+            }
+            IconButton(onClick = onOpenNowOnTv, modifier = Modifier.tvFocusable()) {
+                Icon(
+                    Icons.Filled.Schedule,
+                    contentDescription =
+                        stringResource(R.string.topbar_now_on_tv),
+                )
+            }
+            IconButton(onClick = onOpenSearch, modifier = Modifier.tvFocusable()) {
+                Icon(
+                    Icons.Filled.Search,
+                    contentDescription =
+                        stringResource(R.string.topbar_search),
+                )
+            }
+        }
+        Scaffold(
+            topBar = {
+                if (isTv) {
+                    TvHeader(selected, onSelect = { selected = it }, actions = actions)
+                } else {
+                    TopAppBar(
+                        title = { Text(stringResource(tabs[selected].labelRes)) },
+                        actions = { actions(true) },
+                    )
+                }
+            },
+            bottomBar = {
+                if (!isTv) {
+                    NavigationBar {
+                        tabs.forEachIndexed { index, tab ->
+                            NavigationBarItem(
+                                selected = selected == index,
+                                onClick = { selected = index },
+                                icon = {
+                                    Icon(
+                                        tab.icon,
+                                        contentDescription =
+                                            stringResource(tab.labelRes),
+                                    )
+                                },
+                                label = {
+                                    Text(stringResource(tab.labelRes), maxLines = 1)
+                                },
+                            )
                         }
-                        .focusGroup(),
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        NavigationRailItem(
-                            selected = selected == index,
-                            onClick = { selected = index },
-                            modifier = Modifier.focusRequester(railFocus[index]),
-                            icon = {
-                                Icon(
-                                    tab.icon,
-                                    contentDescription =
-                                        stringResource(tab.labelRes),
-                                )
-                            },
-                            label = {
-                                Text(stringResource(tab.labelRes), maxLines = 1)
-                            },
-                        )
                     }
                 }
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        // Overscan-veilige marge: tv's snijden de randen af.
-                        .padding(end = 24.dp, top = 8.dp, bottom = 16.dp),
-                ) { tabContent() }
-            }
-        } else {
+            },
+        ) { padding ->
             Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding)
+                    .then(if (isTv) Modifier.padding(horizontal = 24.dp, vertical = 8.dp) else Modifier),
             ) { tabContent() }
         }
     }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun TvHeader(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    actions: @Composable (Boolean) -> Unit,
+) {
+    val tabs = Tab.entries
+    val tabFocus = remember { List(tabs.size) { FocusRequester() } }
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
+        val showBrand = maxWidth >= 850.dp
+        val showAccount = maxWidth >= 1000.dp
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (showBrand) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(end = 16.dp),
+                )
+            }
+            Row(
+                modifier = Modifier.weight(1f).selectableGroup()
+                    .focusProperties { enter = { tabFocus[selected] } }
+                    .focusGroup(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                tabs.forEachIndexed { index, tab ->
+                    val active = index == selected
+                    val shape = RoundedCornerShape(6.dp)
+                    Box(
+                        modifier = Modifier.weight(1f)
+                            .focusRequester(tabFocus[index])
+                            .background(
+                                if (active) MaterialTheme.colorScheme.surfaceVariant
+                                else MaterialTheme.colorScheme.background,
+                                shape,
+                            )
+                            .tvFocusable()
+                            .selectable(selected = active, role = Role.Tab, onClick = { onSelect(index) })
+                            .height(44.dp)
+                            .padding(horizontal = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(tab.labelRes),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            actions(showAccount)
+        }
     }
 }
 
@@ -448,7 +464,6 @@ private fun SettingsContent(
     tvMode: String,
     startupTab: String,
     onSwitchProvider: (String) -> Unit,
-    onRemoveProvider: (String) -> Unit,
     onSetStreamFormat: (String) -> Unit,
     onSetAdultPin: (String) -> Unit,
     onUnlockAdult: (String) -> Boolean,
@@ -471,7 +486,6 @@ private fun SettingsContent(
                 state = state,
                 isTv = isTv,
                 onSwitchProvider = onSwitchProvider,
-                onRemoveProvider = onRemoveProvider,
                 onAddProvider = onAddProvider,
                 onOpenConnectionTest = onOpenConnectionTest,
             )
@@ -678,7 +692,6 @@ private fun AccountSettings(
     state: MainState,
     isTv: Boolean,
     onSwitchProvider: (String) -> Unit,
-    onRemoveProvider: (String) -> Unit,
     onAddProvider: () -> Unit,
     onOpenConnectionTest: () -> Unit,
 ) {
@@ -738,17 +751,7 @@ private fun AccountSettings(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(
-                    onClick = { onRemoveProvider(acc.id) },
-                    modifier = Modifier.size(36.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription =
-                            stringResource(R.string.provider_remove_desc),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+
             }
         }
     }
@@ -759,7 +762,7 @@ private fun AccountSettings(
             OutlinedButton(
                 onClick = onAddProvider,
                 modifier = Modifier.weight(1f),
-            ) { Text(stringResource(R.string.welcome_add_provider)) }
+            ) { Text(stringResource(R.string.activation_manage)) }
             OutlinedButton(
                 onClick = onOpenConnectionTest,
                 modifier = Modifier.weight(1f),
@@ -769,7 +772,7 @@ private fun AccountSettings(
         OutlinedButton(
             onClick = onAddProvider,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text(stringResource(R.string.welcome_add_provider)) }
+        ) { Text(stringResource(R.string.activation_manage)) }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
             onClick = onOpenConnectionTest,

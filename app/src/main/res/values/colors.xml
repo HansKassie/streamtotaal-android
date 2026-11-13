@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="streamfix_accent">#FFF97316</color>
-    <color name="streamfix_background">#FF15151A</color>
+    <color name="streamfix_accent">#FF5AD8CC</color>
+    <color name="streamfix_background">#FF101114</color>
     <color name="streamfix_surface">#FF1E1E24</color>
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>

@@ -1,9 +1,14 @@
 package nl.streamfix.ui.screens.live
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.dpadExitField
 import nl.streamfix.ui.tvFocusable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,11 +18,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -47,9 +53,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.focusGroup
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.KeyEventType
@@ -58,6 +62,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,9 +84,6 @@ import java.util.Locale
  */
 private const val EPG_RECHECK_MS = 30_000L
 
-// kotlin.OptIn: focusProperties.enter is een echte Compose-experimentele API
-// (anders dan Media3's UnstableApi, dat om androidx.annotation.OptIn vraagt).
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun LiveTvScreen(
     onOpenChannel: (categoryId: String, channelId: String) -> Unit,
@@ -185,26 +187,17 @@ fun LiveTvScreen(
                 ?.name ?: categoryPlaceholder
         }
 
-        val categoryFocus = remember { FocusRequester() }
         val categoryButton: @Composable () -> Unit = {
             Box {
                 OutlinedButton(
                     onClick = { menuOpen = true },
-                    modifier = if (isTv) {
-                        Modifier.focusRequester(categoryFocus)
-                    } else {
-                        Modifier.fillMaxWidth()
-                    },
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
                         text = selectedLabel,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = if (isTv) {
-                            Modifier.widthIn(max = 220.dp)
-                        } else {
-                            Modifier.weight(1f)
-                        },
+                        modifier = Modifier.weight(1f),
                     )
                     Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
                 }
@@ -232,67 +225,55 @@ fun LiveTvScreen(
             }
         }
 
-        if (isTv) {
-            Row(
-                // Vanuit de zenderlijst omhoog hoort de focus op de categorie
-                // te landen. Zonder deze regel kiest focus-search de knop die
-                // geometrisch het dichtst bij het midden van de brede
-                // kanaalrij ligt, en dat is de providerknop rechts.
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .focusProperties { enter = { categoryFocus } }
-                    .focusGroup(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                categoryButton()
-                // Provider-switch: alleen zinvol met meerdere abonnementen.
-                // De gids blijft bereikbaar via de gele/Gids-toets en via
-                // het TV-gids-item in de zenderlijst-overlay van de speler.
-                if (providers.size > 1) {
-                    var provMenuOpen by remember { mutableStateOf(false) }
-                    Box(modifier = Modifier.padding(start = 8.dp)) {
-                        OutlinedButton(onClick = { provMenuOpen = true }) {
-                            // Account-icoon: onderscheidt deze knop in een
-                            // oogopslag van de categorie-knop ernaast.
-                            Icon(
-                                Icons.Filled.AccountCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
+        val providerButton: @Composable () -> Unit = {
+            if (providers.size > 1) {
+                var provMenuOpen by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.padding(top = 8.dp)) {
+                    OutlinedButton(
+                        onClick = { provMenuOpen = true },
+                        modifier = Modifier.fillMaxWidth().tvFocusable(),
+                    ) {
+                        // Account-icoon: onderscheidt deze knop in een
+                        // oogopslag van de categorie-knop ernaast.
+                        Icon(
+                            Icons.Filled.AccountCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = providers
+                                .firstOrNull { it.first == activeProviderId }
+                                ?.second.orEmpty(),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Icon(
+                            Icons.Filled.ArrowDropDown,
+                            contentDescription = null,
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = provMenuOpen,
+                        onDismissRequest = { provMenuOpen = false },
+                    ) {
+                        providers.forEach { (id, name) ->
+                            DropdownMenuItem(
+                                text = { Text(name) },
+                                onClick = {
+                                    provMenuOpen = false
+                                    if (id != activeProviderId) {
+                                        onSwitchProvider(id)
+                                    }
+                                },
                             )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = providers
-                                    .firstOrNull { it.first == activeProviderId }
-                                    ?.second.orEmpty(),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.widthIn(max = 220.dp),
-                            )
-                            Icon(
-                                Icons.Filled.ArrowDropDown,
-                                contentDescription = null,
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = provMenuOpen,
-                            onDismissRequest = { provMenuOpen = false },
-                        ) {
-                            providers.forEach { (id, name) ->
-                                DropdownMenuItem(
-                                    text = { Text(name) },
-                                    onClick = {
-                                        provMenuOpen = false
-                                        if (id != activeProviderId) {
-                                            onSwitchProvider(id)
-                                        }
-                                    },
-                                )
-                            }
                         }
                     }
                 }
             }
-        } else {
+        }
+        if (!isTv) {
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                 categoryButton()
             }
@@ -301,84 +282,130 @@ fun LiveTvScreen(
         Spacer(Modifier.height(8.dp))
 
         val channelList: @Composable () -> Unit = {
-        when {
-            state.isLoading -> Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
+            when {
+                state.isLoading -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) { CircularProgressIndicator() }
 
-            state.errorMessage != null -> Box(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = state.errorMessage!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-
-            state.visibleChannels.isEmpty() -> Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.live_no_channels),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            else -> LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                items(state.visibleChannels, key = { it.id }) { channel ->
-                    // Herhalen zolang de rij in beeld staat, niet eenmalig.
-                    // De poort in het ViewModel laat een verlopen antwoord
-                    // weer toe, maar dat helpt alleen als er ook opnieuw
-                    // gevraagd wordt; een rij die blijft staan zou anders
-                    // voorgoed op zijn eerste antwoord blijven zitten.
-                    LaunchedEffect(channel.id) {
-                        while (true) {
-                            viewModel.ensureEpg(channel.id)
-                            delay(EPG_RECHECK_MS)
-                        }
-                    }
-                    ChannelRow(
-                        channel = channel,
-                        programmes = epgMap[channel.id],
-                        nowMs = nowMs,
-                        isFavorite = state.favoriteIds.contains(channel.id),
-                        focusRequester =
-                            if (channel.id == targetId) rowFocus else null,
-                        onClick = {
-                            onOpenChannel(
-                                state.selectedCategoryId ?: FAVORITES_ID,
-                                channel.id,
-                            )
-                        },
-                        onToggleFavorite = { viewModel.toggleFavorite(channel) },
-                        onInfo = { onOpenChannelEpg(channel.id, channel.name) },
-                        onFocused = {
-                            focusedChannel = channel
-                            viewModel.onChannelFocused(channel.id)
-                        },
+                state.errorMessage != null -> Box(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = state.errorMessage!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge,
                     )
+                }
+
+                state.visibleChannels.isEmpty() -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.live_no_channels),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                else -> LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(state.visibleChannels, key = { it.id }) { channel ->
+                        // Herhalen zolang de rij in beeld staat, niet eenmalig.
+                        // De poort in het ViewModel laat een verlopen antwoord
+                        // weer toe, maar dat helpt alleen als er ook opnieuw
+                        // gevraagd wordt; een rij die blijft staan zou anders
+                        // voorgoed op zijn eerste antwoord blijven zitten.
+                        LaunchedEffect(channel.id) {
+                            while (true) {
+                                viewModel.ensureEpg(channel.id)
+                                delay(EPG_RECHECK_MS)
+                            }
+                        }
+                        ChannelRow(
+                            channel = channel,
+                            programmes = epgMap[channel.id],
+                            nowMs = nowMs,
+                            isFavorite = state.favoriteIds.contains(channel.id),
+                            focusRequester =
+                                if (channel.id == targetId) rowFocus else null,
+                            onClick = {
+                                onOpenChannel(
+                                    state.selectedCategoryId ?: FAVORITES_ID,
+                                    channel.id,
+                                )
+                            },
+                            onToggleFavorite = { viewModel.toggleFavorite(channel) },
+                            onInfo = { onOpenChannelEpg(channel.id, channel.name) },
+                            onFocused = {
+                                focusedChannel = channel
+                                viewModel.onChannelFocused(channel.id)
+                            },
+                        )
+                    }
                 }
             }
         }
-        }
 
         if (isTv) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.weight(1f)) { channelList() }
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                val categories = listOf(FAVORITES_ID to favoritesLabel) +
+                    state.categories.map { it.id to it.name }
+                val activeIndex = categories.indexOfFirst { it.first == state.selectedCategoryId }
+                val categoryList = rememberLazyListState()
+                LaunchedEffect(activeIndex) {
+                    if (activeIndex >= 0 && categoryList.layoutInfo.visibleItemsInfo.none { it.index == activeIndex }) {
+                        categoryList.scrollToItem(activeIndex)
+                    }
+                }
+                Column(Modifier.weight(0.25f)) {
+                    Text(
+                        text = categoryPlaceholder,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).selectableGroup(),
+                        state = categoryList,
+                    ) {
+                        itemsIndexed(categories, key = { _, item -> item.first }) { index, (id, name) ->
+                            val selected = index == activeIndex
+                            Text(
+                                text = name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.fillMaxWidth()
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.surfaceVariant
+                                        else MaterialTheme.colorScheme.background,
+                                        RoundedCornerShape(6.dp),
+                                    )
+                                    .tvFocusable()
+                                    .selectable(
+                                        selected = selected,
+                                        role = Role.Tab,
+                                        onClick = { viewModel.selectCategory(id) },
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                            )
+                        }
+                    }
+                    providerButton()
+                }
+                Box(Modifier.weight(0.47f)) { channelList() }
                 EpgInfoPanel(
                     channel = focusedChannel,
                     programmes = focusedChannel?.id?.let { epgMap[it] },
                     nowMs = nowMs,
-                    modifier = Modifier
-                        .width(360.dp)
-                        .padding(end = 24.dp, top = 4.dp, bottom = 16.dp),
+                    modifier = Modifier.weight(0.28f).padding(bottom = 16.dp),
                 )
             }
         } else {
@@ -553,7 +580,7 @@ private fun ChannelRow(
             .fillMaxWidth()
             .focusGroup()
             .padding(
-                horizontal = 16.dp,
+                horizontal = if (isTv) 0.dp else 16.dp,
                 vertical = if (isTv) 3.dp else 10.dp,
             ),
         verticalAlignment = Alignment.CenterVertically,
@@ -571,6 +598,7 @@ private fun ChannelRow(
                 .onFocusChanged { if (it.isFocused) onFocused() }
                 .tvFocusable()
                 .clickable(onClick = onClick)
+                .then(if (isTv) Modifier.heightIn(min = 60.dp) else Modifier)
                 .padding(
                     horizontal = if (isTv) 8.dp else 0.dp,
                     vertical = if (isTv) 6.dp else 0.dp,
@@ -586,7 +614,7 @@ private fun ChannelRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = channel.name,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = if (isTv) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -630,13 +658,13 @@ private fun ChannelRow(
                 }
             }
         }
-        IconButton(onClick = onInfo) {
+        IconButton(onClick = onInfo, modifier = Modifier.tvFocusable()) {
             Icon(
                 Icons.Filled.Info,
                 contentDescription = stringResource(R.string.live_programme_guide_desc),
             )
         }
-        IconButton(onClick = onToggleFavorite) {
+        IconButton(onClick = onToggleFavorite, modifier = Modifier.tvFocusable()) {
             Icon(
                 imageVector = if (isFavorite) Icons.Filled.Star
                 else Icons.Outlined.StarBorder,

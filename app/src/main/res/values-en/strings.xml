@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="activation_title">Activate ZelViro Player</string>
+    <string name="activation_instructions">Scan the QR code or open the website. Enter your device code and key, then add a playlist.</string>
+    <string name="activation_code">Device code</string>
+    <string name="activation_key">Key</string>
+    <string name="activation_waiting">Waiting for activation…</string>
+    <string name="activation_checking">Connecting to the portal…</string>
+    <string name="activation_playlists">Playlists added: %1$d. Waiting for activation…</string>
+    <string name="activation_unavailable">The portal is currently unreachable or does not support this device yet.</string>
+    <string name="activation_blocked">This device is blocked. Contact the administrator.</string>
+    <string name="activation_rate_limited">Too many registration attempts. Try again in a few minutes.</string>
+    <string name="activation_refresh">Check again</string>
+    <string name="activation_qr">QR code for the activation portal</string>
+    <string name="activation_linked">This device is linked. Manage your playlists in the portal.</string>
+    <string name="activation_manage">Manage in the portal</string>
     <!-- app_name is a brand name and intentionally not translated. -->
 
     <!-- ===== Error messages (AppError -> uiMessage). ===== -->
@@ -123,7 +137,7 @@
     <string name="update_failed">The update could not be installed. Please try again.</string>
     <string name="update_failed_download">The update could not be downloaded. Please try again.</string>
     <string name="update_failed_integrity">The downloaded update file is invalid. Please try again.</string>
-    <string name="update_permission_required">Allow StreamTotaal to install apps, then try again.</string>
+    <string name="update_permission_required">Allow ZelViro Player to install apps, then try again.</string>
     <string name="update_failed_installer">The update was downloaded, but the installation screen could not be opened.</string>
     <string name="update_open_permission">Open permission</string>
     <string name="update_diagnostic">Updater %1$s - Error code: %2$s</string>

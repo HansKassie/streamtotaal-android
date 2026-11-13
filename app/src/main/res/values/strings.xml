@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Merknaam: bewust niet vertaald. -->
-    <string name="app_name" translatable="false">StreamTotaal</string>
+    <string name="app_name" translatable="false">ZelViro Player</string>
 
     <!-- ===== Foutmeldingen (AppError -> uiMessage). ===== -->
     <string name="err_invalid_credentials">Gebruikersnaam of wachtwoord klopt niet.</string>
@@ -23,6 +23,20 @@
     <string name="welcome_sign_in_xtream">Inloggen met Xtream Codes</string>
     <string name="welcome_choose_provider">Kies een provider</string>
     <string name="welcome_add_provider">Provider toevoegen</string>
+    <string name="activation_title">Activeer ZelViro Player</string>
+    <string name="activation_instructions">Scan de QR-code of open de website. Vul daar de apparaatcode en sleutel in en voeg een afspeellijst toe.</string>
+    <string name="activation_code">Apparaatcode</string>
+    <string name="activation_key">Sleutel</string>
+    <string name="activation_waiting">Wachten op activatie…</string>
+    <string name="activation_checking">Verbinding maken met het portaal…</string>
+    <string name="activation_playlists">Afspeellijsten toegevoegd: %1$d. Wachten op activatie…</string>
+    <string name="activation_unavailable">Het portaal is nu niet bereikbaar of ondersteunt dit apparaat nog niet.</string>
+    <string name="activation_blocked">Dit apparaat is geblokkeerd. Neem contact op met de beheerder.</string>
+    <string name="activation_rate_limited">Te veel aanmeldpogingen. Probeer het over een paar minuten opnieuw.</string>
+    <string name="activation_refresh">Opnieuw controleren</string>
+    <string name="activation_qr">QR-code voor het activatieportaal</string>
+    <string name="activation_linked">Dit apparaat is gekoppeld. Beheer je afspeellijsten in het portaal.</string>
+    <string name="activation_manage">Beheren via het portaal</string>
 
     <!-- ===== Login-scherm (Xtream). ===== -->
     <string name="login_title">Xtream Codes</string>
@@ -124,7 +138,7 @@
     <string name="update_failed">De update kon niet worden geïnstalleerd. Probeer het opnieuw.</string>
     <string name="update_failed_download">De update kon niet worden gedownload. Probeer het opnieuw.</string>
     <string name="update_failed_integrity">Het gedownloade updatebestand klopt niet. Probeer het opnieuw.</string>
-    <string name="update_permission_required">Geef StreamTotaal toestemming om apps te installeren en probeer het daarna opnieuw.</string>
+    <string name="update_permission_required">Geef ZelViro Player toestemming om apps te installeren en probeer het daarna opnieuw.</string>
     <string name="update_failed_installer">De update is gedownload, maar het installatiescherm kon niet worden geopend.</string>
     <string name="update_open_permission">Toestemming openen</string>
     <string name="update_diagnostic">Updater %1$s - Foutcode: %2$s</string>

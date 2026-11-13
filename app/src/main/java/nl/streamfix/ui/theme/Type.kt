@@ -6,7 +6,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Voorlopig systeemfont (SansSerif). Een merkfont kan later in Fase 5 (polish).
+// Android-systeemfont als tegenhanger van de schreefloze LG Smart UI.
 private val AppFont = FontFamily.SansSerif
 
 val StreamFixTypography = Typography(
@@ -24,9 +24,9 @@ val StreamFixTypography = Typography(
     ),
     titleLarge = TextStyle(
         fontFamily = AppFont,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 26.sp
+        fontWeight = FontWeight.Bold,
+        fontSize = 21.sp,
+        lineHeight = 27.sp
     ),
     titleMedium = TextStyle(
         fontFamily = AppFont,

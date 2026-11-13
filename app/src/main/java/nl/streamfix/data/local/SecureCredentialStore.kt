@@ -45,6 +45,14 @@ class SecureCredentialStore @Inject constructor(
     fun allAccounts(): List<Account> =
         readState().accounts.mapNotNull { it.toDomain() }
 
+    fun syncPortalAccounts(accounts: List<Account.Xtream>, activate: Boolean) {
+        val state = readState()
+        val activeId = state.activeId?.takeIf { id -> accounts.any { it.id == id } }
+            ?: accounts.firstOrNull()?.id?.takeIf { activate || state.activeId != null }
+        val updated = CredentialState(accounts = accounts.map { it.toStored() }, activeId = activeId)
+        if (updated != state) writeState(updated)
+    }
+
     /**
      * Hernoemt opgeslagen accounts; geef null terug om er een te laten
      * staan. Schrijft alleen als er echt iets verandert, zodat dit bij elke

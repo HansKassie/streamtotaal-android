@@ -201,6 +201,7 @@ dependencies {
     // Netwerk
     implementation(libs.retrofit)
     implementation(libs.okhttp)
+    implementation("com.google.zxing:core:3.5.3")
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.retrofit.kotlinx.serialization)
