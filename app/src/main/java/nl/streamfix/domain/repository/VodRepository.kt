@@ -7,6 +7,8 @@ import nl.streamfix.domain.util.AppResult
 
 interface VodRepository {
     suspend fun getCategories(): AppResult<List<LiveCategory>>
+
+    suspend fun getManageableCategories(): AppResult<List<LiveCategory>> = getCategories()
     suspend fun getItems(categoryId: String): AppResult<List<VodItem>>
     suspend fun getAllItems(): AppResult<List<VodItem>>
     suspend fun getDetail(vodId: String): AppResult<VodDetail>

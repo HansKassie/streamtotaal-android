@@ -9,6 +9,10 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import nl.streamfix.data.local.AdultContent
 import nl.streamfix.data.local.AppSettingsStore
+import nl.streamfix.data.local.CatalogSection
+import nl.streamfix.data.local.ZelviroPreferences
+import nl.streamfix.data.local.isCatalogItemVisible
+import nl.streamfix.data.local.visibilityKey
 import nl.streamfix.data.local.SecureCredentialStore
 import nl.streamfix.data.local.filterActive
 import nl.streamfix.data.local.db.FavoriteChannelEntity
@@ -29,12 +33,22 @@ class LiveRepositoryImpl @Inject constructor(
     private val store: SecureCredentialStore,
     private val favoriteDao: FavoriteDao,
     private val appSettings: AppSettingsStore,
+    private val zelviro: ZelviroPreferences,
 ) : LiveRepository {
 
     private fun activeXtream(): Account.Xtream? =
         store.currentActiveAccount() as? Account.Xtream
 
     override suspend fun getCategories(): AppResult<List<LiveCategory>> {
+        val account = activeXtream() ?: return AppResult.Failure(AppError.Unknown)
+        val result = getManageableCategories()
+        val hidden = zelviro.hidden(account.id, CatalogSection.Live)
+        return if (result is AppResult.Success && hidden.isNotEmpty())
+            AppResult.Success(result.data.filterNot { it.visibilityKey() in hidden })
+        else result
+    }
+
+    override suspend fun getManageableCategories(): AppResult<List<LiveCategory>> {
         val acc = activeXtream() ?: return AppResult.Failure(AppError.Unknown)
         val r = liveService.categories(acc.serverUrl, acc.username, acc.password)
         return if (r is AppResult.Success && appSettings.adultFilterActive()) {
@@ -48,6 +62,8 @@ class LiveRepositoryImpl @Inject constructor(
         categoryId: String?,
     ): AppResult<List<LiveChannel>> {
         val acc = activeXtream() ?: return AppResult.Failure(AppError.Unknown)
+        val hidden = zelviro.hidden(acc.id, CatalogSection.Live)
+        if (categoryId in hidden) return AppResult.Success(emptyList())
         val r = liveService.channels(
             acc.serverUrl, acc.username, acc.password, categoryId,
         )
@@ -55,16 +71,24 @@ class LiveRepositoryImpl @Inject constructor(
         // categorie moeten juist geclassificeerd worden, ook (en vooral) als
         // ze straks weggefilterd worden.
         if (r is AppResult.Success) classifyFavorites(acc, r.data)
-        if (r !is AppResult.Success || !appSettings.adultFilterActive()) return r
+        if (r !is AppResult.Success) return r
         // "Alle kanalen" (zoeken/gemist): kanalen uit volwassen-categorieen
         // weglaten op basis van de categorie-namen.
-        val adultIds = adultCategoryIds(acc)
-        return AppResult.Success(
-            r.data.filterNot {
-                it.categoryId in adultIds || AdultContent.isAdult(it.name)
-            },
-        )
+        val adultFilter = appSettings.adultFilterActive()
+        if (!adultFilter && hidden.isEmpty()) return r
+        val adultIds = if (adultFilter) adultCategoryIds(acc) else emptySet()
+        val current = if (categoryId.isNullOrBlank() && hidden.isNotEmpty()) {
+            currentCategoryKeys(acc)
+        } else emptySet()
+        return AppResult.Success(r.data.filter {
+            (!adultFilter || (it.categoryId !in adultIds && !AdultContent.isAdult(it.name))) &&
+                isCatalogItemVisible(it.categoryIds, current, hidden)
+        })
     }
+
+    private suspend fun currentCategoryKeys(acc: Account.Xtream): Set<String> =
+        (liveService.categories(acc.serverUrl, acc.username, acc.password) as? AppResult.Success)
+            ?.data?.map { it.visibilityKey() }?.toSet().orEmpty()
 
     // Sessie-cache per account: categorienamen wijzigen zelden, dus de
     // extra categories()-call (Zoeken/Gemist met filter aan) hoeft niet
@@ -127,9 +151,15 @@ class LiveRepositoryImpl @Inject constructor(
                 combine(
                     favoriteDao.observe(account.id),
                     appSettings.adultState,
-                ) { list, adult ->
+                    zelviro.catalogRevision,
+                ) { list, adult, _ ->
+                    val hidden = zelviro.hidden(account.id, CatalogSection.Live)
+                    val current = if (hidden.isNotEmpty() && account is Account.Xtream && list.isNotEmpty()) {
+                        currentCategoryKeys(account)
+                    } else emptySet()
                     list
                         .filterNot { it.hiddenByAdultFilter(adult.filterActive) }
+                        .filter { isCatalogItemVisible(setOfNotNull(it.categoryId), current, hidden) }
                         .map {
                             LiveChannel(
                                 id = it.channelId,
@@ -216,11 +246,17 @@ class LiveRepositoryImpl @Inject constructor(
         val adultIds = adultIdsCache
             ?.takeIf { it.first == acc.id }?.second.orEmpty()
         if (AdultContent.isAdult(channel.name) || categoryId in adultIds) return
-        appSettings.setLastChannel(acc.id, categoryId, channel.id)
+        val storedCategory = if (nl.streamfix.data.local.isZelviro && categoryId.isBlank()) {
+            channel.categoryId.orEmpty()
+        } else categoryId
+        appSettings.setLastChannel(acc.id, storedCategory, channel.id)
     }
 
     override fun lastWatchedChannel(): Pair<String, String>? {
         val acc = activeXtream() ?: return null
-        return appSettings.lastChannel(acc.id)
+        return appSettings.lastChannel(acc.id)?.let { (category, channel) ->
+            if (category in zelviro.hidden(acc.id, CatalogSection.Live)) "" to channel
+            else category to channel
+        }
     }
 }

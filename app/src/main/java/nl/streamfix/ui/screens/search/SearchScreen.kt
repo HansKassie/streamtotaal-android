@@ -117,7 +117,7 @@ fun SearchScreen(
                     item { SectionHeader(stringResource(R.string.tab_live_tv)) }
                     items(state.live, key = { "l_${it.id}" }) { ch ->
                         ResultRow(ch.name, ch.logoUrl) {
-                            onOpenChannel(ch.categoryId ?: "", ch.id)
+                            onOpenChannel(if (nl.streamfix.data.local.isZelviro) "" else ch.categoryId.orEmpty(), ch.id)
                         }
                     }
                 }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.streamfix.R
+import nl.streamfix.data.local.zelviroTextContext
 import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
 import nl.streamfix.domain.usecase.GetSeriesCategoriesUseCase
 import nl.streamfix.domain.usecase.GetVodCategoriesUseCase
@@ -55,7 +56,7 @@ class ConnectionTestViewModel @Inject constructor(
             step(0) {
                 when (val r = verifyAccount()) {
                     is AppResult.Success ->
-                        ok(context.getString(R.string.conn_check_subscription_active))
+                        ok(context.zelviroTextContext().getString(R.string.conn_check_subscription_active))
                     is AppResult.Failure -> fail(r.error.uiMessage(context))
                 }
             }
@@ -67,10 +68,10 @@ class ConnectionTestViewModel @Inject constructor(
     }
 
     private fun initialRows(): List<CheckRow> = listOf(
-        CheckRow(context.getString(R.string.conn_step_server_login)),
-        CheckRow(context.getString(R.string.conn_step_live_tv)),
-        CheckRow(context.getString(R.string.conn_step_movies)),
-        CheckRow(context.getString(R.string.conn_step_series)),
+        CheckRow(context.zelviroTextContext().getString(R.string.conn_step_server_login)),
+        CheckRow(context.zelviroTextContext().getString(R.string.conn_step_live_tv)),
+        CheckRow(context.zelviroTextContext().getString(R.string.conn_step_movies)),
+        CheckRow(context.zelviroTextContext().getString(R.string.conn_step_series)),
     )
 
     private fun ok(msg: String) = CheckRow("", CheckState.Ok, msg)
@@ -79,9 +80,9 @@ class ConnectionTestViewModel @Inject constructor(
     private fun <T> categoryResult(r: AppResult<List<T>>): CheckRow = when (r) {
         is AppResult.Success ->
             if (r.data.isEmpty()) {
-                ok(context.getString(R.string.conn_check_reachable_no_categories))
+                ok(context.zelviroTextContext().getString(R.string.conn_check_reachable_no_categories))
             } else {
-                ok(context.getString(R.string.conn_check_available))
+                ok(context.zelviroTextContext().getString(R.string.conn_check_available))
             }
         is AppResult.Failure -> fail(r.error.uiMessage(context))
     }

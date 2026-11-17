@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="zelviro_auto">Automatisch</string>
+    <string name="zelviro_off">Uit</string>
+    <string name="zelviro_app_language">App-taal</string>
+    <string name="zelviro_audio_language">Audiotaal</string>
+    <string name="zelviro_subtitle_language">Ondertiteltaal</string>
+    <string name="zelviro_hide_section">Categorieën verbergen: %1$s</string>
+    <string name="zelviro_hide_all">Alles verbergen</string>
+    <string name="zelviro_show_all">Alles tonen</string>
+    <string name="zelviro_categories_error">Categorieën laden is mislukt.</string>
+    <string name="zelviro_close">Sluiten</string>
+</resources>

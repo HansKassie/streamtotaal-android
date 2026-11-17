@@ -52,6 +52,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import nl.streamfix.R
+import nl.streamfix.ui.screens.live.FAVORITES_ID
 
 @Composable
 fun VodScreen(
@@ -115,7 +116,7 @@ fun VodScreen(
             ) {
                 state.categories.forEach { cat ->
                     DropdownMenuItem(
-                        text = { Text(cat.name) },
+                        text = { Text(if (cat.id == FAVORITES_ID) stringResource(R.string.common_favorites) else cat.name) },
                         onClick = {
                             menuOpen = false
                             viewModel.selectCategory(cat.id)

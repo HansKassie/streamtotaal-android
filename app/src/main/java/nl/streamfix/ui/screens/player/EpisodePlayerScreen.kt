@@ -70,7 +70,7 @@ fun EpisodePlayerScreen(
     // van Media3; op tv begint hij verborgen en komt hij bij een toets.
     var chromeVisible by remember { mutableStateOf(!isTv) }
 
-    val player = rememberStreamFixExoPlayer(preferDutchSubtitles = true)
+    val player = rememberStreamFixExoPlayer(preferDutchSubtitles = true, mediaKey = state.mediaKey)
     var countdown by remember { mutableStateOf<Int?>(null) }
     var retryAttempt by remember { mutableIntStateOf(0) }
     var retryJob by remember { mutableStateOf<Job?>(null) }

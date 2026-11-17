@@ -55,6 +55,7 @@ class XtreamVodService @Inject constructor(
                         name = dto.name?.ifBlank { "Film $id" } ?: "Film $id",
                         posterUrl = dto.streamIcon?.takeIf { it.isNotBlank() },
                         categoryId = dto.categoryId ?: categoryId,
+                        categoryIds = catalogCategoryIds(dto.categoryIds, dto.categoryId ?: categoryId),
                         containerExtension = dto.containerExtension,
                         rating = dto.rating,
                     )
@@ -86,6 +87,7 @@ class XtreamVodService @Inject constructor(
                         name = dto.name?.ifBlank { "Film $id" } ?: "Film $id",
                         posterUrl = dto.streamIcon?.takeIf { it.isNotBlank() },
                         categoryId = dto.categoryId,
+                        categoryIds = catalogCategoryIds(dto.categoryIds, dto.categoryId),
                         containerExtension = dto.containerExtension,
                         rating = dto.rating,
                     )

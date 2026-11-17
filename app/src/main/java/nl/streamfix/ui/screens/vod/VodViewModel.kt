@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.streamfix.R
 import nl.streamfix.data.local.AppSettingsStore
+import nl.streamfix.data.local.ZelviroPreferences
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.VodItem
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
@@ -51,6 +52,7 @@ class VodViewModel @Inject constructor(
     private val getActiveAccount: GetActiveAccountUseCase,
     private val appSettings: AppSettingsStore,
     @ApplicationContext private val context: Context,
+    private val zelviro: ZelviroPreferences? = null,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VodUiState())
@@ -69,6 +71,12 @@ class VodViewModel @Inject constructor(
     }
 
     init {
+        if (zelviro != null) viewModelScope.launch {
+            zelviro.catalogRevision.drop(1).collect {
+                startFreshLoad()
+                loadCategories()
+            }
+        }
         viewModelScope.launch {
             observeFavorites().collect { favs ->
                 _state.update { it.copy(favorites = favs) }

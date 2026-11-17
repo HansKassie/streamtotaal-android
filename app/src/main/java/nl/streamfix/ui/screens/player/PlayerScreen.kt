@@ -117,7 +117,7 @@ fun PlayerScreen(
     val overlayEpg by viewModel.overlayEpg.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val isTv = LocalIsTv.current
-    val activity = context as? Activity
+    val activity = androidx.compose.ui.platform.LocalView.current.context as? Activity
     var chromeVisible by remember { mutableStateOf(true) }
     var channelListOpen by remember { mutableStateOf(false) }
     // Staat open tussen de KeyDown en de KeyUp van een OK-druk die wij
@@ -210,7 +210,7 @@ fun PlayerScreen(
     }
     val scope = rememberCoroutineScope()
 
-    val player = rememberStreamFixExoPlayer()
+    val player = rememberStreamFixExoPlayer(mediaKey = state.currentChannelId)
     var retryAttempt by remember { mutableIntStateOf(0) }
     var retryJob by remember { mutableStateOf<Job?>(null) }
     val errorTimer = remember(scope) { PlaybackErrorTimer(scope) }

@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import nl.streamfix.data.local.CatalogSection
+import nl.streamfix.data.local.ZelviroPreferences
+import nl.streamfix.data.local.visibilityKey
 import nl.streamfix.data.local.AdultContent
 import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.data.local.SecureCredentialStore
@@ -17,6 +20,9 @@ import nl.streamfix.data.local.db.FavoriteMediaEntity
 import nl.streamfix.domain.model.SeriesItem
 import nl.streamfix.domain.model.VodItem
 import nl.streamfix.domain.repository.MediaFavoritesRepository
+import nl.streamfix.domain.repository.VodRepository
+import nl.streamfix.domain.repository.SeriesRepository
+import nl.streamfix.domain.util.AppResult
 
 private const val TYPE_VOD = "vod"
 private const val TYPE_SERIES = "series"
@@ -26,6 +32,9 @@ class MediaFavoritesRepositoryImpl @Inject constructor(
     private val dao: FavoriteMediaDao,
     private val store: SecureCredentialStore,
     private val appSettings: AppSettingsStore,
+    private val preferences: ZelviroPreferences,
+    private val vod: VodRepository,
+    private val series: SeriesRepository,
 ) : MediaFavoritesRepository {
 
     private fun List<FavoriteMediaEntity>.dropAdult(filterActive: Boolean) =
@@ -40,8 +49,14 @@ class MediaFavoritesRepositoryImpl @Inject constructor(
                 combine(
                     dao.observe(account.id, TYPE_VOD),
                     appSettings.adultState,
-                ) { rows, adult ->
-                    rows.dropAdult(adult.filterActive).map {
+                    preferences.catalogRevision,
+                ) { rows, adult, _ ->
+                    val visible = rows.dropAdult(adult.filterActive)
+                    val hidden = preferences.hidden(account.id, CatalogSection.Movies)
+                    val ids = if (visible.isNotEmpty() && hidden.isNotEmpty() && vod.hasHiddenCategories(hidden)) {
+                        (vod.getAllItems() as? AppResult.Success)?.data?.map { it.id }?.toHashSet()
+                    } else null
+                    visible.filter { ids == null || it.mediaId in ids }.map {
                         VodItem(
                             id = it.mediaId,
                             name = it.name,
@@ -63,8 +78,14 @@ class MediaFavoritesRepositoryImpl @Inject constructor(
                 combine(
                     dao.observe(account.id, TYPE_SERIES),
                     appSettings.adultState,
-                ) { rows, adult ->
-                    rows.dropAdult(adult.filterActive).map {
+                    preferences.catalogRevision,
+                ) { rows, adult, _ ->
+                    val visible = rows.dropAdult(adult.filterActive)
+                    val hidden = preferences.hidden(account.id, CatalogSection.Series)
+                    val ids = if (visible.isNotEmpty() && hidden.isNotEmpty() && series.hasHiddenCategories(hidden)) {
+                        (series.getAllItems() as? AppResult.Success)?.data?.map { it.id }?.toHashSet()
+                    } else null
+                    visible.filter { ids == null || it.mediaId in ids }.map {
                         SeriesItem(
                             id = it.mediaId,
                             name = it.name,
@@ -75,6 +96,12 @@ class MediaFavoritesRepositoryImpl @Inject constructor(
                 }
             }
         }
+
+    private suspend fun VodRepository.hasHiddenCategories(hidden: Set<String>) =
+        (getManageableCategories() as? AppResult.Success)?.data.orEmpty().any { it.visibilityKey() in hidden }
+
+    private suspend fun SeriesRepository.hasHiddenCategories(hidden: Set<String>) =
+        (getManageableCategories() as? AppResult.Success)?.data.orEmpty().any { it.visibilityKey() in hidden }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun isVodFavorite(id: String): Flow<Boolean> =

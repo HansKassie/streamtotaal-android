@@ -7,6 +7,7 @@ data class SeriesItem(
     val categoryId: String?,
     /** Rauw providerveld; beoordeel het met MediaRating, toon het nooit los. */
     val rating: String? = null,
+    val categoryIds: Set<String> = setOfNotNull(categoryId),
 )
 
 data class Episode(

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="zelviro_auto">Automatisch</string>
+    <string name="zelviro_off">Aus</string>
+    <string name="zelviro_app_language">App-Sprache</string>
+    <string name="zelviro_audio_language">Audiosprache</string>
+    <string name="zelviro_subtitle_language">Untertitelsprache</string>
+    <string name="zelviro_hide_section">Kategorien ausblenden: %1$s</string>
+    <string name="zelviro_hide_all">Alle ausblenden</string>
+    <string name="zelviro_show_all">Alle anzeigen</string>
+    <string name="zelviro_categories_error">Kategorien konnten nicht geladen werden.</string>
+    <string name="zelviro_close">Schließen</string>
+</resources>

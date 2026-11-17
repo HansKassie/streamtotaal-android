@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import nl.streamfix.R
+import nl.streamfix.data.local.zelviroTextContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -105,7 +106,7 @@ class MainViewModel @Inject constructor(
             if (name != null) {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.provider_switched_toast, name),
+                    context.zelviroTextContext().getString(R.string.provider_switched_toast, name),
                     Toast.LENGTH_SHORT,
                 ).show()
             }

@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.streamfix.data.local.ZelviroPreferences
+import kotlinx.coroutines.flow.drop
 import nl.streamfix.domain.model.LiveChannel
 import nl.streamfix.domain.model.SeriesItem
 import nl.streamfix.domain.model.VodItem
@@ -41,6 +43,7 @@ class SearchViewModel @Inject constructor(
     private val getAllVod: GetAllVodUseCase,
     private val getAllSeries: GetAllSeriesUseCase,
     private val getActiveAccount: GetActiveAccountUseCase,
+    private val zelviro: ZelviroPreferences? = null,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SearchUiState())
@@ -53,6 +56,12 @@ class SearchViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     init {
+        if (zelviro != null) viewModelScope.launch {
+            zelviro.catalogRevision.drop(1).collect {
+                loaded = false
+                onQueryChange(_state.value.query)
+            }
+        }
         viewModelScope.launch {
             var lastId: String? = null
             var first = true

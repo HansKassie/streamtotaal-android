@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import nl.streamfix.R
+import nl.streamfix.data.local.zelviroTextContext
 import nl.streamfix.domain.model.AppError
 
 /**
@@ -37,4 +38,4 @@ fun AppError.uiMessageRes(): Int = when (this) {
 
 /** Resolveert de foutmelding in de huidige toestel-locale. */
 fun AppError.uiMessage(context: Context): String =
-    context.getString(uiMessageRes())
+    context.zelviroTextContext().getString(uiMessageRes())

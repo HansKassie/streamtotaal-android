@@ -13,4 +13,5 @@ data class LiveChannel(
     val epgChannelId: String?,
     /** Dagen terugkijken (catch-up); 0 = geen archief. */
     val archiveDays: Int = 0,
+    val categoryIds: Set<String> = setOfNotNull(categoryId),
 )

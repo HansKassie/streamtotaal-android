@@ -9,6 +9,8 @@ interface LiveRepository {
 
     suspend fun getCategories(): AppResult<List<LiveCategory>>
 
+    suspend fun getManageableCategories(): AppResult<List<LiveCategory>> = getCategories()
+
     /** [categoryId] null = alle kanalen. */
     suspend fun getChannels(categoryId: String?): AppResult<List<LiveChannel>>
 

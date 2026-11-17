@@ -20,6 +20,7 @@ data class XtreamLiveStreamDto(
     @SerialName("stream_icon") val streamIcon: String? = null,
     @SerialName("epg_channel_id") val epgChannelId: String? = null,
     @SerialName("category_id") val categoryId: String? = null,
+    @SerialName("category_ids") val categoryIds: JsonElement? = null,
     // Catch-up: 0/1 (soms string) en aantal dagen archief.
     @SerialName("tv_archive") val tvArchive: JsonElement? = null,
     @SerialName("tv_archive_duration") val tvArchiveDuration: JsonElement? = null,

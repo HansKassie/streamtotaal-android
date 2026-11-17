@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="zelviro_auto">Automatic</string>
+    <string name="zelviro_off">Off</string>
+    <string name="zelviro_app_language">App language</string>
+    <string name="zelviro_audio_language">Audio language</string>
+    <string name="zelviro_subtitle_language">Subtitle language</string>
+    <string name="zelviro_hide_section">Hide categories: %1$s</string>
+    <string name="zelviro_hide_all">Hide all</string>
+    <string name="zelviro_show_all">Show all</string>
+    <string name="zelviro_categories_error">Could not load categories.</string>
+    <string name="zelviro_close">Close</string>
+</resources>

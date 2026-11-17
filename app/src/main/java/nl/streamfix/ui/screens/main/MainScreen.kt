@@ -95,10 +95,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import nl.streamfix.BuildConfig
+import androidx.compose.ui.platform.LocalView
+import nl.streamfix.data.local.isZelviro
 import nl.streamfix.R
 import nl.streamfix.data.local.STARTUP_TAB_FAVORITES
 import nl.streamfix.data.local.STARTUP_TAB_HISTORY
@@ -186,6 +187,7 @@ fun MainScreen(
     }
     var selected by rememberSaveable { mutableIntStateOf(initialTabIndex) }
     val context = LocalContext.current
+    val activity = LocalView.current.context as? Activity
     var backArmed by remember { mutableStateOf(false) }
 
     // "Start met laatste zender": eenmalig per Activity-instantie direct de
@@ -194,7 +196,7 @@ fun MainScreen(
     // slaat de volgende start ten onrechte over) en saved-state overleeft op
     // tv-boxen een systeem-kill (dus rememberSaveable sloeg die ook over).
     // Terugkeren uit de speler hergebruikt dezelfde Activity en vuurt nooit.
-    val activityKey = System.identityHashCode(context)
+    val activityKey = System.identityHashCode(activity)
     LaunchedEffect(Unit) {
         if (StartupAutoOpen.handledActivity != activityKey) {
             StartupAutoOpen.handledActivity = activityKey
@@ -213,7 +215,7 @@ fun MainScreen(
     // openen. Zat de kijker nog in de speler bij het weggaan, dan is dit
     // scherm niet gecomposed en herstelt Android de speler zelf.
     DisposableEffect(Unit) {
-        val lifecycle = (context as? LifecycleOwner)?.lifecycle
+        val lifecycle = (activity as? androidx.lifecycle.LifecycleOwner)?.lifecycle
         var leftApp = false
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -251,7 +253,7 @@ fun MainScreen(
     BackHandler {
         when {
             selected != 0 -> selected = 0
-            backArmed -> (context as? Activity)?.finish()
+            backArmed -> activity?.finish()
             else -> {
                 backArmed = true
                 Toast.makeText(
@@ -489,14 +491,17 @@ private fun SettingsContent(
                 onAddProvider = onAddProvider,
                 onOpenConnectionTest = onOpenConnectionTest,
             )
-            SettingsSection.Preferences -> PreferenceSettings(
-                state = state,
-                tvMode = tvMode,
-                startupTab = startupTab,
-                onSetStreamFormat = onSetStreamFormat,
-                onSetTvMode = onSetTvMode,
-                onSetStartupTab = onSetStartupTab,
-            )
+            SettingsSection.Preferences -> {
+                PreferenceSettings(
+                    state = state,
+                    tvMode = tvMode,
+                    startupTab = startupTab,
+                    onSetStreamFormat = onSetStreamFormat,
+                    onSetTvMode = onSetTvMode,
+                    onSetStartupTab = onSetStartupTab,
+                )
+                if (isZelviro) ZelviroSettings(state.account?.id)
+            }
             SettingsSection.Parental -> SettingsGroup(
                 stringResource(R.string.settings_adult_content),
             ) {

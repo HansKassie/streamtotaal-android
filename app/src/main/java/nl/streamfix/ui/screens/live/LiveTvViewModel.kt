@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import nl.streamfix.data.local.AdultVisibility
+import nl.streamfix.data.local.ZelviroPreferences
 import nl.streamfix.domain.model.EpgProgramme
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
@@ -59,6 +60,7 @@ class LiveTvViewModel @Inject constructor(
     private val getLastWatched: GetLastWatchedChannelUseCase,
     private val adultVisibility: AdultVisibility,
     private val errorTexts: ErrorTexts,
+    private val zelviro: ZelviroPreferences? = null,
 ) : ViewModel() {
 
     /**
@@ -121,6 +123,12 @@ class LiveTvViewModel @Inject constructor(
     }
 
     init {
+        if (zelviro != null) viewModelScope.launch {
+            zelviro.catalogRevision.drop(1).collect {
+                startFreshLoad()
+                loadCategories()
+            }
+        }
         viewModelScope.launch {
             observeFavorites().collect { favs ->
                 favorites = favs

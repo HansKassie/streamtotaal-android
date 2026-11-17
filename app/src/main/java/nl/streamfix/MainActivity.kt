@@ -21,6 +21,9 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import nl.streamfix.data.local.ZelviroPreferences
+import nl.streamfix.ui.screens.main.ZelviroLocale
 import nl.streamfix.ui.RootState
 import nl.streamfix.ui.RootViewModel
 import nl.streamfix.ui.StartupLoadingScreen
@@ -32,6 +35,8 @@ import nl.streamfix.ui.update.UpdaterGate
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
+    @Inject lateinit var preferences: ZelviroPreferences
+
     private val rootViewModel: RootViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,31 +44,33 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            StreamFixTheme {
-                val state by rootViewModel.state.collectAsStateWithLifecycle()
-                val deviceIsTv = remember { DeviceMode.isTelevision(this) }
-                CompositionLocalProvider(LocalIsTv provides deviceIsTv) {
-                // De padding blijft bewust ongebruikt: deze Scaffold heeft
-                // geen balken en levert alleen de achtergrond. De schermen
-                // eronder hebben elk hun eigen Scaffold die de insets
-                // afhandelt; hier nogmaals padding zetten geeft dubbele
-                // marges.
-                @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
-                Scaffold(modifier = Modifier.fillMaxSize()) { _ ->
-                    when (state) {
-                        RootState.Loading -> StartupLoadingScreen()
-                        RootState.LoggedIn -> StreamFixNavHost(
-                            startLoggedIn = true,
-                            deviceIsTv = deviceIsTv,
-                        )
-                        RootState.LoggedOut -> StreamFixNavHost(
-                            startLoggedIn = false,
-                            deviceIsTv = deviceIsTv,
-                        )
-                    }
+            ZelviroLocale(preferences) {
+                StreamFixTheme {
+                    val state by rootViewModel.state.collectAsStateWithLifecycle()
+                    val deviceIsTv = remember { DeviceMode.isTelevision(this) }
+                    CompositionLocalProvider(LocalIsTv provides deviceIsTv) {
+                        // De padding blijft bewust ongebruikt: deze Scaffold heeft
+                        // geen balken en levert alleen de achtergrond. De schermen
+                        // eronder hebben elk hun eigen Scaffold die de insets
+                        // afhandelt; hier nogmaals padding zetten geeft dubbele
+                        // marges.
+                        @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
+                        Scaffold(modifier = Modifier.fillMaxSize()) { _ ->
+                            when (state) {
+                                RootState.Loading -> StartupLoadingScreen()
+                                RootState.LoggedIn -> StreamFixNavHost(
+                                    startLoggedIn = true,
+                                    deviceIsTv = deviceIsTv,
+                                )
+                                RootState.LoggedOut -> StreamFixNavHost(
+                                    startLoggedIn = false,
+                                    deviceIsTv = deviceIsTv,
+                                )
+                            }
 
-                    if (state != RootState.Loading) UpdaterGate()
-                }
+                            if (state != RootState.Loading) UpdaterGate()
+                        }
+                    }
                 }
             }
         }

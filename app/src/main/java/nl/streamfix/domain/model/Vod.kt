@@ -8,6 +8,7 @@ data class VodItem(
     val containerExtension: String?,
     /** Rauw providerveld; beoordeel het met MediaRating, toon het nooit los. */
     val rating: String? = null,
+    val categoryIds: Set<String> = setOfNotNull(categoryId),
 )
 
 data class VodDetail(

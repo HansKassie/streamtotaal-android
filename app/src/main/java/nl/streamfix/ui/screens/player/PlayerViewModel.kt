@@ -176,7 +176,16 @@ class PlayerViewModel @Inject constructor(
             _state.update {
                 it.copy(channelListEmpty = false, channelLoadFailed = false)
             }
-            val result = loadChannelsFor(playingCategoryId)
+            var result = loadChannelsFor(playingCategoryId)
+            if (nl.streamfix.data.local.isZelviro && playingCategoryId.isNotBlank() &&
+                result is ChannelLoadResult.Success && result.channels.isEmpty()
+            ) {
+                result = loadChannelsFor("")
+                if (result is ChannelLoadResult.Success && result.channels.isNotEmpty() && generation == loadGeneration) {
+                    playingCategoryId = ""
+                    browseCategoryId = ""
+                }
+            }
             if (generation != loadGeneration) return@launch
             when (result) {
                 ChannelLoadResult.Failure -> {

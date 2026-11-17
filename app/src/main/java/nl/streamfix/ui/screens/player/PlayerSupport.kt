@@ -49,6 +49,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import nl.streamfix.R
+import nl.streamfix.data.local.isZelviro
+import nl.streamfix.ui.screens.main.LocalZelviroLanguages
 
 /**
  * Gedeelde ExoPlayer-factory voor live/VOD/series-spelers met een ruimere
@@ -70,9 +72,10 @@ import nl.streamfix.R
 @Composable
 fun rememberStreamFixExoPlayer(
     preferDutchSubtitles: Boolean = false,
+    mediaKey: String? = null,
 ): ExoPlayer {
-    val context = LocalContext.current
-    return remember(context, preferDutchSubtitles) {
+    val context = LocalContext.current.applicationContext
+    val player = remember(context, preferDutchSubtitles) {
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
                 /* minBufferMs = */ 30_000,
@@ -90,7 +93,7 @@ fun rememberStreamFixExoPlayer(
             .setMediaSourceFactory(mediaSourceFactory)
             .build()
             .apply {
-                if (preferDutchSubtitles) {
+                if (preferDutchSubtitles && !isZelviro) {
                     trackSelectionParameters = trackSelectionParameters
                         .buildUpon()
                         .setPreferredTextLanguages("nl", "nld", "dut")
@@ -98,6 +101,15 @@ fun rememberStreamFixExoPlayer(
                 }
             }
     }
+    if (isZelviro) {
+        val languages = LocalZelviroLanguages.current
+        val session = remember(player, mediaKey) { ZelviroTrackSession(player, languages) }
+        DisposableEffect(session) {
+            session.attach()
+            onDispose { session.detach() }
+        }
+    }
+    return player
 }
 
 /**
@@ -290,6 +302,7 @@ private fun Tracks.optionsFor(
                     label = name,
                     selected = group.isTrackSelected(i),
                     apply = {
+                        ZelviroTrackSession.active[player]?.select(group, i)
                         player.trackSelectionParameters =
                             player.trackSelectionParameters.buildUpon()
                                 .setTrackTypeDisabled(trackType, false)
@@ -368,6 +381,7 @@ fun TrackSelectorDialog(
                     stringResource(R.string.player_subtitles_off),
                     selected = subsDisabled || subs.none { it.selected },
                 ) {
+                    ZelviroTrackSession.active[player]?.disableSubtitles()
                     player.trackSelectionParameters =
                         player.trackSelectionParameters.buildUpon()
                             .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)

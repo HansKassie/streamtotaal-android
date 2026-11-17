@@ -58,6 +58,7 @@ class XtreamLiveService @Inject constructor(
                     name = dto.name?.ifBlank { fallback } ?: fallback,
                     logoUrl = dto.streamIcon?.takeIf { it.isNotBlank() },
                     categoryId = dto.categoryId ?: categoryId,
+                    categoryIds = catalogCategoryIds(dto.categoryIds, dto.categoryId ?: categoryId),
                     epgChannelId = dto.epgChannelId?.takeIf { it.isNotBlank() },
                     archiveDays = dto.archiveDays,
                 )

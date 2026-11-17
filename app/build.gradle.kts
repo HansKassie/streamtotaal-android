@@ -133,6 +133,7 @@ android {
         create("zelviro") {
             dimension = "distribution"
             applicationId = "com.zelviro.player"
+            resourceConfigurations += "de"
             versionCode = 1
             versionName = "1.0.0"
             buildConfigField("boolean", "HAS_UPDATER", "true")

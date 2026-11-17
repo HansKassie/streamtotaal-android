@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="activation_title">ZelViro Player aktivieren</string>
+    <string name="activation_instructions">Scanne den QR-Code oder öffne die Website. Gib den Gerätecode und den Geräteschlüssel ein und füge eine Playlist hinzu.</string>
+    <string name="activation_code">Gerätecode</string>
+    <string name="activation_key">Geräteschlüssel</string>
+    <string name="activation_waiting">Warten auf Aktivierung…</string>
+    <string name="activation_checking">Verbindung zum Portal wird hergestellt…</string>
+    <string name="activation_playlists">Hinzugefügte Playlists: %1$d. Warten auf Aktivierung…</string>
+    <string name="activation_unavailable">Das Portal ist momentan nicht erreichbar oder unterstützt dieses Gerät noch nicht.</string>
+    <string name="activation_blocked">Dieses Gerät ist gesperrt. Wenden Sie sich an die Administration.</string>
+    <string name="activation_rate_limited">Zu viele Registrierungsversuche. Versuchen Sie es in einigen Minuten erneut.</string>
+    <string name="activation_refresh">Erneut prüfen</string>
+    <string name="activation_qr">QR-Code für das Aktivierungsportal</string>
+    <string name="activation_linked">Dieses Gerät ist verknüpft. Verwalte deine Playlists im Portal.</string>
+    <string name="activation_manage">Im Portal verwalten</string>
+    <!-- app_name is a brand name and intentionally not translated. -->
+
+    <!-- ===== Error messages (AppError -> uiMessage). ===== -->
+    <string name="err_invalid_credentials">Benutzername oder Passwort ist falsch.</string>
+    <string name="err_subscription_expired">Ihr Abonnement ist abgelaufen. Wenden Sie sich an Ihren Anbieter.</string>
+    <string name="err_server_unreachable">Der Server ist nicht erreichbar. Prüfen Sie die Serveradresse.</string>
+    <string name="err_provider_unavailable">Der Server Ihres Anbieters antwortet nicht. Versuchen Sie es später erneut oder wählen Sie einen anderen Anbieter.</string>
+    <string name="err_network_unavailable">Keine Internetverbindung. Versuchen Sie es erneut.</string>
+    <string name="err_not_xtream_server">Dies scheint kein gültiger Xtream-Codes-Server zu sein.</string>
+    <string name="err_invalid_url">Die URL ist ungültig. Prüfen Sie die Adresse auf Tippfehler und Leerzeichen.</string>
+    <string name="err_unknown">Ein Fehler ist aufgetreten. Versuchen Sie es erneut.</string>
+
+    <!-- ===== Shared. ===== -->
+    <string name="common_back">Zurück</string>
+    <string name="common_cancel">Abbrechen</string>
+    <string name="provider_remove_desc">Anbieter entfernen</string>
+
+    <!-- ===== Welcome screen. ===== -->
+    <string name="welcome_xtream_hint">Mit Ihren Xtream-Codes-Zugangsdaten anmelden</string>
+    <string name="welcome_sign_in_xtream">Mit Xtream Codes anmelden</string>
+    <string name="welcome_choose_provider">Anbieter auswählen</string>
+    <string name="welcome_add_provider">Anbieter hinzufügen</string>
+
+    <!-- ===== Login screen (Xtream). ===== -->
+    <string name="login_title">Xtream Codes</string>
+    <string name="login_choose_provider_label">Wählen Sie Ihren Anbieter</string>
+    <string name="login_choose_provider_placeholder">Anbieter auswählen</string>
+    <string name="login_network_hint">Ihren Anbieter finden Sie in Ihrem Konto.</string>
+    <string name="login_custom_provider">Sonstiger Anbieter</string>
+    <string name="login_add_custom_provider">Sonstiger Anbieter</string>
+    <string name="login_provider_name">Name des Anbieters</string>
+    <string name="login_server_url">Serveradresse</string>
+    <string name="login_username">Benutzername</string>
+    <string name="login_password">Passwort</string>
+    <string name="login_password_show">Passwort anzeigen</string>
+    <string name="login_password_hide">Passwort ausblenden</string>
+    <string name="login_submit">Anmelden</string>
+
+    <!-- ===== Account information. ===== -->
+    <string name="expiry_unlimited">Unbegrenzt</string>
+
+    <!-- ===== Live TV screen. ===== -->
+    <string name="live_channel_fallback">Sender %1$s</string>
+    <string name="common_favorites">Favoriten</string>
+    <string name="common_now">Jetzt</string>
+    <string name="live_search_channel">Sender suchen</string>
+    <string name="live_category_placeholder">Kategorie</string>
+    <string name="live_no_channels">Keine Sender</string>
+    <string name="live_add_favorite_desc">Zu Favoriten hinzufügen</string>
+    <string name="live_remove_favorite_desc">Aus Favoriten entfernen</string>
+    <string name="live_programme_guide_desc">Programmführer</string>
+    <string name="live_upcoming_prefix">Als Nächstes: %1$s</string>
+
+    <!-- ===== Search. ===== -->
+    <string name="search_title">Suche</string>
+    <string name="search_query_hint">Live-TV, Filme und Serien durchsuchen</string>
+    <string name="search_nothing_found">Keine Ergebnisse</string>
+
+    <!-- ===== On TV now. ===== -->
+    <string name="nowontv_title">Jetzt im TV</string>
+    <string name="nowontv_no_favorites">Noch keine Lieblingssender. Markieren Sie Favoriten unter Live-TV.</string>
+    <string name="nowontv_no_programme_guide">Kein Programmführer</string>
+
+    <!-- ===== Movies + VOD detail. ===== -->
+    <string name="vod_search_movie">Film suchen</string>
+    <string name="vod_no_movies">Keine Filme</string>
+    <string name="vod_title_fallback">Film</string>
+    <string name="vod_meta_year">Jahr</string>
+    <string name="vod_meta_genre">Genre</string>
+    <string name="vod_meta_rating">Bewertung</string>
+    <string name="vod_meta_duration">Dauer</string>
+    <string name="vod_meta_director">Regie</string>
+    <string name="vod_meta_cast">Besetzung</string>
+    <string name="vod_play">Abspielen</string>
+    <string name="vod_meta_label_format">%1$s:</string>
+
+    <!-- ===== Series + series detail. ===== -->
+    <string name="series_search_series">Serie suchen</string>
+    <string name="series_no_series">Keine Serien</string>
+    <string name="series_title_fallback">Serie</string>
+    <string name="series_season_placeholder">Staffel</string>
+    <string name="series_season_format">Staffel %1$d</string>
+    <string name="series_episode_format">%1$d. %2$s</string>
+    <string name="series_meta_year_prefix">Jahr: %1$s</string>
+    <string name="series_meta_genre_prefix">Genre: %1$s</string>
+    <string name="series_meta_rating_prefix">Bewertung: %1$s</string>
+    <string name="series_meta_director_prefix">Regie: %1$s</string>
+
+    <!-- ===== Favorites (detail button + list). ===== -->
+    <string name="favorite_remove_desc">Aus Favoriten entfernen</string>
+    <string name="favorite_add_desc">Zu Favoriten hinzufügen</string>
+
+    <!-- ===== History ("Continue watching"). ===== -->
+    <string name="history_empty">Noch nichts angesehen</string>
+    <string name="history_long_press_hint">Tipp: Halten Sie einen Eintrag gedrückt, um ihn zu entfernen.</string>
+    <string name="history_clear_all">Alles löschen</string>
+    <string name="history_remove_dialog_title">Aus dem Verlauf entfernen?</string>
+    <string name="history_remove">Entfernen</string>
+    <string name="history_clear_all_dialog_title">Gesamten Verlauf löschen?</string>
+    <string name="history_clear_all_dialog_body">Die gesamte Liste „Weiterschauen“ wird gelöscht.</string>
+    <string name="history_clear_action">Löschen</string>
+
+    <!-- ===== Favorites tab. ===== -->
+    <string name="favorites_empty_hint">Noch keine Favoriten. Öffnen Sie Live-TV und wählen Sie den Stern neben einem Sender.</string>
+
+    <!-- ===== Catch-up. ===== -->
+    <string name="catchup_no_channels_with_archive">Keine Sender mit TV-Archiv</string>
+    <string name="catchup_archive_days_format">%1$d T.</string>
+    <string name="catchup_channel_title_fallback">TV-Archiv</string>
+    <string name="catchup_no_programmes">Keine Sendungen im TV-Archiv verfügbar</string>
+
+    <!-- ===== Connection test screen. ===== -->
+    <string name="connection_test_intro">Prüft, ob Ihr Anbieter erreichbar ist, die Anmeldung klappt und die Bereiche verfügbar sind.</string>
+    <string name="connection_test_running">Test läuft…</string>
+    <string name="connection_test_retry">Erneut testen</string>
+
+    <!-- ===== Update dialog (sideload). ===== -->
+    <string name="update_dialog_title_format">Update verfügbar (%1$s)</string>
+    <string name="update_downloading">Update wird heruntergeladen…</string>
+    <string name="update_downloading_progress">Update wird heruntergeladen… %1$d%%</string>
+    <string name="update_failed">Das Update konnte nicht installiert werden. Versuchen Sie es erneut.</string>
+    <string name="update_failed_download">Das Update konnte nicht heruntergeladen werden. Versuchen Sie es erneut.</string>
+    <string name="update_failed_integrity">Die heruntergeladene Updatedatei ist ungültig. Versuchen Sie es erneut.</string>
+    <string name="update_permission_required">Erlauben Sie ZelViro Player, Apps zu installieren, und versuchen Sie es erneut.</string>
+    <string name="update_failed_installer">Das Update wurde heruntergeladen. Der Installationsbildschirm konnte nicht geöffnet werden.</string>
+    <string name="update_open_permission">Berechtigung öffnen</string>
+    <string name="update_diagnostic">Updater %1$s, Fehlercode: %2$s</string>
+    <string name="update_now">Jetzt aktualisieren</string>
+    <string name="update_retry">Erneut versuchen</string>
+    <string name="update_later">Später</string>
+
+    <!-- ===== Player. ===== -->
+    <string name="player_track_label_fallback">Spur %1$d</string>
+    <string name="player_close">Schließen</string>
+    <string name="player_audio_subtitles">Audio und Untertitel</string>
+    <string name="player_audio_track">Audiospur</string>
+    <string name="player_no_choice_available">Keine Auswahl verfügbar</string>
+    <string name="player_subtitles">Untertitel</string>
+    <string name="player_subtitles_off">Aus</string>
+    <string name="player_connection_problem">Verbindungsproblem. Neuer Versuch läuft automatisch.</string>
+    <string name="player_media_unavailable">Dieser Inhalt lässt sich momentan nicht abspielen. Gehen Sie zurück und versuchen Sie es erneut.</string>
+    <string name="player_channel_group_problem">Sender in dieser Gruppe vorübergehend nicht verfügbar</string>
+    <string name="player_channel_group_hint">Wählen Sie eine andere Gruppe und öffnen Sie den Sender dort.</string>
+    <string name="player_channel_load_failed">Die Senderliste konnte nicht geladen werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.</string>
+    <string name="player_channel_list_empty">Keine Sender empfangen</string>
+    <string name="player_channel_list_empty_hint">Versuchen Sie es erneut oder wählen Sie eine andere Gruppe.</string>
+    <string name="player_retry_now">Jetzt erneut versuchen</string>
+    <string name="player_resume_dialog_title">Weiterschauen?</string>
+    <string name="player_resume_dialog_body">Sie haben bei %1$s aufgehört.</string>
+    <string name="player_resume_from">Ab %1$s weiterschauen</string>
+    <string name="player_restart">Von Anfang an</string>
+    <string name="player_exit_title">Wiedergabe beenden?</string>
+    <string name="player_exit_body">Ihre Position wird gespeichert. Sie können später weiterschauen.</string>
+    <string name="player_continue_watching">Weiterschauen</string>
+    <string name="player_stop_playback">Beenden</string>
+    <string name="player_prev_channel_desc">Vorheriger Sender</string>
+    <string name="player_next_channel_desc">Nächster Sender</string>
+    <string name="player_overlay_groups">▣  Gruppe: %1$s</string>
+    <string name="player_overlay_group_loading">Gruppe wird geladen…</string>
+    <string name="player_overlay_group_failed">Die Gruppe konnte nicht geladen werden.</string>
+    <string name="player_overlay_tv_guide">☰  Programmführer</string>
+    <string name="player_overlay_last_channel">↩  Vorheriger Sender</string>
+    <string name="player_next_episode_in">Nächste Folge in %1$d s</string>
+
+    <!-- ===== EPG guide. ===== -->
+    <string name="epg_guide_title">Programmführer</string>
+    <string name="epg_loading">Programm wird geladen…</string>
+    <string name="epg_no_guide">Kein Programm</string>
+    <string name="rating_badge_description">Bewertung %1$s von 10</string>
+    <string name="epg_no_channels">Keine Sender</string>
+    <string name="epg_status_upcoming">Als Nächstes</string>
+    <string name="epg_status_earlier">Früher</string>
+    <string name="epg_no_programme_guide">Kein Programm verfügbar</string>
+    <string name="epg_load_failed">Das Programm konnte nicht geladen werden.</string>
+
+    <!-- ===== Tabs and top bar. ===== -->
+    <string name="tab_live_tv">Live-TV</string>
+    <string name="tab_favorites_short">Fav.</string>
+    <string name="tab_movies">Filme</string>
+    <string name="tab_series_short">Serien</string>
+    <string name="tab_catchup">TV-Archiv</string>
+    <string name="tab_history">Weiterschauen</string>
+    <string name="tab_settings">Mehr</string>
+    <string name="topbar_now_on_tv">Jetzt im TV</string>
+    <string name="topbar_search">Suche</string>
+    <string name="main_back_to_exit_toast">Zum Beenden erneut Zurück drücken</string>
+    <string name="tab_placeholder_coming_soon">%1$s folgt in einer späteren Version</string>
+
+    <!-- ===== Account section in settings. ===== -->
+    <string name="account_unknown">Unbekannt</string>
+    <string name="account_status_prefix">Status: %1$s</string>
+    <string name="account_expiry_prefix">Gültig bis: %1$s</string>
+    <string name="account_max_prefix">Gleichzeitige Verbindungen: %1$s</string>
+    <string name="settings_providers">Anbieter</string>
+    <string name="provider_switched_toast">Zu %1$s gewechselt</string>
+    <string name="settings_connection_test">Verbindung prüfen</string>
+    <string name="settings_active_provider">Aktiver Anbieter</string>
+    <string name="settings_section_preferences">Einstellungen</string>
+    <string name="settings_section_parental">Kindersicherung</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_version">Version %1$s</string>
+
+    <!-- ===== Display mode. ===== -->
+    <string name="settings_display">Anzeige</string>
+    <string name="tv_mode_auto">Automatisch (empfohlen)</string>
+    <string name="tv_mode_tv">TV (Fernbedienung)</string>
+    <string name="tv_mode_phone">Smartphone oder Tablet</string>
+
+    <!-- ===== Startup screen choice. ===== -->
+    <string name="settings_startup_screen">Startbildschirm</string>
+    <string name="startup_tab_history">Weiterschauen</string>
+    <string name="startup_tab_last">Letzter Sender (sofort abspielen)</string>
+
+    <!-- ===== Stream format. ===== -->
+    <string name="settings_stream_format">Streamformat</string>
+    <string name="stream_format_auto">Automatisch</string>
+    <string name="stream_format_ts">MPEGTS (.ts)</string>
+    <string name="stream_format_m3u8">HLS (.m3u8)</string>
+
+    <!-- ===== Adult content + PIN. ===== -->
+    <string name="settings_adult_content">Inhalte für Erwachsene</string>
+    <string name="adult_no_pin_yet">Keine PIN festgelegt. Inhalte für Erwachsene sind ausgeblendet.</string>
+    <string name="adult_set_pin">PIN festlegen</string>
+    <string name="adult_visible_session">Sichtbar (diese Sitzung)</string>
+    <string name="adult_hide_again">Wieder ausblenden</string>
+    <string name="adult_change_pin">PIN ändern</string>
+    <string name="adult_hidden">Ausgeblendet</string>
+    <string name="adult_show_with_pin">Mit PIN anzeigen</string>
+    <string name="pin_enter_title">PIN eingeben</string>
+    <string name="pin_show">Anzeigen</string>
+    <string name="pin_save">Speichern</string>
+    <string name="pin_field_label">PIN</string>
+    <string name="pin_field_repeat">PIN wiederholen</string>
+    <string name="pin_error_too_short">Die PIN muss mindestens 4 Ziffern haben.</string>
+    <string name="pin_error_not_equal">Die PINs stimmen nicht überein.</string>
+    <string name="pin_error_incorrect">Falsche PIN.</string>
+    <string name="pin_error_locked">Zu viele Fehlversuche. Warten Sie %1$d Sekunden und versuchen Sie es erneut.</string>
+
+    <string name="logout">Abmelden</string>
+    <string name="settings_account">Konto</string>
+
+    <!-- ===== Connection test. ===== -->
+    <string name="conn_step_server_login">Server und Anmeldung</string>
+    <string name="conn_step_live_tv">Live-TV</string>
+    <string name="conn_step_movies">Filme</string>
+    <string name="conn_step_series">Serien</string>
+    <string name="conn_check_subscription_active">Abonnement aktiv</string>
+    <string name="conn_check_reachable_no_categories">Erreichbar, keine Kategorien</string>
+    <string name="conn_check_available">Verfügbar</string>
+</resources>
