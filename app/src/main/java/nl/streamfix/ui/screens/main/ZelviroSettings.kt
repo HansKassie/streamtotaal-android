@@ -1,5 +1,6 @@
 package nl.streamfix.ui.screens.main
 
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.os.LocaleList
 import androidx.compose.foundation.selection.selectable
@@ -47,7 +48,14 @@ fun ZelviroLocale(preferences: ZelviroPreferences, content: @Composable () -> Un
     val config = remember(original, language) {
         Configuration(original).apply { setLocales(LocaleList(Locale.forLanguageTag(language))) }
     }
-    val localized = remember(context, config) { context.createConfigurationContext(config) }
+    val localized = remember(context, config) {
+        val configured = context.createConfigurationContext(config)
+        // Hilt en navigatie moeten de Activity via de contextketen kunnen vinden.
+        object : ContextWrapper(context) {
+            override fun getResources() = configured.resources
+            override fun getAssets() = configured.assets
+        }
+    }
     CompositionLocalProvider(
         LocalContext provides localized,
         LocalConfiguration provides config,
