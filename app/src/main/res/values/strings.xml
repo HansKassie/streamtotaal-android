@@ -24,6 +24,10 @@
     <string name="welcome_choose_provider">Kies een provider</string>
     <string name="welcome_add_provider">Provider toevoegen</string>
     <string name="activation_title">Activeer ZelViro Player</string>
+    <string name="activation_add_playlist_title">Voeg je afspeellijst toe</string>
+    <string name="activation_add_playlist_active">Dit apparaat is geactiveerd. Voeg in het portaal een Xtream-afspeellijst toe. Daarna gaat de app automatisch verder.</string>
+    <string name="activation_add_playlist_next">Voeg eerst in het portaal een Xtream-afspeellijst toe om verder te gaan.</string>
+    <string name="activation_open_portal">Open het portaal</string>
     <string name="activation_instructions">Scan de QR-code of open de website. Vul daar de apparaatcode en sleutel in en voeg een afspeellijst toe.</string>
     <string name="activation_code">Apparaatcode</string>
     <string name="activation_key">Sleutel</string>

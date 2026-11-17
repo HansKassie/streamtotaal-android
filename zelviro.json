@@ -1,9 +1,9 @@
 {
-    "versionCode": 2,
-    "versionName": "1.0.1",
-    "apkUrl": "https://updates.smarttv-solutions.xyz/zelviro-player.apk",
-    "sha256": "3f05840149dfeb93bebcf4ac83ac1de2218a690c4e662fc296260a12baafa09a",
-    "releaseNotes": "New settings: choose the app language (English, Dutch or German), your preferred audio and subtitle language, and hide categories you never watch.",
-    "minSupportedVersionCode": 1,
-    "forceUpdate": false
+  "versionCode": 3,
+  "versionName": "1.0.2",
+  "apkUrl": "https://updates.smarttv-solutions.xyz/zelviro-player-1.0.2.apk",
+  "sha256": "8490d1367f78fabcf85d80957f17c46e580cd706f597b57948e9f5a8e4325ead",
+  "releaseNotes": "Clearer setup: when a device needs a playlist, the app explains what to do. On mobile you can open the portal directly with your device code filled in.",
+  "minSupportedVersionCode": 1,
+  "forceUpdate": false
 }

@@ -59,7 +59,12 @@ private class PortalActive(val afspeellijsten: List<PortalPlaylist>)
 private class PortalStatus(val versie: Int, val status: String)
 
 sealed interface PortalResult {
-    class Pending(val code: String, val key: String, val playlistCount: Int) : PortalResult
+    class Pending(
+        val code: String,
+        val key: String,
+        val playlistCount: Int,
+        val activated: Boolean = false,
+    ) : PortalResult
     class Active(val playlists: List<PortalPlaylist>, val code: String, val key: String) : PortalResult
     data object Blocked : PortalResult
     data object Unavailable : PortalResult
@@ -134,7 +139,7 @@ class PortalClient @Inject constructor(@ApplicationContext context: Context) {
             "geactiveerd" -> {
                 val playlists = json.decodeFromString<PortalActive>(body).afspeellijsten
                 when {
-                    playlists.isEmpty() -> PortalResult.Pending(device.code, device.sleutel, 0)
+                    playlists.isEmpty() -> PortalResult.Pending(device.code, device.sleutel, 0, activated = true)
                     playlists.any { !it.valid() } || playlists.distinctBy { it.id }.size != playlists.size ->
                         PortalResult.Unavailable
                     else -> PortalResult.Active(playlists, device.code, device.sleutel)

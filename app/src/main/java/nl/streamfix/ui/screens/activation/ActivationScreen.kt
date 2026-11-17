@@ -1,5 +1,6 @@
 package nl.streamfix.ui.screens.activation
 
+import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -50,6 +53,7 @@ import nl.streamfix.R
 import nl.streamfix.data.remote.PORTAL_URL
 import nl.streamfix.data.remote.PortalResult
 import nl.streamfix.data.repository.PortalAccounts
+import nl.streamfix.ui.LocalIsTv
 import nl.streamfix.ui.theme.ActivationBackground
 import nl.streamfix.ui.tvFocusable
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -118,26 +122,44 @@ fun ActivationScreen(
             val active = status as? PortalResult.Active
             val code = active?.code ?: pending?.code
             val key = active?.key ?: pending?.key
+            val context = LocalContext.current
+            val uriHandler = LocalUriHandler.current
+            val isTv = LocalIsTv.current
+            val instructions = stringResource(R.string.activation_instructions)
             val details: @Composable ColumnScope.() -> Unit = {
                 Text(
                     stringResource(R.string.app_name),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
-                Text(stringResource(R.string.activation_title), style = MaterialTheme.typography.displaySmall)
+                val title = if ((status as? PortalResult.Pending)?.playlistCount == 0) {
+                    R.string.activation_add_playlist_title
+                } else R.string.activation_title
+                Text(stringResource(title), style = MaterialTheme.typography.displaySmall)
                 Text(
-                    stringResource(R.string.activation_instructions),
+                    instructions,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (code != null && key != null) {
                     Text("${stringResource(R.string.activation_code)}: $code", color = MaterialTheme.colorScheme.primary)
                     Text("${stringResource(R.string.activation_key)}: $key", color = MaterialTheme.colorScheme.primary)
                     Text("${PORTAL_URL.removePrefix("https://")}/activate")
+                    if (!isTv) {
+                        TextButton(onClick = {
+                            try {
+                                uriHandler.openUri(activationUrl(code))
+                            } catch (_: IllegalArgumentException) {
+                                Toast.makeText(context, instructions, Toast.LENGTH_LONG).show()
+                            }
+                        }) { Text(stringResource(R.string.activation_open_portal)) }
+                    }
                 }
                 val message = when (val current = status) {
-                    is PortalResult.Pending -> if (current.playlistCount > 0) {
-                        stringResource(R.string.activation_playlists, current.playlistCount)
-                    } else stringResource(R.string.activation_waiting)
+                    is PortalResult.Pending -> when {
+                        current.activated -> stringResource(R.string.activation_add_playlist_active)
+                        current.playlistCount == 0 -> stringResource(R.string.activation_add_playlist_next)
+                        else -> stringResource(R.string.activation_playlists, current.playlistCount)
+                    }
                     PortalResult.Blocked -> stringResource(R.string.activation_blocked)
                     PortalResult.Unavailable -> stringResource(R.string.activation_unavailable)
                     PortalResult.RateLimited -> stringResource(R.string.activation_rate_limited)
@@ -175,11 +197,13 @@ fun ActivationScreen(
     }
 }
 
+private fun activationUrl(code: String): String = PORTAL_URL.toHttpUrl().newBuilder()
+    .addPathSegment("activate").addQueryParameter("code", code).build().toString()
+
 @Composable
 private fun ActivationQr(code: String, modifier: Modifier = Modifier) {
     val matrix = remember(code) {
-        val url = PORTAL_URL.toHttpUrl().newBuilder().addPathSegment("activate")
-            .addQueryParameter("code", code).build().toString()
+        val url = activationUrl(code)
         QRCodeWriter().encode(url, BarcodeFormat.QR_CODE, 1, 1)
     }
     val description = stringResource(R.string.activation_qr)

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="activation_title">ZelViro Player aktivieren</string>
+    <string name="activation_add_playlist_title">Füge deine Playlist hinzu</string>
+    <string name="activation_add_playlist_active">Dieses Gerät ist aktiviert. Füge im Portal eine Xtream-Playlist hinzu. Die App fährt danach automatisch fort.</string>
+    <string name="activation_add_playlist_next">Füge zuerst im Portal eine Xtream-Playlist hinzu, um fortzufahren.</string>
+    <string name="activation_open_portal">Portal öffnen</string>
     <string name="activation_instructions">Scanne den QR-Code oder öffne die Website. Gib den Gerätecode und den Geräteschlüssel ein und füge eine Playlist hinzu.</string>
     <string name="activation_code">Gerätecode</string>
     <string name="activation_key">Geräteschlüssel</string>
