@@ -1,9 +1,9 @@
 {
-  "versionCode": 4,
-  "versionName": "1.0.3",
-  "apkUrl": "https://updates.smarttv-solutions.xyz/zelviro-player-1.0.3.apk",
-  "sha256": "c7639872a1fa2c34d3891a10cf8472373fb2f72390c7705cd49d5a3682b3107c",
-  "releaseNotes": "Stability improvements for account switching, programme guide loading and playback, with stronger protection of saved settings.",
+  "versionCode": 5,
+  "versionName": "1.0.4",
+  "apkUrl": "https://updates.smarttv-solutions.xyz/zelviro-player-1.0.4.apk",
+  "sha256": "6ba07be08ab249a677c4171cae4997d50bfc766085789cae4a389f20a813950d",
+  "releaseNotes": "Prevents repeated device registration when secure storage is unavailable and shows clear instructions for activation support.",
   "minSupportedVersionCode": 1,
   "forceUpdate": false
 }
