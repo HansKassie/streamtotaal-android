@@ -5,17 +5,14 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CancellationException
 
 /**
  * Versleutelde SharedPreferences met een fail-closed fallback.
  *
- * Keystore-corruptie (bekend na restore/OS-upgrade) mag de app niet laten
- * crashen. We proberen eerst opnieuw na het wissen van het bestand. Lukt
- * versleutelen daarna nog niet, dan vallen we NIET terug op een plat
- * MODE_PRIVATE-bestand (dat zou credentials/pincode onversleuteld op schijf
- * zetten), maar op een niet-persistente in-memory store: niets gevoeligs op
- * schijf, geen crash, en bij herstart is er geen sessie meer (herinloggen
- * afgedwongen, adult-filter valt terug op verborgen).
+ * Twee openingspogingen geven een tijdelijke Keystore-storing kans te herstellen.
+ * Het bestaande bestand blijft bewaard. Bij aanhoudende fouten worden wijzigingen
+ * alleen in geheugen opgeslagen en kan een herstart het originele bestand herstellen.
  */
 internal fun createSecurePrefs(
     context: Context,
@@ -33,16 +30,20 @@ internal fun createSecurePrefs(
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
     }
-    return try {
-        encrypted()
-    } catch (e: Exception) {
-        runCatching { context.deleteSharedPreferences(fileName) }
+    return openSecurePrefsWithRetry(::encrypted)
+}
+
+internal fun openSecurePrefsWithRetry(open: () -> SharedPreferences): SharedPreferences {
+    repeat(2) {
         try {
-            encrypted()
-        } catch (e2: Exception) {
-            InMemorySharedPreferences()
+            return open()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Behoud het bestand voor een volgende poging of herstart.
         }
     }
+    return InMemorySharedPreferences()
 }
 
 /**

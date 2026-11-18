@@ -52,7 +52,7 @@ class VodViewModel @Inject constructor(
     private val getActiveAccount: GetActiveAccountUseCase,
     private val appSettings: AppSettingsStore,
     @ApplicationContext private val context: Context,
-    private val zelviro: ZelviroPreferences? = null,
+    private val zelviro: ZelviroPreferences,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VodUiState())
@@ -71,7 +71,7 @@ class VodViewModel @Inject constructor(
     }
 
     init {
-        if (zelviro != null) viewModelScope.launch {
+        viewModelScope.launch {
             zelviro.catalogRevision.drop(1).collect {
                 startFreshLoad()
                 loadCategories()

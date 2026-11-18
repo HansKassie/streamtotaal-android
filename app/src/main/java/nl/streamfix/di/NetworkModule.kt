@@ -79,43 +79,21 @@ object NetworkModule {
         retrofit.create(XtreamApi::class.java)
 
     /**
-     * Debug-only logger. Logt methode, host, pad en HTTP-status plus een
-     * korte body-preview, met username/password geredigeerd, zodat
-     * providerafwijkingen te diagnosticeren zijn zonder credentials te lekken
-     * (briefing 6.1: geen PII in logs).
+     * Debugverzoeken met methode, host, HTTP-status en doorlooptijd.
+     * Paden, queryparameters en response-inhoud kunnen inloggegevens bevatten.
      */
-    private fun passwordRedactingLogger() = Interceptor { chain ->
+    internal fun passwordRedactingLogger(
+        log: (String) -> Unit = { android.util.Log.d("StreamFixHttp", it) },
+    ) = Interceptor { chain ->
         val request = chain.request()
-        val url = request.url
-        val isDefaultPort =
-            (url.scheme == "http" && url.port == 80) ||
-                (url.scheme == "https" && url.port == 443)
-        val portPart = if (isDefaultPort) "" else ":${url.port}"
-        val safeUrl = "${url.scheme}://${url.host}$portPart${url.encodedPath}"
-        android.util.Log.d("StreamFixHttp", "${request.method} -> $safeUrl")
+        val started = System.nanoTime()
+        log("${request.method} -> ${request.url.host}")
 
         val response = chain.proceed(request)
 
-        val preview = runCatching {
-            val body = response.peekBody(512)
-            redact(body.string())
-        }.getOrDefault("<body niet leesbaar>")
-        android.util.Log.d(
-            "StreamFixHttp",
-            "<- HTTP ${response.code} ${response.message}; body: $preview",
-        )
+        val elapsedMs = (System.nanoTime() - started) / 1_000_000
+        log("<- HTTP ${response.code}; $elapsedMs ms")
         response
     }
 
-    private fun redact(text: String): String =
-        text
-            // query-vorm: username=...&password=...
-            .replace(Regex("(?i)(username|password)=([^&\\s\"]+)"), "$1=***")
-            // JSON-vorm uit de respons: "password":"..."
-            .replace(
-                Regex("(?i)\"(username|password)\"\\s*:\\s*\"[^\"]*\""),
-                "\"$1\":\"***\"",
-            )
-            .take(300)
-            .replace("\n", " ")
 }

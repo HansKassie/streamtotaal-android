@@ -60,7 +60,7 @@ class LiveTvViewModel @Inject constructor(
     private val getLastWatched: GetLastWatchedChannelUseCase,
     private val adultVisibility: AdultVisibility,
     private val errorTexts: ErrorTexts,
-    private val zelviro: ZelviroPreferences? = null,
+    private val zelviro: ZelviroPreferences,
 ) : ViewModel() {
 
     /**
@@ -123,7 +123,7 @@ class LiveTvViewModel @Inject constructor(
     }
 
     init {
-        if (zelviro != null) viewModelScope.launch {
+        viewModelScope.launch {
             zelviro.catalogRevision.drop(1).collect {
                 startFreshLoad()
                 loadCategories()

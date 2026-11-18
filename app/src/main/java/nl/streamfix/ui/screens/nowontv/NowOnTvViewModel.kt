@@ -8,11 +8,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.async
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import nl.streamfix.domain.model.LiveChannel
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
 import nl.streamfix.domain.usecase.GetChannelEpgUseCase
@@ -41,6 +44,10 @@ class NowOnTvViewModel @Inject constructor(
     private val _state = MutableStateFlow(NowOnTvState())
     val state: StateFlow<NowOnTvState> = _state.asStateFlow()
 
+    private var loadJob: Job? = null
+    private var loadGeneration = 0
+    private val epgSlots = Semaphore(4)
+
     init {
         viewModelScope.launch {
             var lastId: String? = null
@@ -50,7 +57,9 @@ class NowOnTvViewModel @Inject constructor(
                 if (first || id != lastId) {
                     first = false
                     lastId = id
-                    _state.value = NowOnTvState()
+                    loadGeneration++
+                    loadJob?.cancel()
+                    _state.value = NowOnTvState(isLoading = acc != null)
                     if (acc != null) load()
                 }
             }
@@ -58,15 +67,19 @@ class NowOnTvViewModel @Inject constructor(
     }
 
     private fun load() {
+        val generation = ++loadGeneration
+        loadJob?.cancel()
         _state.update { it.copy(isLoading = true) }
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             val favs = observeFavorites().first()
+            if (generation != loadGeneration) return@launch
             val now = System.currentTimeMillis()
             val items = coroutineScope {
                 favs.map { ch ->
                     async {
-                        val epg = (getChannelEpg(ch.id) as? AppResult.Success)
-                            ?.data
+                        val epg = epgSlots.withPermit {
+                            (getChannelEpg(ch.id) as? AppResult.Success)?.data
+                        }
                         val current = epg?.firstOrNull {
                             now in it.startMs until it.endMs
                         }
@@ -79,6 +92,7 @@ class NowOnTvViewModel @Inject constructor(
                     }
                 }.awaitAll()
             }
+            if (generation != loadGeneration) return@launch
             _state.update { it.copy(isLoading = false, items = items) }
         }
     }

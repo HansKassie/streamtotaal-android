@@ -146,6 +146,8 @@ fun PlaybackScreen(
             // Bij "Stoppen" is de positie al bewaard voordat de ontvanger
             // stopte; nu nog eens opslaan zou daar een 0 overheen zetten.
             if (!stoppedExplicitly) viewModel.savePosition(cast.positionMs)
+            playerView.value?.player = null
+            playerView.value = null
             cast.release()
             player.release()
         }

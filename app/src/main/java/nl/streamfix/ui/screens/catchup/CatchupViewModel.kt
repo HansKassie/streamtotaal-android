@@ -2,24 +2,23 @@ package nl.streamfix.ui.screens.catchup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import nl.streamfix.data.local.AppSettingsStore
+import nl.streamfix.data.local.AdultVisibility
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.LiveChannel
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
 import nl.streamfix.domain.usecase.GetLiveCategoriesUseCase
 import nl.streamfix.domain.usecase.GetLiveChannelsUseCase
 import nl.streamfix.domain.util.AppResult
-import nl.streamfix.ui.uiMessage
+import nl.streamfix.ui.ErrorTexts
 
 private val NL_TOKENS =
     setOf("nl", "nld", "ned", "nederland", "holland", "dutch")
@@ -51,12 +50,16 @@ class CatchupViewModel @Inject constructor(
     private val getChannels: GetLiveChannelsUseCase,
     private val getCategories: GetLiveCategoriesUseCase,
     private val getActiveAccount: GetActiveAccountUseCase,
-    private val appSettings: AppSettingsStore,
-    @ApplicationContext private val context: Context,
+    private val adultVisibility: AdultVisibility,
+    private val errorTexts: ErrorTexts,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CatchupUiState())
     val state: StateFlow<CatchupUiState> = _state.asStateFlow()
+
+    private var loadJob: Job? = null
+    private var loadGeneration = 0
+    private var hasActiveAccount = false
 
     init {
         viewModelScope.launch {
@@ -67,24 +70,34 @@ class CatchupViewModel @Inject constructor(
                 if (first || id != lastId) {
                     first = false
                     lastId = id
+                    hasActiveAccount = acc != null
+                    loadGeneration++
+                    loadJob?.cancel()
                     _state.value = CatchupUiState()
                     if (acc != null) load()
                 }
             }
         }
         viewModelScope.launch {
-            appSettings.adultState.drop(1).collect { load() }
+            adultVisibility.adultState.drop(1).collect {
+                if (hasActiveAccount) load()
+            }
         }
     }
 
     private fun load() {
+        val generation = ++loadGeneration
+        loadJob?.cancel()
         _state.update { it.copy(isLoading = true, errorMessage = null) }
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             val categories = when (val c = getCategories()) {
                 is AppResult.Success -> c.data
                 is AppResult.Failure -> emptyList()
             }
-            when (val r = getChannels(null)) {
+            if (generation != loadGeneration) return@launch
+            val result = getChannels(null)
+            if (generation != loadGeneration) return@launch
+            when (val r = result) {
                 is AppResult.Success -> {
                     val archive = r.data
                         .filter { it.archiveDays > 0 }
@@ -107,7 +120,7 @@ class CatchupViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = r.error.uiMessage(context),
+                            errorMessage = errorTexts.of(r.error),
                         )
                     }
             }

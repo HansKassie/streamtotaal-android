@@ -43,7 +43,7 @@ class SearchViewModel @Inject constructor(
     private val getAllVod: GetAllVodUseCase,
     private val getAllSeries: GetAllSeriesUseCase,
     private val getActiveAccount: GetActiveAccountUseCase,
-    private val zelviro: ZelviroPreferences? = null,
+    private val zelviro: ZelviroPreferences,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SearchUiState())
@@ -56,7 +56,7 @@ class SearchViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     init {
-        if (zelviro != null) viewModelScope.launch {
+        viewModelScope.launch {
             zelviro.catalogRevision.drop(1).collect {
                 loaded = false
                 onQueryChange(_state.value.query)

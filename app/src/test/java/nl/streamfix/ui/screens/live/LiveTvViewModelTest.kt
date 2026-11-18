@@ -15,6 +15,9 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import nl.streamfix.data.local.InMemorySharedPreferences
+import nl.streamfix.data.local.ZelviroPreferences
+import nl.streamfix.data.local.CatalogSection
 import nl.streamfix.data.local.AdultState
 import nl.streamfix.data.local.AdultVisibility
 import nl.streamfix.domain.model.Account
@@ -165,6 +168,7 @@ class LiveTvViewModelTest {
         auth: FakeAuthRepository = FakeAuthRepository(account("a")),
         gate: EpgRequestGate = EpgRequestGate(),
         errorTexts: ErrorTexts = FakeErrorTexts(),
+        preferences: ZelviroPreferences = ZelviroPreferences(InMemorySharedPreferences()),
     ) = LiveTvViewModel(
         getCategories = GetLiveCategoriesUseCase(live),
         getChannels = GetLiveChannelsUseCase(live),
@@ -176,7 +180,20 @@ class LiveTvViewModelTest {
         getLastWatched = GetLastWatchedChannelUseCase(live),
         adultVisibility = FakeAdultVisibility(),
         errorTexts = errorTexts,
+        zelviro = preferences,
     )
+
+    @Test
+    fun categoryPreferenceChangesReloadTheOverview() = runTest(dispatcher) {
+        val live = FakeLiveRepository()
+        val preferences = ZelviroPreferences(InMemorySharedPreferences())
+        val model = viewModel(live = live, preferences = preferences)
+        advanceUntilIdle()
+        live.categories = listOf(LiveCategory("cat2", "Nieuwe selectie"))
+        preferences.setHidden("a", CatalogSection.Live, setOf("cat1"))
+        advanceUntilIdle()
+        assertEquals(live.categories, model.state.value.categories)
+    }
 
     @Test
     fun naEenFoutVultEenNieuwePogingDeRijAlsnog() = runTest(dispatcher) {

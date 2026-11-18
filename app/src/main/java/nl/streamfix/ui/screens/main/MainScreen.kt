@@ -948,7 +948,7 @@ private fun AdultContentSection(
             confirmLabel = stringResource(R.string.pin_save),
             requireConfirm = true,
             onDismiss = { showSet = false },
-            validate = { it.length >= 4 },
+            validate = { nl.streamfix.data.local.isValidAdultPin(it) },
         ) { pin ->
             onSetAdultPin(pin)
             showSet = false

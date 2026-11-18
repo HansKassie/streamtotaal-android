@@ -252,6 +252,8 @@ class LiveRepositoryImpl @Inject constructor(
         appSettings.setLastChannel(acc.id, storedCategory, channel.id)
     }
 
+    // Een lege categorie betekent alle zichtbare zenders. De speler gebruikt
+    // het bewaarde kanaal als dat zichtbaar is, anders de eerste zichtbare zender.
     override fun lastWatchedChannel(): Pair<String, String>? {
         val acc = activeXtream() ?: return null
         return appSettings.lastChannel(acc.id)?.let { (category, channel) ->

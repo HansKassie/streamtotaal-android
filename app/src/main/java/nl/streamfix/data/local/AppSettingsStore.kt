@@ -22,16 +22,20 @@ private val VALID_STARTUP_TABS = setOf(
     STARTUP_TAB_LAST,
 )
 
+internal fun isValidAdultPin(pin: String): Boolean =
+    pin.length >= 4 && pin.all(Char::isDigit)
+
 /**
  * Kleine versleutelde app-instellingen los van de credentials. Nu alleen
  * de pincode + zichtbaarheid van volwassen content. Sessie-ontgrendeling
  * staat in geheugen (vervalt bij herstart van de app).
  */
 @Singleton
-class AppSettingsStore @Inject constructor(
-    @ApplicationContext context: Context,
+class AppSettingsStore internal constructor(
+    private val prefs: SharedPreferences,
 ) : AdultVisibility {
-    private val prefs: SharedPreferences = createSecurePrefs(context, PREFS_FILE)
+    @Inject
+    constructor(@ApplicationContext context: Context) : this(createSecurePrefs(context, PREFS_FILE))
 
     private val _adultState = MutableStateFlow(readAdultState())
     override val adultState: StateFlow<AdultState> = _adultState.asStateFlow()
@@ -104,6 +108,7 @@ class AppSettingsStore @Inject constructor(
     }
 
     fun setPin(pin: String) {
+        if (!isValidAdultPin(pin)) return
         prefs.edit().putString(KEY_PIN, pin).putBoolean(KEY_HIDDEN, true).apply()
         sessionUnlocked = false
         emit()

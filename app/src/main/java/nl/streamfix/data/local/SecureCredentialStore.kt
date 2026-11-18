@@ -18,13 +18,15 @@ import nl.streamfix.domain.model.Account
  * Keystore). Bestandsnaam matcht de backup-exclude in data_extraction_rules.
  */
 @Singleton
-class SecureCredentialStore @Inject constructor(
-    @ApplicationContext private val context: Context,
+class SecureCredentialStore internal constructor(
     private val json: Json,
+    private val openPreferences: () -> SharedPreferences,
 ) {
-    private val prefs: SharedPreferences by lazy {
-        createSecurePrefs(context, PREFS_FILE)
-    }
+    @Inject
+    constructor(@ApplicationContext context: Context, json: Json) :
+        this(json, { createSecurePrefs(context, PREFS_FILE) })
+
+    private val prefs: SharedPreferences by lazy { openPreferences() }
 
     private val _activeAccount: MutableStateFlow<Account?> by lazy {
         MutableStateFlow(readState().activeAccount())
@@ -34,6 +36,7 @@ class SecureCredentialStore @Inject constructor(
     fun currentActiveAccount(): Account? = readState().activeAccount()
 
     /** Voegt toe of werkt bij op id, en maakt het account actief. */
+    @Synchronized
     fun saveAndActivate(account: Account) {
         val state = readState()
         val stored = account.toStored()
@@ -45,6 +48,7 @@ class SecureCredentialStore @Inject constructor(
     fun allAccounts(): List<Account> =
         readState().accounts.mapNotNull { it.toDomain() }
 
+    @Synchronized
     fun syncPortalAccounts(accounts: List<Account.Xtream>, activate: Boolean) {
         val state = readState()
         val activeId = state.activeId?.takeIf { id -> accounts.any { it.id == id } }
@@ -58,6 +62,7 @@ class SecureCredentialStore @Inject constructor(
      * staan. Schrijft alleen als er echt iets verandert, zodat dit bij elke
      * start kan draaien zonder de opslag onnodig aan te raken.
      */
+    @Synchronized
     fun renameAccounts(newNameFor: (Account.Xtream) -> String?) {
         val state = readState()
         var changed = false
@@ -76,6 +81,7 @@ class SecureCredentialStore @Inject constructor(
     }
 
     /** Maakt een reeds opgeslagen provider actief. */
+    @Synchronized
     fun setActive(id: String) {
         val state = readState()
         if (state.accounts.any { it.id == id }) {
@@ -84,6 +90,7 @@ class SecureCredentialStore @Inject constructor(
     }
 
     /** Verwijdert één opgeslagen provider. Was die actief, dan geen actieve meer. */
+    @Synchronized
     fun removeAccount(id: String) {
         val state = readState()
         writeState(
@@ -95,6 +102,7 @@ class SecureCredentialStore @Inject constructor(
     }
 
     /** Zet het live-formaat ("auto"/"ts"/"m3u8") voor het actieve account. */
+    @Synchronized
     fun setStreamFormat(format: String) {
         val state = readState()
         val activeId = state.activeId ?: return
@@ -105,12 +113,14 @@ class SecureCredentialStore @Inject constructor(
     }
 
     /** Beeindigt de sessie maar bewaart opgeslagen providers (keuze gebruiker). */
+    @Synchronized
     fun deactivate() {
         val state = readState()
         writeState(state.copy(activeId = null))
     }
 
     /** Wist alles (volledige reset). */
+    @Synchronized
     fun clear() {
         prefs.edit().clear().apply()
         _activeAccount.value = null

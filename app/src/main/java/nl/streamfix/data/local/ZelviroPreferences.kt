@@ -1,6 +1,7 @@
 package nl.streamfix.data.local
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.LocaleList
 import java.util.Locale
@@ -49,8 +50,10 @@ internal fun Context.zelviroTextContext(): Context {
 }
 
 @Singleton
-class ZelviroPreferences @Inject constructor(@ApplicationContext context: Context) {
-    private val prefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+class ZelviroPreferences internal constructor(private val prefs: SharedPreferences) {
+    @Inject
+    constructor(@ApplicationContext context: Context) :
+        this(context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE))
     private val _languages = MutableStateFlow(LanguagePreferences(
         prefs.getString("app", "auto") ?: "auto",
         prefs.getString("audio", "auto") ?: "auto",
