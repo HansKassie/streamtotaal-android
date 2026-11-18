@@ -8,7 +8,7 @@ import javax.inject.Singleton
 import nl.streamfix.data.repository.NetworkNameMigration
 import nl.streamfix.domain.repository.AccountMigrations
 
-/** Sideload-flavor: opgeslagen providernamen omzetten naar netwerkletters. */
+/** ZelViro: oude providernamen omzetten (geen ingebouwde netwerken, dus in de praktijk niets). */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class MigrationModule {

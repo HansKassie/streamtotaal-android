@@ -44,10 +44,8 @@ class UpdateRepositoryImpl @Inject constructor(
         // Het manifest in de Cloudflare R2-bucket. Vervang dat object om een
         // update uit te rollen. Leeg maken = updatecheck uit.
         //
-        // Staat per flavor in build.gradle.kts en niet hier, want sideload en
-        // reseller delen dit bestand maar hebben elk een eigen kanaal. Wezen
-        // die naar hetzelfde manifest, dan zou de reseller-uitvoering bij de
-        // volgende update onze volledige app installeren.
+        // Staat in build.gradle.kts (flavor zelviro), naast applicationId en
+        // versie, zodat een uitvoering en haar updatekanaal bij elkaar blijven.
         val UPDATE_HOST: String = BuildConfig.UPDATE_HOST
         val UPDATE_MANIFEST_URL: String = BuildConfig.UPDATE_MANIFEST_URL
     }

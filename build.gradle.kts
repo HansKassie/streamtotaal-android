@@ -11,24 +11,25 @@ plugins {
     alias(libs.plugins.hilt) apply false
 }
 
+/** Waar R2 de bestanden serveert; publish-release.sh gebruikt hetzelfde adres. */
+val updateHost = "https://updates.smarttv-solutions.xyz"
+
 /**
- * Bouwt een sideloadbare release en maakt de twee uploadbestanden gereed: de
- * APK en het manifest met versiegegevens en de SHA-256 uit diezelfde APK.
- *
- * Twee uitvoeringen, want er zijn twee updatekanalen. Beide doorlopen
- * dezelfde controles; het verschil zit alleen in de flavor en de
- * bestandsnamen. Een kopie van deze taak zou betekenen dat een controle
- * hierboven wel wordt aangescherpt en die hieronder niet.
+ * Bouwt de ondertekende ZelViro-release en zet de uploadbestanden klaar:
+ * - zelviro-player-<versie>.apk: voor de updater in de app. Elke versie een
+ *   eigen naam, dus de edge-cache van Cloudflare kan nooit een oude APK
+ *   serveren bij een nieuw manifest, en een gepubliceerde versie wordt nooit
+ *   overschreven;
+ * - zelviro-player.apk: dezelfde bytes onder een vaste naam, voor de
+ *   downloadknop op de website en de Downloader-code;
+ * - zelviro.json: versie, SHA-256 en apkUrl uit diezelfde APK. Alleen de
+ *   releaseNotes vul je zelf in.
+ * Daarna publiceert ./publish-release.sh alles en controleert het.
  */
-fun registreerReleaseTaak(
-    taakNaam: String,
-    flavor: String,
-    apkNaam: String,
-    manifestNaam: String,
-) = tasks.register(taakNaam) {
+tasks.register("prepareZelviroRelease") {
     group = "distribution"
-    description = "Builds and prepares the signed $flavor release for upload."
-    dependsOn(":app:assemble${flavor.replaceFirstChar { it.uppercase() }}Release")
+    description = "Builds and prepares the signed ZelViro release for upload."
+    dependsOn(":app:assembleZelviroRelease")
 
     doLast {
         // Zonder keystore.properties slaat het app-project de release-signing
@@ -43,16 +44,23 @@ fun registreerReleaseTaak(
             )
         }
 
-        val releaseDir = file("app/build/outputs/apk/$flavor/release")
+        val releaseDir = file("app/build/outputs/apk/zelviro/release")
         val metadataFile = releaseDir.resolve("output-metadata.json")
         val metadata = JsonSlurper().parse(metadataFile) as Map<*, *>
         val element = (metadata["elements"] as List<*>).single() as Map<*, *>
+        val versionCode = (element["versionCode"] as Number).toInt()
+        val versionName = element["versionName"] as String
+        if (!Regex("""\d+\.\d+\.\d+""").matches(versionName)) {
+            throw GradleException("Onverwachte versienaam '$versionName': verwacht bijvoorbeeld 1.0.5.")
+        }
         val sourceApk = releaseDir.resolve(element["outputFile"] as String)
-        val uploadApk = file(apkNaam)
-        sourceApk.copyTo(uploadApk, overwrite = true)
+        val versieApk = file("zelviro-player-$versionName.apk")
+        val vasteApk = file("zelviro-player.apk")
+        sourceApk.copyTo(versieApk, overwrite = true)
+        sourceApk.copyTo(vasteApk, overwrite = true)
 
         val digest = MessageDigest.getInstance("SHA-256")
-        uploadApk.inputStream().use { input ->
+        versieApk.inputStream().use { input ->
             val buffer = ByteArray(64 * 1024)
             while (true) {
                 val read = input.read(buffer)
@@ -62,48 +70,23 @@ fun registreerReleaseTaak(
         }
         val sha256 = digest.digest().joinToString("") { "%02x".format(it) }
 
-        val manifestFile = file(manifestNaam)
+        val manifestFile = file("zelviro.json")
         @Suppress("UNCHECKED_CAST")
         val manifest = LinkedHashMap(
             JsonSlurper().parse(manifestFile) as Map<String, Any?>,
         )
-        manifest["versionCode"] = (element["versionCode"] as Number).toInt()
-        manifest["versionName"] = element["versionName"] as String
+        manifest["versionCode"] = versionCode
+        manifest["versionName"] = versionName
+        manifest["apkUrl"] = "$updateHost/${versieApk.name}"
         manifest["sha256"] = sha256
         manifestFile.writeText(
             JsonOutput.prettyPrint(JsonOutput.toJson(manifest)) + "\n",
         )
 
-        logger.lifecycle("Release ($flavor) ready: ${uploadApk.absolutePath}")
-        logger.lifecycle("Manifest: ${manifestFile.name}")
-        logger.lifecycle("SHA-256: $sha256")
+        logger.lifecycle("ZelViro $versionName (code $versionCode) klaar:")
+        logger.lifecycle("  ${versieApk.name} en ${vasteApk.name} (zelfde bytes)")
+        logger.lifecycle("  zelviro.json -> ${manifest["apkUrl"]}")
+        logger.lifecycle("  SHA-256: $sha256")
+        logger.lifecycle("Vergeet de releaseNotes in zelviro.json niet; publiceer met ./publish-release.sh")
     }
 }
-
-// Onze eigen uitvoering. De naam blijft ongewijzigd, want SETUP.md en
-// publish-release.sh verwijzen ernaar.
-registreerReleaseTaak(
-    taakNaam = "prepareSideloadRelease",
-    flavor = "sideload",
-    apkNaam = "streamtotaal.apk",
-    manifestNaam = "version.json",
-)
-
-// De uitvoering voor de collega-reseller. Eigen APK en eigen manifest, want
-// een gedeeld manifest zou bij de volgende update onze volledige app op zijn
-// toestellen installeren.
-registreerReleaseTaak(
-    taakNaam = "prepareResellerRelease",
-    flavor = "reseller",
-    apkNaam = "streamtotaal-e.apk",
-    manifestNaam = "version-e.json",
-)
-
-// ZelViro Player: een eigen app (com.zelviro.player) met een eigen
-// updatekanaal, los van StreamTotaal.
-registreerReleaseTaak(
-    taakNaam = "prepareZelviroRelease",
-    flavor = "zelviro",
-    apkNaam = "zelviro-player.apk",
-    manifestNaam = "zelviro.json",
-)

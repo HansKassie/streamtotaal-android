@@ -6,7 +6,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
- * Sideload-flavor: kijkt of er een update beschikbaar is en toont
+ * ZelViro: kijkt of er een update beschikbaar is en toont
  * de update-dialoog. MainActivity hoeft niet te weten dat de updater
  * bestaat; in de Play Store-flavor is dit een no-op-composable.
  */

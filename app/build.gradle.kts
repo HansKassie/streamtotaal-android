@@ -69,73 +69,34 @@ android {
         }
     }
 
-    // Drie distributiekanalen vanuit een gedeelde codebase.
-    // - sideload  = bestaande klanten via R2 + in-app updater + preset-providers.
-    // - playstore = Google Play; geen self-updater (verboden door beleid),
-    //               geen preset-providers, gebruiker tikt zelf een URL in.
-    // - reseller  = collega-reseller; zelfde app, alleen zijn eigen netwerk en
-    //               een eigen updatekanaal. Eigen applicationId, anders zou
-    //               zijn uitvoering die van ons overschrijven op hetzelfde
-    //               toestel.
+    // Twee distributiekanalen vanuit een gedeelde codebase.
+    // - zelviro   = ZelViro Player, de enige app die we uitbrengen: via R2
+    //               (zelviro.json), met de updater uit src/zelviro.
+    // - playstore = bewaard voor later (Google Play); geen self-updater
+    //               (verboden door beleid), geen ingebouwde providers.
     //
-    // sideload en reseller delen src/distributable: de updater en de
-    // netwerkhernoeming staan daar EEN keer. Zonder die gedeelde map zou een
-    // derde flavor een kopie van echte logica betekenen, en die lopen uiteen.
-    // Alleen ProviderCatalog verschilt nog per flavor, plus de twee
-    // buildConfigFields hieronder.
+    // De StreamTotaal-uitvoeringen sideload (nl.streamfix.app) en reseller
+    // (.e) zijn op 2026-11-18 verwijderd: niet meer in gebruik. Hun updater,
+    // manifest en FileProvider staan nu in src/zelviro.
     flavorDimensions += "distribution"
     productFlavors {
-        create("sideload") {
-            dimension = "distribution"
-            buildConfigField("boolean", "HAS_UPDATER", "true")
-            buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "true")
-            buildConfigField(
-                "String",
-                "UPDATE_HOST",
-                "\"updates.smarttv-solutions.xyz\"",
-            )
-            buildConfigField(
-                "String",
-                "UPDATE_MANIFEST_URL",
-                "\"https://updates.smarttv-solutions.xyz/version.json\"",
-            )
-        }
         create("playstore") {
             dimension = "distribution"
             applicationIdSuffix = ".playstore"
             buildConfigField("boolean", "HAS_UPDATER", "false")
             buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "false")
         }
-        create("reseller") {
-            dimension = "distribution"
-            applicationIdSuffix = ".e"
-            buildConfigField("boolean", "HAS_UPDATER", "true")
-            buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "true")
-            buildConfigField(
-                "String",
-                "UPDATE_HOST",
-                "\"updates.smarttv-solutions.xyz\"",
-            )
-            // Eigen manifest. Zou dit naar version.json wijzen, dan
-            // installeert zijn app bij de volgende update onze volledige
-            // uitvoering, inclusief alle netwerken.
-            buildConfigField(
-                "String",
-                "UPDATE_MANIFEST_URL",
-                "\"https://updates.smarttv-solutions.xyz/version-e.json\"",
-            )
-        }
         // ZelViro Player: de algemene speler (geen eigen zenders; klanten
-        // koppelen hun afspeellijst via zelviro-player.com). Een eigen app,
-        // dus een eigen applicationId en een eigen updatekanaal: zo komt hij
-        // nooit als update op de toestellen van StreamTotaal-klanten, en
-        // andersom. Eigen versienummering, los van StreamTotaal.
+        // koppelen hun afspeellijst via zelviro-player.com). applicationId,
+        // ondertekening en de namen van de opslagbestanden nooit wijzigen:
+        // dan is het voor Android een andere app, of raken klanten hun
+        // activatie kwijt. Eigen versienummering.
         create("zelviro") {
             dimension = "distribution"
             applicationId = "com.zelviro.player"
             resourceConfigurations += "de"
-            versionCode = 5
-            versionName = "1.0.4"
+            versionCode = 6
+            versionName = "1.0.5"
             buildConfigField("boolean", "HAS_UPDATER", "true")
             buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "false")
             buildConfigField(
@@ -148,21 +109,6 @@ android {
                 "UPDATE_MANIFEST_URL",
                 "\"https://updates.smarttv-solutions.xyz/zelviro.json\"",
             )
-        }
-    }
-
-    // De updater en de netwerkhernoeming horen bij allebei de sideloadbare
-    // varianten, maar NIET bij de Play Store-build: zelfupdate-code hoort
-    // daar helemaal niet in te zitten.
-    sourceSets {
-        getByName("sideload") { java.srcDir("src/distributable/java") }
-        getByName("reseller") { java.srcDir("src/distributable/java") }
-        // ZelViro deelt de updater, en het manifest met de installatie-
-        // toestemming en de FileProvider van sideload (geen kopie).
-        getByName("zelviro") {
-            java.srcDir("src/distributable/java")
-            manifest.srcFile("src/sideload/AndroidManifest.xml")
-            res.srcDir("src/sideload/res")
         }
     }
 

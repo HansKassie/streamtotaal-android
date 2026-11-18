@@ -1,10 +1,9 @@
 package nl.streamfix.data.remote
 
-import android.content.SharedPreferences
 import java.io.IOException
+import java.net.UnknownHostException
 import kotlinx.coroutines.runBlocking
-import nl.streamfix.data.local.InMemorySharedPreferences
-import nl.streamfix.data.local.openSecurePrefsWithRetry
+import nl.streamfix.data.local.*
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
@@ -12,88 +11,112 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.*
 import org.junit.Test
 
-/** Normale SharedPreferences als testdouble, onderscheiden van de echte geheugenfallback. */
-private class RegularPreferencesFake : SharedPreferences by InMemorySharedPreferences()
-
 class PortalStorageGuardTest {
-    private val device = """{"code":"12:34:56:78:9a:bc","sleutel":"123456","geheim":"${"a".repeat(43)}"}"""
     private val pending = """{"versie":2,"status":"niet-geactiveerd","code":"12:34:56:78:9a:bc","afspeellijsten":0}"""
 
-    private fun http(requests: MutableList<String>) = OkHttpClient.Builder()
+    private fun http(requests: MutableList<String>, onRegister: (() -> Unit)? = null) = OkHttpClient.Builder()
         .addInterceptor { chain ->
             val path = chain.request().url.encodedPath
             requests += path
             val registering = path.endsWith("/aanmelden")
-            Response.Builder()
-                .request(chain.request())
-                .protocol(Protocol.HTTP_1_1)
-                .code(if (registering) 201 else 200)
-                .message("Test response")
-                .body((if (registering) device else pending).toResponseBody())
-                .build()
-        }
-        .build()
+            if (registering) onRegister?.invoke()
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
+                .code(if (registering) 201 else 200).message("Test response")
+                .body((if (registering) testPortalDeviceJson else pending).toResponseBody()).build()
+        }.build()
 
-    @Test
-    fun memoryFallbackNeverRegistersAcrossRetriesAndRestarts() = runBlocking {
+    @Test fun memoryFallbackNeverRegistersAcrossRetriesAndRestarts() = runBlocking {
         val requests = mutableListOf<String>()
-        val http = http(requests)
         repeat(3) {
             val fallback = openSecurePrefsWithRetry { throw IOException("Simulated opening failure") }
-            val client = PortalClient({ fallback }, http)
-            repeat(4) {
-                assertSame(PortalResult.StorageUnavailable, client.status(register = true))
-            }
+            val client = PortalClient({ testIdentityStore(IdentityFileFake(), fallback) }, http(requests))
+            repeat(4) { assertSame(PortalResult.StorageUnavailable, client.status(register = true)) }
         }
-        assertTrue("Memory fallback must never contact the portal", requests.isEmpty())
+        assertTrue(requests.isEmpty())
     }
 
-    @Test
-    fun memoryFallbackWithAnIdentityStillNeverContactsPortal() = runBlocking {
+    @Test fun memoryFallbackWithAnIdentityStillNeverContactsPortal() = runBlocking {
         val requests = mutableListOf<String>()
         val fallback = InMemorySharedPreferences()
-        fallback.edit().putString("device", device).putString("previous", device).apply()
-        val client = PortalClient({ fallback }, http(requests))
+        fallback.edit().putString("device", testPortalDeviceJson).apply()
+        val client = PortalClient({ testIdentityStore(IdentityFileFake(), fallback) }, http(requests))
         assertSame(PortalResult.StorageUnavailable, client.status(register = false))
         assertSame(PortalResult.StorageUnavailable, client.status(register = true))
         assertTrue(requests.isEmpty())
-        assertEquals(device, fallback.getString("device", null))
     }
 
-    @Test
-    fun normalPreferencesRegisterOnceAndReuseIdentity() = runBlocking {
+    @Test fun freshInstallRegistersOnceAndReusesIdentityWithoutKeystore() = runBlocking {
         val requests = mutableListOf<String>()
-        val preferences = RegularPreferencesFake()
-        val http = http(requests)
-        val first = PortalClient({ preferences }, http).status(register = true)
-        assertTrue(first is PortalResult.Pending)
-        val stored = preferences.getString("device", null)
-        assertNotNull(stored)
-
-        val restarted = PortalClient({ preferences }, http)
-        assertTrue(restarted.status(register = true) is PortalResult.Pending)
+        val file = IdentityFileFake()
+        fun store() = testIdentityStore(file, legacyExists = false, open = { error("No Keystore needed") })
+        assertTrue(PortalClient({ store() }, http(requests)).status(true) is PortalResult.Pending)
+        assertTrue(PortalClient({ store() }, http(requests)).status(true) is PortalResult.Pending)
         assertEquals(listOf("/api/apparaat/aanmelden", "/api/apparaat/stand"), requests)
-        assertEquals(stored, preferences.getString("device", null))
     }
 
-    @Test
-    fun existingNormalIdentityOnlyRequestsItsStatus() = runBlocking {
+    @Test fun migratedIdentityOnlyRequestsItsStatus() = runBlocking {
         val requests = mutableListOf<String>()
-        val preferences = RegularPreferencesFake()
-        preferences.edit().putString("device", device).apply()
-        val client = PortalClient({ preferences }, http(requests))
-        val result = client.status(register = true)
+        val preferences = LegacyPreferencesFake()
+        preferences.edit().putString("device", testPortalDeviceJson).commit()
+        val file = IdentityFileFake()
+        val client = PortalClient({ testIdentityStore(file, preferences) }, http(requests))
+        val result = client.status(true)
         assertTrue(result is PortalResult.Pending)
         assertEquals("12:34:56:78:9a:bc", (result as PortalResult.Pending).code)
         assertEquals(listOf("/api/apparaat/stand"), requests)
-        assertEquals(device, preferences.getString("device", null))
+        assertFalse(preferences.contains("device"))
     }
 
-    @Test
-    fun startupWithoutRegistrationPermissionDoesNotRegister() = runBlocking {
+    @Test fun startupWithoutRegistrationPermissionDoesNotRegister() = runBlocking {
         val requests = mutableListOf<String>()
-        val client = PortalClient({ RegularPreferencesFake() }, http(requests))
-        assertSame(PortalResult.Unavailable, client.status(register = false))
+        val client = PortalClient({ testIdentityStore(IdentityFileFake(), legacyExists = false) }, http(requests))
+        assertSame(PortalResult.Unavailable, client.status(false))
         assertTrue(requests.isEmpty())
+    }
+
+    @Test fun unwritableStorageNeverContactsPortal() = runBlocking {
+        val requests = mutableListOf<String>()
+        val file = IdentityFileFake().apply { failOnWrite = 1 }
+        val client = PortalClient({ testIdentityStore(file, legacyExists = false) }, http(requests))
+        assertSame(PortalResult.StorageUnavailable, client.status(true))
+        assertTrue(requests.isEmpty())
+    }
+
+    @Test fun registrationWaitsForDurableMarker() = runBlocking {
+        val requests = mutableListOf<String>()
+        val file = IdentityFileFake().apply { failOnWrite = 2 }
+        val client = PortalClient({ testIdentityStore(file, legacyExists = false) }, http(requests))
+        assertSame(PortalResult.StorageUnavailable, client.status(true))
+        assertTrue(requests.isEmpty())
+    }
+
+    @Test fun saveFailureAfterRegistrationDoesNotRegisterAgainAfterRestart() = runBlocking {
+        val requests = mutableListOf<String>()
+        val file = IdentityFileFake().apply { failOnWrite = 3 }
+        fun client() = PortalClient({ testIdentityStore(file, legacyExists = false) }, http(requests))
+        assertSame(PortalResult.StorageUnavailable, client().status(true))
+        repeat(3) { assertSame(PortalResult.StorageUnavailable, client().status(true)) }
+        assertEquals(listOf("/api/apparaat/aanmelden"), requests)
+    }
+
+    @Test fun unknownNetworkOutcomeDoesNotRegisterAgain() = runBlocking {
+        val requests = mutableListOf<String>()
+        val file = IdentityFileFake()
+        val http = http(requests) { throw IOException("Simulated lost response") }
+        fun client() = PortalClient({ testIdentityStore(file, legacyExists = false) }, http)
+        assertSame(PortalResult.Unavailable, client().status(true))
+        assertSame(PortalResult.StorageUnavailable, client().status(true))
+        assertEquals(1, requests.size)
+    }
+
+    @Test fun offlineBeforeConnectingDoesNotPermanentlyBlockRegistration() = runBlocking {
+        val requests = mutableListOf<String>()
+        val file = IdentityFileFake()
+        val offline = http(requests) { throw UnknownHostException("Simulated offline startup") }
+        val first = PortalClient({ testIdentityStore(file, legacyExists = false) }, offline)
+        assertSame(PortalResult.Unavailable, first.status(true))
+        val online = PortalClient({ testIdentityStore(file, legacyExists = false) }, http(requests))
+        assertTrue(online.status(true) is PortalResult.Pending)
+        assertEquals(2, requests.size)
     }
 }

@@ -1,8 +1,10 @@
 package nl.streamfix.data.remote
 
 import android.content.Context
-import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,10 +14,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import nl.streamfix.data.local.createSecurePrefs
-import nl.streamfix.data.local.InMemorySharedPreferences
+import nl.streamfix.data.local.PortalDevice
+import nl.streamfix.data.local.PortalIdentityStorageException
+import nl.streamfix.data.local.PortalIdentityStore
+import nl.streamfix.data.local.createPortalIdentityStore
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -23,15 +26,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 internal const val PORTAL_URL = "https://zelviro-player.com"
-private val deviceCode = Regex("([0-9a-f]{2}:){5}[0-9a-f]{2}")
-private val deviceKey = Regex("[0-9]{6}")
-private val deviceSecret = Regex("[A-Za-z0-9_-]{43}")
 private val playlistId = Regex("[A-Za-z0-9_-]{1,32}")
-
-@Serializable
-private class PortalDevice(val code: String, val sleutel: String, val geheim: String) {
-    fun valid() = deviceCode.matches(code) && deviceKey.matches(sleutel) && deviceSecret.matches(geheim)
-}
 
 @Serializable
 class PortalPlaylist(
@@ -76,12 +71,12 @@ sealed interface PortalResult {
 
 @Singleton
 class PortalClient internal constructor(
-    private val openPreferences: () -> SharedPreferences,
+    private val openIdentity: () -> PortalIdentityStore,
     private val http: OkHttpClient,
 ) {
     @Inject
     constructor(@ApplicationContext context: Context) : this(
-        { createSecurePrefs(context, "streamfix_portal_device") },
+        { createPortalIdentityStore(context) },
         OkHttpClient.Builder()
             .callTimeout(15, TimeUnit.SECONDS)
             .followRedirects(false)
@@ -89,7 +84,7 @@ class PortalClient internal constructor(
             .build(),
     )
 
-    private val prefs by lazy { openPreferences() }
+    private val store by lazy { openIdentity() }
     private val mutex = Mutex()
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -99,6 +94,8 @@ class PortalClient internal constructor(
                 statusLocked(register)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
+            } catch (_: PortalIdentityStorageException) {
+                PortalResult.StorageUnavailable
             } catch (_: Exception) {
                 PortalResult.Unavailable
             }
@@ -106,38 +103,51 @@ class PortalClient internal constructor(
     }
 
     private fun statusLocked(register: Boolean): PortalResult {
-        // Een identiteit in geheugen zou bij iedere herstart een nieuw apparaat opleveren.
-        if (prefs is InMemorySharedPreferences) return PortalResult.StorageUnavailable
-        val previous = readDevice("previous")
+        var identity = store.load()
+        val previous = identity.previous
         if (previous != null) {
             val (code, body) = post("stand", "{}", previous.geheim)
             if (code == 200) {
                 val result = parseStatus(body, previous)
                 if (result != PortalResult.Unavailable) {
-                    prefs.edit().putString("device", json.encodeToString(previous)).remove("previous").apply()
+                    store.save(identity.copy(device = previous, previous = null, registrationPending = false))
                     return result
                 }
             }
         }
-        var device = readDevice("device")
+        // Bij een onderbroken registratie weten we niet of de server al een
+        // apparaat maakte. Niet opnieuw aanmelden en spookapparaten veroorzaken.
+        if (identity.registrationPending) return PortalResult.StorageUnavailable
+        var device = identity.device
         if (device != null) {
             val (code, body) = post("stand", "{}", device.geheim)
             if (code == 200) return parseStatus(body, device)
             if (code != 401 || !register) return PortalResult.Unavailable
-            if (previous == null) prefs.edit().putString("previous", json.encodeToString(device)).apply()
+            if (previous == null) identity = identity.copy(previous = device)
         } else if (!register) return PortalResult.Unavailable
 
-        val (code, body) = post("aanmelden", """{"platform":"android-tv"}""")
-        if (code == 429) return PortalResult.RateLimited
+        // Eerst duurzaam schrijven én heropenen, dan pas naar het portaal.
+        identity = identity.copy(registrationPending = true)
+        store.save(identity)
+        val (code, body) = try {
+            post("aanmelden", """{"platform":"android-tv"}""")
+        } catch (error: Exception) {
+            // DNS/verbinding mislukte: er is nog geen HTTP-verzoek verstuurd.
+            // Een verloren antwoord of timeout blijft juist onzeker.
+            if (error is UnknownHostException || error is ConnectException || error is NoRouteToHostException) {
+                store.save(identity.copy(registrationPending = false))
+            }
+            throw error
+        }
+        if (code in 400..499) {
+            store.save(identity.copy(registrationPending = false))
+            return if (code == 429) PortalResult.RateLimited else PortalResult.Unavailable
+        }
         if (code != 201) return PortalResult.Unavailable
         device = json.decodeFromString<PortalDevice>(body).takeIf { it.valid() }
             ?: return PortalResult.Unavailable
-        prefs.edit().putString("device", json.encodeToString(device)).apply()
+        store.save(identity.copy(device = device, registrationPending = false))
         return PortalResult.Pending(device.code, device.sleutel, 0)
-    }
-
-    private fun readDevice(key: String): PortalDevice? = prefs.getString(key, null)?.let { raw ->
-        runCatching { json.decodeFromString<PortalDevice>(raw) }.getOrNull()?.takeIf { it.valid() }
     }
 
     private fun parseStatus(body: String, device: PortalDevice): PortalResult {

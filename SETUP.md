@@ -115,41 +115,55 @@ JSON-bestand met de vorm
 constante `REMOTE_CATALOG_URL` in datzelfde bestand. Is die leeg of
 onbereikbaar, dan gebruikt de app de ingebouwde lijst.
 
-## In-app updates via Cloudflare R2
+## In-app updates via Cloudflare R2 (ZelViro Player)
 
-Distributie loopt via een Cloudflare R2-bucket op een eigen domein:
-- App haalt op: `https://updates.smarttv-solutions.xyz/version.json`
-  (constante `UPDATE_MANIFEST_URL` in `UpdateRepositoryImpl.kt`).
-- `version.json` wijst met `apkUrl` naar
-  `https://updates.smarttv-solutions.xyz/streamtotaal.apk`.
+Sinds 2026-11-18 is ZelViro Player (`com.zelviro.player`, flavor `zelviro`)
+de enige Android-app die we uitbrengen. De StreamTotaal-uitvoeringen
+(`sideload`, `reseller`) zijn op 2026-11-18 uit de code gehaald, met hun
+Gradle-taken en de lokale manifesten `version.json` en `version-e.json`.
+R2 is daarbij niet aangeraakt. Los daarvan had de eigenaar die kanalen al
+eerder uit de bucket gehaald: op 2026-11-18 gaven `version.json`,
+`version-e.json`, `streamtotaal.apk` en `streamtotaal-e.apk` een 404.
+Oude StreamTotaal-apps vinden dus geen update meer (en crashen daar niet
+op). `playstore` staat nog in de code, voor later.
 
-Eenmalig (Cloudflare-dashboard):
-1. R2 > Create bucket, bijv. `streamtotaal-updates`.
-2. Bucket > Settings > Public access > Custom Domains > Connect Domain:
-   `updates.smarttv-solutions.xyz` (Cloudflare regelt DNS + TLS).
-3. Keystore aanmaken en release signen (sectie 2).
+Distributie loopt via de R2-bucket `streamtotaal-updates` op
+`https://updates.smarttv-solutions.xyz`:
+- `zelviro.json`: het manifest dat de app bij opstart leest (constante
+  `UPDATE_MANIFEST_URL`, per flavor in `app/build.gradle.kts`).
+- `zelviro-player-<versie>.apk`: de APK waar `apkUrl` in het manifest
+  naar wijst. Elke versie een eigen naam: geen purge nodig, en een
+  gepubliceerde versie wordt nooit overschreven.
+- `zelviro-player.apk`: dezelfde bytes onder een vaste naam, voor de
+  downloadknop op zelviro-player.com en Downloader-code 4710544. Die
+  moet na elke uitgave gepurged worden in Cloudflare.
 
 Per nieuwe versie uitrollen:
-1. Verhoog `versionCode` (en `versionName`) in `app/build.gradle.kts`.
-2. Werk de `releaseNotes` in `version.json` bij.
-3. Draai `.\gradlew.bat prepareSideloadRelease`. Dit bouwt de gesigneerde
-   sideload-APK, kopieert hem naar `streamtotaal.apk` en synchroniseert
-   versie + SHA-256 in `version.json` met het gebouwde bestand.
-4. Upload in de R2-bucket (Objects > Upload) `streamtotaal.apk` en het
-   bijgewerkte `version.json` (overschrijf de bestaande objecten).
-5. Cloudflare-cache kan kort blijven hangen; eventueel die twee objecten
-   purgen via Caching > Configuration.
+1. Verhoog `versionCode` en `versionName` in de flavor `zelviro` in
+   `app/build.gradle.kts`.
+2. Draai `.\gradlew.bat prepareZelviroRelease`. Dit bouwt de ondertekende
+   APK, zet `zelviro-player-<versie>.apk` en `zelviro-player.apk` klaar,
+   en zet versie, SHA-256 en `apkUrl` in `zelviro.json`.
+3. Vul de `releaseNotes` in `zelviro.json` in (Engels).
+4. `./publish-release.sh controle`: kijkt alles na zonder te uploaden
+   (hashes, pakket en versie in de APK, hoger dan live, nieuwe
+   releaseNotes, versie-APK nog niet online met andere bytes).
+5. `./publish-release.sh`: uploadt in de veilige volgorde (versie-APK,
+   nakijken, manifest, vaste APK), purget de vaste APK als
+   `cloudflare.properties` gevuld is, en kijkt daarna na wat apps en de
+   website echt krijgen. Zonder purgegegevens zegt het welke URL je met
+   de hand moet purgen.
+6. `./publish-release.sh verify` kan altijd, los, om live na te kijken.
+7. Mislukt er halverwege iets (vaste APK, purge, controle), draai het
+   script dan opnieuw: het herkent dezelfde release en maakt af wat
+   ontbreekt. Bij een ander antwoord dan 200 of 404 (bijvoorbeeld 503) stopt
+   het in plaats van te gokken.
 
-Migratie vanaf GitHub: reeds geinstalleerde apps (<= 1.0.5) pollen nog de
-oude GitHub-`version.json`. Houd die daarom in stand en laat hem naar de
-nieuwe versie wijzen totdat vrijwel iedereen op een build met de
-Cloudflare-URL zit; daarna kan het GitHub-kanaal vervallen.
+Wie `publish-release.sh` wijzigt, draait daarna
+`bash scripts/test-publish-release.sh`: dezelfde stappen tegen een nep-R2,
+zonder netwerk, inclusief 503, onderbreken en hervatten.
 
-De app vergelijkt bij opstart `version.json`-`versionCode` met de
+De app vergelijkt bij opstart de `versionCode` uit `zelviro.json` met de
 geinstalleerde versie; hoger = updatedialog. `forceUpdate:true` of een
-versie onder `minSupportedVersionCode` maakt de update verplicht.
-
-De klant moet bij de eerste update eenmalig "installeren uit onbekende
-bronnen" toestaan (systeemprompt; `REQUEST_INSTALL_PACKAGES` staat in de
-manifest). Zonder consistente keystore-signing installeert een update
-niet over een bestaande app heen.
+versie onder `minSupportedVersionCode` maakt de update verplicht. De app
+controleert de SHA-256 van de gedownloade APK voordat hij installeert.

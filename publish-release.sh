@@ -1,84 +1,57 @@
 #!/usr/bin/env bash
 #
-# Rolt de klaargezette sideload-release uit naar R2 en controleert daarna of
-# klanten echt de nieuwe APK krijgen.
+# Publiceert een klaargezette ZelViro Player-release naar R2 en controleert
+# daarna wat klanten echt krijgen. De enige Android-app die we uitbrengen
+# (com.zelviro.player); de StreamTotaal-uitvoeringen zijn op 2026-11-18
+# verwijderd.
 #
 # Vooraf:
-#   ./gradlew prepareSideloadRelease     (schrijft streamtotaal.apk + version.json)
-#   ./gradlew prepareResellerRelease     (schrijft streamtotaal-e.apk + version-e.json)
-#   wrangler login                       (eenmalig)
-#
-# Voor het leegmaken van de edge-cache: zet CF_ZONE_ID en CF_PURGE_TOKEN in
-# cloudflare.properties naast dit script (buiten git, net als
-# keystore.properties). Zie cloudflare.properties.example. Omgevingsvariabelen
-# met dezelfde namen gaan voor, handig als je het ooit automatisch draait.
-#
-# PURGEN IS VERPLICHT. De edge cachet de APK op die exacte URL, ook al meldt
-# een HEAD-verzoek "cf-cache-status: DYNAMIC". Dat is misleidend: een GET op
-# dezelfde URL geeft gewoon HIT met de oude bytes. Zonder purge serveert de
-# edge de oude APK terwijl version.json al de nieuwe aankondigt, en slaat de
-# sha256-controle in de app terecht aan: klanten zien "De update is mislukt".
-# Vastgesteld bij 1.0.20 en 1.0.21 op 2026-10-11. Kan het script niet purgen,
-# dan stopt het na de APK en laat het het manifest bewust staan.
+#   ./gradlew prepareZelviroRelease   bouwt en zet klaar:
+#       zelviro-player-<versie>.apk   voor de updater in de app
+#       zelviro-player.apk            dezelfde bytes, voor website en Downloader
+#       zelviro.json                  versie, SHA-256 en apkUrl
+#   releaseNotes in zelviro.json invullen
+#   wrangler login                    (eenmalig)
 #
 # Gebruik:
-#   ./publish-release.sh            alles: APK, purge, manifest, controle
-#                                   zonder purgegegevens stopt hij na de APK
-#   ./publish-release.sh apk        alleen de APK (plus purge)
-#   ./publish-release.sh manifest   alleen het manifest (plus controle)
-#   ./publish-release.sh purge      alleen purgen en controleren, geen upload
-#   ./publish-release.sh verify     alleen controleren wat er live staat
+#   ./publish-release.sh controle   alles nakijken, NIETS uploaden (doe dit eerst)
+#   ./publish-release.sh            controle, dan uploaden, dan nakijken wat live staat
+#   ./publish-release.sh verify     alleen nakijken wat er nu live staat
 #
-# TWEE UITVOERINGEN. Zonder tweede argument gaat het over onze eigen app.
-# Met "reseller" erachter over die van de collega-reseller, die een eigen
-# APK en een eigen manifest heeft:
+# Volgorde bij uploaden, zodat een klant nooit een manifest ziet waarvan de
+# APK er nog niet is:
+#   1. zelviro-player-<versie>.apk  (nieuwe naam: geen oude kopie in de cache)
+#   2. nakijken dat die APK via het openbare adres de juiste bytes geeft
+#   3. zelviro.json                 (vanaf nu zien apps de update)
+#   4. zelviro-player.apk           (vaste naam voor de website; moet gepurged
+#                                   worden, anders serveert Cloudflare nog even
+#                                   de vorige versie. Met cloudflare.properties
+#                                   gaat dat vanzelf.)
 #
-#   ./publish-release.sh all reseller
-#   ./publish-release.sh verify reseller
+# Mislukt er halverwege iets (vaste APK, purge, controle), draai het script
+# dan gewoon opnieuw: het herkent dezelfde release (zelfde versie, APK en
+# manifest) en maakt af wat nog ontbreekt. Alleen een 404 betekent "nog niets
+# live"; elke andere fout (503, geen verbinding) laat het script stoppen.
 #
-# En met "zelviro" over ZelViro Player (./gradlew prepareZelviroRelease):
-#
-#   ./publish-release.sh all zelviro
-#
-# Die twee delen niets behalve dit script en de bucket. Een release van de
-# een raakt de ander dus niet, en je purgt ze allebei apart.
-#
-# Met "purge" test je je Cloudflare-gegevens los van een uitrol: een bestand
-# purgen dat al goed is, is onschadelijk.
+# Een gepubliceerde versie wordt nooit overschreven: staat
+# zelviro-player-<versie>.apk al online met andere bytes, dan stopt het script.
 
 set -euo pipefail
 
 BUCKET="streamtotaal-updates"
 HOST="https://updates.smarttv-solutions.xyz"
-
-# Welke uitvoering. Standaard de onze; "reseller" voor die van de collega.
-variant="${2:-eigen}"
-case "$variant" in
-    eigen)
-        APK="streamtotaal.apk"
-        MANIFEST="version.json"
-        GRADLE_TAAK="prepareSideloadRelease"
-        ;;
-    reseller)
-        APK="streamtotaal-e.apk"
-        MANIFEST="version-e.json"
-        GRADLE_TAAK="prepareResellerRelease"
-        ;;
-    zelviro)
-        # ZelViro Player: eigen app (com.zelviro.player), eigen kanaal.
-        APK="zelviro-player.apk"
-        MANIFEST="zelviro.json"
-        GRADLE_TAAK="prepareZelviroRelease"
-        ;;
-    *)
-        echo "Onbekende uitvoering: $variant" >&2
-        echo "Gebruik: eigen (standaard), reseller of zelviro" >&2
-        exit 1
-        ;;
-esac
+MANIFEST="zelviro.json"
+VASTE_APK="zelviro-player.apk"
 APK_TYPE="application/vnd.android.package-archive"
+PAKKET="com.zelviro.player"
 
 cd "$(dirname "$0")"
+
+mode="${1:-all}"
+if [ $# -gt 1 ]; then
+    echo "FOUT: alleen ZelViro wordt nog gepubliceerd; '$2' bestaat niet meer." >&2
+    exit 1
+fi
 
 SECRETS="cloudflare.properties"
 
@@ -100,7 +73,6 @@ CF_PURGE_TOKEN="${CF_PURGE_TOKEN:-$(read_secret CF_PURGE_TOKEN)}"
 
 # Wrangler staat op Windows in APPDATA/npm en niet altijd op de PATH. Een
 # .cmd heeft daar geen uitvoerbit, dus testen op bestaan en niet op -x.
-# Alleen nodig om te uploaden; "verify" werkt ook zonder.
 find_wrangler() {
     if command -v wrangler >/dev/null 2>&1; then
         WRANGLER="wrangler"
@@ -112,194 +84,255 @@ find_wrangler() {
     fi
 }
 
-mode="${1:-all}"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
 
 json_value() {
     sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\{0,1\}\([^\",]*\)\"\{0,1\}.*/\1/p" "$2" | head -1
 }
+
+sha_van() { sha256sum "$1" | cut -d' ' -f1; }
 
 host_of() {
     printf '%s' "$1" | sed -e 's|^[a-zA-Z]*://||' -e 's|[/?].*$||' -e 's|:.*$||' \
         | tr '[:upper:]' '[:lower:]'
 }
 
-check_pair() {
-    [ -f "$APK" ] || { echo "FOUT: $APK ontbreekt. Draai eerst $GRADLE_TAAK." >&2; exit 1; }
-    [ -f "$MANIFEST" ] || { echo "FOUT: $MANIFEST ontbreekt." >&2; exit 1; }
+fout() { echo "FOUT: $*" >&2; exit 1; }
 
-    local local_hash manifest_hash
-    local_hash="$(sha256sum "$APK" | cut -d' ' -f1)"
-    manifest_hash="$(json_value sha256 "$MANIFEST")"
-
-    if [ "$local_hash" != "$manifest_hash" ]; then
-        echo "FOUT: de hash in $MANIFEST hoort niet bij $APK." >&2
-        echo "  APK:      $local_hash" >&2
-        echo "  manifest: $manifest_hash" >&2
-        echo "Release-builds zijn niet byte-reproduceerbaar, dus beide bestanden" >&2
-        echo "moeten uit dezelfde $GRADLE_TAAK-run komen." >&2
-        exit 1
-    fi
-    echo "Paar klopt: versie $(json_value versionName "$MANIFEST") (code $(json_value versionCode "$MANIFEST")), sha256 ${local_hash:0:12}..."
+# Het openbare adres ophalen zoals een klant dat doet. Geeft de HTTP-status,
+# of 000 als er geen antwoord kwam.
+haal_op() {
+    local code
+    code="$(curl -sS -o "$2" -w '%{http_code}' "$1" 2>/dev/null)" || code="000"
+    printf '%s' "$code"
 }
 
-# Tweede argument "standalone" = losse controle, er is dan niets geupload.
-purge() {
-    local url="$1" context="${2:-upload}" payload response
-    if [ -z "${CF_ZONE_ID:-}" ] || [ -z "${CF_PURGE_TOKEN:-}" ]; then
-        echo
-        if [ "$context" = "standalone" ]; then
-            echo "Geen CF_ZONE_ID/CF_PURGE_TOKEN, dus er valt niets te testen."
-            echo "Vul cloudflare.properties, zie cloudflare.properties.example."
-            exit 2
-        fi
-        echo "GESTOPT NA DE APK: geen CF_ZONE_ID/CF_PURGE_TOKEN, dus niet gepurged."
-        echo
-        echo "  Het manifest is NIET geupload, en dat is met opzet. Zolang dat"
-        echo "  nog de vorige versie aankondigt merkt niemand iets. Zou het er"
-        echo "  nu al staan, dan kondigt de app een update aan terwijl de edge"
-        echo "  de oude APK serveert, en zien klanten dat de update mislukt."
-        echo
-        echo "  1. Purge in het Cloudflare-dashboard, Caching, Configuration,"
-        echo "     Purge Cached Content, op URL:"
-        echo "       $url"
-        echo "  2. Draai daarna: ./publish-release.sh manifest $variant"
-        echo
-        echo "  Of vul cloudflare.properties, dan gaat dit voortaan vanzelf."
-        exit 2
+# Hetzelfde, maar langs de cache heen (een unieke zoekparameter). Voor de
+# controles VOOR het uploaden: vraag je het echte adres van een APK op die
+# nog niet bestaat, dan onthoudt Cloudflare die 404, en krijgen klanten (en
+# de controle na het uploaden) nog even een 404 terwijl het bestand er al
+# staat. Zo bleef bij de proef op 2026-11-18 de controle na het uploaden
+# steken. Na het uploaden controleren we juist WEL het echte adres.
+haal_vers() {
+    haal_op "$1?controle=$(date +%s)$RANDOM" "$2"
+}
+
+# ---------- controle vooraf: lokaal en tegenover wat er live staat ----------
+
+controle() {
+    [ -f "$MANIFEST" ] || fout "$MANIFEST ontbreekt."
+    WIL_CODE="$(json_value versionCode "$MANIFEST")"
+    WIL_NAAM="$(json_value versionName "$MANIFEST")"
+    WIL_SHA="$(json_value sha256 "$MANIFEST")"
+    WIL_URL="$(json_value apkUrl "$MANIFEST")"
+    NOTES="$(json_value releaseNotes "$MANIFEST")"
+    VERSIE_APK="zelviro-player-$WIL_NAAM.apk"
+
+    case "$WIL_CODE" in ''|*[!0-9]*) fout "versionCode in $MANIFEST is geen getal." ;; esac
+    [ -n "$WIL_NAAM" ] || fout "versionName ontbreekt in $MANIFEST."
+    [ "$WIL_URL" = "$HOST/$VERSIE_APK" ] || fout "apkUrl in $MANIFEST is '$WIL_URL', verwacht $HOST/$VERSIE_APK. Draai prepareZelviroRelease."
+    [ -n "$NOTES" ] || fout "releaseNotes in $MANIFEST is leeg."
+
+    [ -f "$VERSIE_APK" ] || fout "$VERSIE_APK ontbreekt. Draai eerst ./gradlew prepareZelviroRelease."
+    [ -f "$VASTE_APK" ] || fout "$VASTE_APK ontbreekt. Draai eerst ./gradlew prepareZelviroRelease."
+    [ "$(sha_van "$VERSIE_APK")" = "$WIL_SHA" ] || fout "de SHA-256 in $MANIFEST hoort niet bij $VERSIE_APK. Draai prepareZelviroRelease opnieuw (releasebuilds zijn niet byte-gelijk)."
+    [ "$(sha_van "$VASTE_APK")" = "$WIL_SHA" ] || fout "$VASTE_APK is niet dezelfde APK als $VERSIE_APK."
+
+    # Pakket en versie uit de APK zelf, als aapt er is (Android SDK).
+    local aapt
+    aapt="$(ls -d "${LOCALAPPDATA:-/nonexistent}/Android/Sdk/build-tools/"*/aapt.exe \
+        "${ANDROID_HOME:-/nonexistent}/build-tools/"*/aapt 2>/dev/null | tail -1 || true)"
+    if [ -n "$aapt" ]; then
+        local badging
+        badging="$("$aapt" dump badging "$VERSIE_APK" | head -1)"
+        case "$badging" in
+            *"name='$PAKKET' versionCode='$WIL_CODE' versionName='$WIL_NAAM'"*) ;;
+            *) fout "de APK zegt iets anders dan $MANIFEST: $badging" ;;
+        esac
+    else
+        echo "Let op: aapt niet gevonden; pakket en versie in de APK niet nagekeken."
     fi
 
-    # Met printf opgebouwd. Handmatig escapen in een dubbel aangehaalde string
-    # ging eerder mis en leverde {files:[...]} op, dus zonder aanhalingstekens,
-    # wat Cloudflare weigert. Die fout was onzichtbaar omdat de purge nooit
-    # gedraaid had.
+    # Tegenover wat er live staat. Alleen een 404 betekent "nog niets live";
+    # elke andere status (503, 000 bij een netwerkfout, ...) is onbekend, en
+    # dan stoppen we liever dan op goed geluk door te gaan.
+    local status
+    HERVAT=0
+    status="$(haal_vers "$HOST/$MANIFEST" "$TMP/live.json")"
+    case "$status" in
+        200)
+            LIVE_CODE="$(json_value versionCode "$TMP/live.json")"
+            LIVE_SHA="$(json_value sha256 "$TMP/live.json")"
+            LIVE_URL="$(json_value apkUrl "$TMP/live.json")"
+            LIVE_NOTES="$(json_value releaseNotes "$TMP/live.json")"
+            case "$LIVE_CODE" in ''|*[!0-9]*) fout "het live manifest heeft geen geldige versionCode." ;; esac
+            if [ "$WIL_CODE" -lt "$LIVE_CODE" ]; then
+                fout "live staat al versiecode $LIVE_CODE; deze release is $WIL_CODE. Verhoog versionCode en versionName in app/build.gradle.kts."
+            elif [ "$WIL_CODE" -eq "$LIVE_CODE" ]; then
+                # Hervatten: dezelfde release staat al (deels) live, bijvoorbeeld
+                # omdat de vaste APK, de purge of de controle mislukte. Alleen als
+                # het precies dezelfde release is: zelfde APK, zelfde adres, en
+                # het manifest niet meer gewijzigd sinds de upload.
+                [ "$LIVE_SHA" = "$WIL_SHA" ] && [ "$LIVE_URL" = "$WIL_URL" ] \
+                    || fout "live staat al versiecode $LIVE_CODE met een andere APK. Verhoog versionCode en versionName in app/build.gradle.kts."
+                cmp -s "$MANIFEST" "$TMP/live.json" \
+                    || fout "$MANIFEST is gewijzigd sinds deze versie live ging. Zet hem terug zoals hij live staat, of breng een nieuwe versie uit."
+                HERVAT=1
+            else
+                [ "$NOTES" != "$LIVE_NOTES" ] || fout "de releaseNotes zijn nog die van de vorige versie. Pas ze aan in $MANIFEST."
+            fi
+            ;;
+        404)
+            echo "Let op: $HOST/$MANIFEST bestaat niet (404); dit wordt de eerste release."
+            LIVE_CODE=0
+            ;;
+        *)
+            fout "$HOST/$MANIFEST gaf HTTP $status. Onduidelijk wat er live staat; probeer het later opnieuw."
+            ;;
+    esac
+
+    # Een gepubliceerde versie nooit overschrijven.
+    status="$(haal_vers "$HOST/$VERSIE_APK" "$TMP/bestaand.apk")"
+    BESTAAT_AL=0
+    case "$status" in
+        200)
+            [ "$(sha_van "$TMP/bestaand.apk")" = "$WIL_SHA" ] || fout "$VERSIE_APK staat al online met andere bytes. Een gepubliceerde versie overschrijven we niet: verhoog de versie."
+            BESTAAT_AL=1
+            ;;
+        404) ;;
+        *) fout "$HOST/$VERSIE_APK gaf HTTP $status. Onduidelijk of deze versie al online staat; probeer het later opnieuw." ;;
+    esac
+    echo "In orde: ZelViro $WIL_NAAM (code $WIL_CODE, live nu ${LIVE_CODE}), sha256 ${WIL_SHA:0:12}..."
+    if [ "$HERVAT" = "1" ] && [ "$BESTAAT_AL" = "0" ]; then
+        echo "  LET OP: het live manifest wijst al naar $VERSIE_APK, maar die ontbreekt (404)."
+        echo "  Apps kunnen deze update nu niet downloaden; het script uploadt hem als eerste."
+    elif [ "$HERVAT" = "1" ]; then
+        echo "  Deze release staat al live; het script maakt de rest af (vaste APK, purge, controle)."
+    elif [ "$BESTAAT_AL" = "1" ]; then
+        echo "  $VERSIE_APK staat al online met dezelfde bytes; die upload wordt overgeslagen."
+    fi
+    return 0
+}
+
+# ---------- uploaden ----------
+
+upload() {
+    "$WRANGLER" r2 object put "$BUCKET/$1" --file="$1" --content-type="$2" --remote
+}
+
+purge() {
+    local url="$1"
+    if [ -z "${CF_ZONE_ID:-}" ] || [ -z "${CF_PURGE_TOKEN:-}" ]; then
+        echo
+        echo "Niet gepurged (geen CF_ZONE_ID/CF_PURGE_TOKEN in $SECRETS)."
+        echo "  Doe dat in Cloudflare: Caching, Configuration, Purge Cached Content, op URL:"
+        echo "    $url"
+        echo "  Tot dan krijgt de website mogelijk nog de vorige versie; de updater in"
+        echo "  de app gebruikt de versie-APK en merkt daar niets van."
+        return 1
+    fi
+    local payload response
     payload="$(printf '{"files":["%s"]}' "$url")"
-    echo "Purgen: $url"
     response="$(curl -fsS -X POST \
         "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
         -H "Authorization: Bearer ${CF_PURGE_TOKEN}" \
         -H "Content-Type: application/json" \
-        --data "$payload")" || {
-        echo "FOUT: de purge-aanroep is mislukt." >&2
-        [ "$context" = "upload" ] && echo "Het manifest is niet geupload." >&2
-        exit 1
-    }
+        --data "$payload")" || { echo "Purge-aanroep mislukt." >&2; return 1; }
     case "$response" in
-        *'"success":true'*) echo "Purge bevestigd door Cloudflare." ;;
-        *)
-            echo "FOUT: Cloudflare heeft de purge geweigerd:" >&2
-            echo "  $response" >&2
-            [ "$context" = "upload" ] && echo "Het manifest is niet geupload." >&2
-            exit 1
-            ;;
+        *'"success":true'*) echo "Gepurged: $url"; return 0 ;;
+        *) echo "Cloudflare weigerde de purge: $response" >&2; return 1 ;;
     esac
 }
 
-upload_apk() {
+publiceer() {
     find_wrangler
-    echo "Uploaden: $APK naar $BUCKET"
-    "$WRANGLER" r2 object put "$BUCKET/$APK" \
-        --file="$APK" --content-type="$APK_TYPE" --remote
-    purge "$HOST/$APK"
+    if [ "$BESTAAT_AL" = "0" ]; then
+        echo "1. $VERSIE_APK uploaden"
+        upload "$VERSIE_APK" "$APK_TYPE"
+    fi
+    echo "2. $VERSIE_APK via het openbare adres nakijken"
+    local status
+    status="$(haal_op "$HOST/$VERSIE_APK" "$TMP/check.apk")"
+    [ "$status" = "200" ] && [ "$(sha_van "$TMP/check.apk")" = "$WIL_SHA" ] \
+        || fout "$HOST/$VERSIE_APK geeft HTTP $status of andere bytes. Het manifest is NIET geupload; klanten merken niets. Purge die URL en draai het script opnieuw."
+    if [ "$HERVAT" = "1" ]; then
+        echo "3. $MANIFEST staat al zo live; overgeslagen"
+    else
+        echo "3. $MANIFEST uploaden"
+        upload "$MANIFEST" "application/json"
+    fi
+    echo "4. $VASTE_APK uploaden (website en Downloader)"
+    upload "$VASTE_APK" "$APK_TYPE"
+    purge "$HOST/$VASTE_APK" || PURGE_OPEN=1
 }
 
-upload_manifest() {
-    find_wrangler
-    echo "Uploaden: $MANIFEST naar $BUCKET"
-    "$WRANGLER" r2 object put "$BUCKET/$MANIFEST" \
-        --file="$MANIFEST" --content-type="application/json" --remote
-}
+# ---------- nakijken wat er live staat ----------
 
-# Controleert wat de APP straks doet, en niet wat wij denken te hebben
-# geupload: het live manifest lezen, en de APK ophalen via de apkUrl en de
-# hash DAARUIT. Daarnaast vergelijken met het lokale manifest, zodat ook een
-# verkeerd geupload manifest wordt gezien.
+# Doet wat de app straks doet: het live manifest lezen en de APK ophalen via
+# de apkUrl daaruit, en de bytes hashen.
 verify() {
     echo
     echo "Controle op wat er live staat"
-    local tmp live_code live_hash live_url live_apk_hash want_code want_hash
-    tmp="$(mktemp -d)"
-    trap 'rm -rf "$tmp"' RETURN
+    local status live_code live_naam live_hash live_url
+    status="$(haal_op "$HOST/$MANIFEST" "$TMP/live.json")"
+    [ "$status" = "200" ] || fout "$HOST/$MANIFEST gaf HTTP $status."
+    live_code="$(json_value versionCode "$TMP/live.json")"
+    live_naam="$(json_value versionName "$TMP/live.json")"
+    live_hash="$(json_value sha256 "$TMP/live.json")"
+    live_url="$(json_value apkUrl "$TMP/live.json")"
+    echo "  manifest: $live_naam (code $live_code)"
 
-    # Een kale curl-fout zegt hier weinig. Bij een variant die nog nooit
-    # gepubliceerd is staat er simpelweg nog geen manifest, en dat is geen
-    # storing maar een beginsituatie.
-    if ! curl -fsS "$HOST/$MANIFEST" -o "$tmp/live.json" 2>/dev/null; then
-        echo "FOUT: $HOST/$MANIFEST is niet op te halen." >&2
-        echo "  Is deze uitvoering al eens gepubliceerd? Zo niet, draai dan" >&2
-        echo "  eerst './publish-release.sh all $variant'." >&2
-        return 1
-    fi
-    live_code="$(json_value versionCode "$tmp/live.json")"
-    live_hash="$(json_value sha256 "$tmp/live.json")"
-    live_url="$(json_value apkUrl "$tmp/live.json")"
-    want_code="$(json_value versionCode "$MANIFEST")"
-    want_hash="$(json_value sha256 "$MANIFEST")"
-
-    echo "  manifest live: versionCode $live_code (lokaal $want_code)"
-    if [ "$live_code" != "$want_code" ] || [ "$live_hash" != "$want_hash" ]; then
-        echo "FOUT: het live manifest is niet wat je wilde publiceren." >&2
-        echo "  live:   code $live_code, sha256 ${live_hash:0:12}..." >&2
-        echo "  lokaal: code $want_code, sha256 ${want_hash:0:12}..." >&2
-        return 1
+    if [ -n "${WIL_CODE:-}" ]; then
+        [ "$live_code" = "$WIL_CODE" ] && [ "$live_hash" = "$WIL_SHA" ] \
+            || fout "het live manifest is niet wat je wilde publiceren (live code $live_code, lokaal $WIL_CODE)."
     fi
 
-    # De app weigert een apkUrl die niet via https op het eigen updatedomein
-    # staat. Dezelfde eis hier, anders keurt de controle iets goed dat de app
-    # nooit zou downloaden.
-    case "$live_url" in
-        https://*) ;;
-        *)
-            echo "FOUT: apkUrl in het live manifest is geen https: $live_url" >&2
-            return 1
-            ;;
-    esac
-    if [ "$(host_of "$live_url")" != "$(host_of "$HOST")" ]; then
-        echo "FOUT: apkUrl wijst naar een andere host: $live_url" >&2
-        return 1
-    fi
+    # De app weigert een apkUrl die niet via https op het eigen updatedomein staat.
+    case "$live_url" in https://*) ;; *) fout "apkUrl is geen https: $live_url" ;; esac
+    [ "$(host_of "$live_url")" = "$(host_of "$HOST")" ] || fout "apkUrl wijst naar een andere host: $live_url"
 
-    # Niet alleen de headers lezen: de bytes echt ophalen en hashen.
-    curl -fsS "$live_url" -o "$tmp/live.apk"
-    live_apk_hash="$(sha256sum "$tmp/live.apk" | cut -d' ' -f1)"
-    echo "  APK via apkUrl: ${live_apk_hash:0:12}... (manifest zegt ${live_hash:0:12}...)"
-    if [ "$live_apk_hash" != "$live_hash" ]; then
-        echo "FOUT: de APK die de edge serveert hoort niet bij het live manifest." >&2
-        echo "Purge $live_url en draai './publish-release.sh verify $variant' opnieuw." >&2
-        return 1
+    status="$(haal_op "$live_url" "$TMP/live.apk")"
+    [ "$status" = "200" ] || fout "$live_url gaf HTTP $status."
+    [ "$(sha_van "$TMP/live.apk")" = "$live_hash" ] || fout "de APK via apkUrl hoort niet bij het manifest. Purge $live_url."
+    echo "  APK voor de updater: in orde (${live_hash:0:12}...)"
+
+    status="$(haal_op "$HOST/$VASTE_APK" "$TMP/vast.apk")"
+    if [ "$status" = "200" ] && [ "$(sha_van "$TMP/vast.apk")" = "$live_hash" ]; then
+        echo "  APK voor website en Downloader: in orde"
+    else
+        echo "  LET OP: $HOST/$VASTE_APK is (nog) niet dezelfde versie. Purge die URL in Cloudflare;"
+        echo "  de updater in de app heeft hier geen last van."
+        VAST_OPEN=1
     fi
 
     echo
-    echo "In orde: klanten krijgen $(json_value versionName "$tmp/live.json") en de sha256-controle slaagt."
+    echo "In orde: apps krijgen $live_naam en de sha256-controle slaagt."
 }
 
+PURGE_OPEN=0
+VAST_OPEN=0
 case "$mode" in
+    controle)
+        controle
+        echo "Niets geupload (controle)."
+        ;;
     all)
-        check_pair
-        upload_apk
-        upload_manifest
-        verify
-        ;;
-    apk)
-        check_pair
-        upload_apk
-        ;;
-    manifest)
-        check_pair
-        upload_manifest
-        verify
-        ;;
-    purge)
-        # Losse controle van de Cloudflare-gegevens: niets uploaden, alleen
-        # purgen en daarna nagaan dat live nog klopt.
-        purge "$HOST/$APK" standalone
+        controle
+        publiceer
         verify
         ;;
     verify)
         verify
         ;;
+    eigen|reseller|apk|manifest|purge)
+        fout "'$mode' bestaat niet meer: alleen ZelViro wordt nog gepubliceerd. Gebruik controle, verify of geen argument."
+        ;;
     *)
-        echo "Onbekende modus: $mode" >&2
-        echo "Gebruik: all, apk, manifest, purge of verify" >&2
-        exit 1
+        fout "onbekende opdracht '$mode'. Gebruik controle, verify of geen argument."
         ;;
 esac
+
+if [ "$PURGE_OPEN" = "1" ] || [ "$VAST_OPEN" = "1" ]; then
+    exit 3
+fi
