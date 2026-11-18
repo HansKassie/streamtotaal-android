@@ -1,9 +1,9 @@
 {
-  "versionCode": 3,
-  "versionName": "1.0.2",
-  "apkUrl": "https://updates.smarttv-solutions.xyz/zelviro-player-1.0.2.apk",
-  "sha256": "8490d1367f78fabcf85d80957f17c46e580cd706f597b57948e9f5a8e4325ead",
-  "releaseNotes": "Clearer setup: when a device needs a playlist, the app explains what to do. On mobile you can open the portal directly with your device code filled in.",
+  "versionCode": 4,
+  "versionName": "1.0.3",
+  "apkUrl": "https://updates.smarttv-solutions.xyz/zelviro-player-1.0.3.apk",
+  "sha256": "c7639872a1fa2c34d3891a10cf8472373fb2f72390c7705cd49d5a3682b3107c",
+  "releaseNotes": "Stability improvements for account switching, programme guide loading and playback, with stronger protection of saved settings.",
   "minSupportedVersionCode": 1,
   "forceUpdate": false
 }
