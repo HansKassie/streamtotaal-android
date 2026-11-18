@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="activation_title">Activate ZelViro Player</string>
+    <string name="activation_storage_title">Device details unavailable</string>
+    <string name="activation_storage_unavailable">ZelViro cannot safely save your device details right now. Fully close the app and open it again. If the problem persists, contact support for help restoring your activation.</string>
     <string name="activation_add_playlist_title">Add your playlist</string>
     <string name="activation_add_playlist_active">This device is activated. Add an Xtream playlist in the portal. The app will then continue automatically.</string>
     <string name="activation_add_playlist_next">First add an Xtream playlist in the portal to continue.</string>

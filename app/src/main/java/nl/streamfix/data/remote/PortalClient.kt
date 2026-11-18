@@ -1,6 +1,7 @@
 package nl.streamfix.data.remote
 
 import android.content.Context
+import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -14,6 +15,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import nl.streamfix.data.local.createSecurePrefs
+import nl.streamfix.data.local.InMemorySharedPreferences
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -69,18 +71,27 @@ sealed interface PortalResult {
     data object Blocked : PortalResult
     data object Unavailable : PortalResult
     data object RateLimited : PortalResult
+    data object StorageUnavailable : PortalResult
 }
 
 @Singleton
-class PortalClient @Inject constructor(@ApplicationContext context: Context) {
-    private val prefs by lazy { createSecurePrefs(context, "streamfix_portal_device") }
+class PortalClient internal constructor(
+    private val openPreferences: () -> SharedPreferences,
+    private val http: OkHttpClient,
+) {
+    @Inject
+    constructor(@ApplicationContext context: Context) : this(
+        { createSecurePrefs(context, "streamfix_portal_device") },
+        OkHttpClient.Builder()
+            .callTimeout(15, TimeUnit.SECONDS)
+            .followRedirects(false)
+            .retryOnConnectionFailure(false)
+            .build(),
+    )
+
+    private val prefs by lazy { openPreferences() }
     private val mutex = Mutex()
     private val json = Json { ignoreUnknownKeys = true }
-    private val http = OkHttpClient.Builder()
-        .callTimeout(15, TimeUnit.SECONDS)
-        .followRedirects(false)
-        .retryOnConnectionFailure(false)
-        .build()
 
     suspend fun status(register: Boolean): PortalResult = withContext(Dispatchers.IO) {
         mutex.withLock {
@@ -95,6 +106,8 @@ class PortalClient @Inject constructor(@ApplicationContext context: Context) {
     }
 
     private fun statusLocked(register: Boolean): PortalResult {
+        // Een identiteit in geheugen zou bij iedere herstart een nieuw apparaat opleveren.
+        if (prefs is InMemorySharedPreferences) return PortalResult.StorageUnavailable
         val previous = readDevice("previous")
         if (previous != null) {
             val (code, body) = post("stand", "{}", previous.geheim)

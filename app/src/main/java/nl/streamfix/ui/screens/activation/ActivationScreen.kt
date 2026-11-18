@@ -87,7 +87,9 @@ class ActivationViewModel @Inject constructor(private val accounts: PortalAccoun
             requested = true
             val result = accounts.refresh(register = register, activate = true)
             if (result is PortalResult.Pending) _pending.value = result
-            if (result == PortalResult.Blocked) _pending.value = null
+            if (result == PortalResult.Blocked || result == PortalResult.StorageUnavailable) {
+                _pending.value = null
+            }
             _status.value = result
         } finally {
             mutex.unlock()
@@ -132,14 +134,18 @@ fun ActivationScreen(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
-                val title = if ((status as? PortalResult.Pending)?.playlistCount == 0) {
-                    R.string.activation_add_playlist_title
-                } else R.string.activation_title
+                val title = when {
+                    status == PortalResult.StorageUnavailable -> R.string.activation_storage_title
+                    (status as? PortalResult.Pending)?.playlistCount == 0 -> R.string.activation_add_playlist_title
+                    else -> R.string.activation_title
+                }
                 Text(stringResource(title), style = MaterialTheme.typography.displaySmall)
-                Text(
-                    instructions,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (status != PortalResult.StorageUnavailable) {
+                    Text(
+                        instructions,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (code != null && key != null) {
                     Text("${stringResource(R.string.activation_code)}: $code", color = MaterialTheme.colorScheme.primary)
                     Text("${stringResource(R.string.activation_key)}: $key", color = MaterialTheme.colorScheme.primary)
@@ -163,6 +169,7 @@ fun ActivationScreen(
                     PortalResult.Blocked -> stringResource(R.string.activation_blocked)
                     PortalResult.Unavailable -> stringResource(R.string.activation_unavailable)
                     PortalResult.RateLimited -> stringResource(R.string.activation_rate_limited)
+                    PortalResult.StorageUnavailable -> stringResource(R.string.activation_storage_unavailable)
                     is PortalResult.Active -> stringResource(R.string.activation_linked)
                     else -> stringResource(R.string.activation_checking)
                 }

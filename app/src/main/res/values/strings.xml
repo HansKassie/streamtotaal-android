@@ -24,6 +24,8 @@
     <string name="welcome_choose_provider">Kies een provider</string>
     <string name="welcome_add_provider">Provider toevoegen</string>
     <string name="activation_title">Activeer ZelViro Player</string>
+    <string name="activation_storage_title">Apparaatgegevens niet beschikbaar</string>
+    <string name="activation_storage_unavailable">ZelViro kan je apparaatgegevens momenteel niet veilig bewaren. Sluit de app volledig af en open hem opnieuw. Blijft dit probleem bestaan? Neem contact op met de klantenservice om je activatie te herstellen.</string>
     <string name="activation_add_playlist_title">Voeg je afspeellijst toe</string>
     <string name="activation_add_playlist_active">Dit apparaat is geactiveerd. Voeg in het portaal een Xtream-afspeellijst toe. Daarna gaat de app automatisch verder.</string>
     <string name="activation_add_playlist_next">Voeg eerst in het portaal een Xtream-afspeellijst toe om verder te gaan.</string>
