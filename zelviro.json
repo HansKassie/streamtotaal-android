@@ -1,9 +1,9 @@
 {
-    "versionCode": 6,
-    "versionName": "1.0.5",
-    "apkUrl": "https://updates.smarttv-solutions.xyz/zelviro-player-1.0.5.apk",
-    "sha256": "559d7c1ad8df3f15099254f75d8f6a51fd7021a43219bc3a8baf53c71b65be82",
-    "releaseNotes": "Improves reliability of saved device activation and preserves existing device details during the storage upgrade.",
+    "versionCode": 7,
+    "versionName": "1.0.6",
+    "apkUrl": "https://updates.smarttv-solutions.xyz/zelviro-player-1.0.6.apk",
+    "sha256": "cdde1c2d6c10a254c8e49dee9298d3a8c703486151b862a72548dbac0cd1351b",
+    "releaseNotes": "Adds a Recently added sort option for movies and series in Settings.",
     "minSupportedVersionCode": 1,
     "forceUpdate": false
 }
