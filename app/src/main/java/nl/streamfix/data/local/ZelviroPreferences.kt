@@ -60,6 +60,13 @@ class ZelviroPreferences internal constructor(private val prefs: SharedPreferenc
         prefs.getString("subtitles", "auto") ?: "auto",
     ))
     val languages = _languages.asStateFlow()
+    private val _newestFirst = MutableStateFlow(prefs.getBoolean("vod_newest_first", false))
+    val newestFirst = _newestFirst.asStateFlow()
+
+    fun setNewestFirst(value: Boolean) {
+        prefs.edit().putBoolean("vod_newest_first", value).apply()
+        _newestFirst.value = value
+    }
     private val _catalogRevision = MutableStateFlow(0)
     val catalogRevision = _catalogRevision.asStateFlow()
 

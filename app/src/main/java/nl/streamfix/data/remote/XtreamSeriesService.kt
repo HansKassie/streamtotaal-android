@@ -58,6 +58,7 @@ class XtreamSeriesService @Inject constructor(
                         posterUrl = dto.cover?.takeIf { it.isNotBlank() },
                         categoryId = dto.categoryId ?: categoryId,
                         categoryIds = catalogCategoryIds(dto.categoryIds, dto.categoryId ?: categoryId),
+                        addedAt = catalogTimestamp(dto.added) ?: catalogTimestamp(dto.lastModified),
                         rating = dto.rating,
                     )
                 },

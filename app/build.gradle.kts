@@ -95,8 +95,8 @@ android {
             dimension = "distribution"
             applicationId = "com.zelviro.player"
             resourceConfigurations += "de"
-            versionCode = 6
-            versionName = "1.0.5"
+            versionCode = 7
+            versionName = "1.0.6"
             buildConfigField("boolean", "HAS_UPDATER", "true")
             buildConfigField("boolean", "HAS_BUNDLED_PROVIDERS", "false")
             buildConfigField(

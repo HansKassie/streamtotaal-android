@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="zelviro_vod_order">Reihenfolge für Filme und Serien</string>
+    <string name="zelviro_vod_default">Standard</string>
+    <string name="zelviro_vod_newest">Zuletzt hinzugefügt</string>
     <string name="zelviro_auto">Automatisch</string>
     <string name="zelviro_off">Aus</string>
     <string name="zelviro_app_language">App-Sprache</string>

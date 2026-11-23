@@ -15,6 +15,7 @@ data class XtreamVodStreamDto(
     @SerialName("category_ids") val categoryIds: JsonElement? = null,
     @SerialName("container_extension") val containerExtension: String? = null,
     @SerialName("rating") val rating: String? = null,
+    @SerialName("added") val added: JsonElement? = null,
 ) {
     val streamIdValue: String? get() = streamId?.jsonPrimitive?.contentOrNull
 }

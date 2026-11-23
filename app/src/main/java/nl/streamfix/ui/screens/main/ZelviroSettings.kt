@@ -82,6 +82,7 @@ class ZelviroSettingsViewModel @Inject constructor(
 fun ZelviroSettings(accountId: String?, viewModel: ZelviroSettingsViewModel = hiltViewModel()) {
     val prefs = viewModel.preferences
     val value by prefs.languages.collectAsStateWithLifecycle()
+    val newestFirst by prefs.newestFirst.collectAsStateWithLifecycle()
     val locale = Locale.forLanguageTag(LocalZelviroLanguages.current.app)
     val automatic = stringResource(R.string.zelviro_auto)
     val off = stringResource(R.string.zelviro_off)
@@ -106,6 +107,14 @@ fun ZelviroSettings(accountId: String?, viewModel: ZelviroSettingsViewModel = hi
         auto + ("off" to off) + languages) {
         prefs.setLanguages(value.copy(subtitles = it))
     }
+    LanguageSetting(
+        stringResource(R.string.zelviro_vod_order),
+        if (newestFirst) "newest" else "default",
+        listOf(
+            "default" to stringResource(R.string.zelviro_vod_default),
+            "newest" to stringResource(R.string.zelviro_vod_newest),
+        ),
+    ) { prefs.setNewestFirst(it == "newest") }
     if (accountId == null) return
     var open by remember(accountId) { mutableStateOf<CatalogSection?>(null) }
     for (section in CatalogSection.entries) {

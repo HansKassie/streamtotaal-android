@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import nl.streamfix.R
 import nl.streamfix.data.local.AppSettingsStore
 import nl.streamfix.data.local.ZelviroPreferences
+import nl.streamfix.data.local.isZelviro
 import nl.streamfix.domain.model.LiveCategory
 import nl.streamfix.domain.model.SeriesItem
 import nl.streamfix.domain.usecase.GetActiveAccountUseCase
@@ -34,11 +35,14 @@ data class SeriesUiState(
     val query: String = "",
     private val items: List<SeriesItem> = emptyList(),
     private val favorites: List<SeriesItem> = emptyList(),
+    val newestFirst: Boolean = false,
 ) {
     val visibleItems: List<SeriesItem>
         get() {
             val source =
-                if (selectedCategoryId == FAVORITES_ID) favorites else items
+                if (selectedCategoryId == FAVORITES_ID) favorites
+                else if (newestFirst) items.sortedByDescending { it.addedAt ?: 0L }
+                else items
             return if (query.isBlank()) source
             else source.filter { it.name.contains(query, ignoreCase = true) }
         }
@@ -71,6 +75,11 @@ class SeriesViewModel @Inject constructor(
     }
 
     init {
+        if (isZelviro) viewModelScope.launch {
+            zelviro.newestFirst.collect { newestFirst ->
+                _state.update { it.copy(newestFirst = newestFirst) }
+            }
+        }
         viewModelScope.launch {
             zelviro.catalogRevision.drop(1).collect {
                 startFreshLoad()
@@ -92,7 +101,7 @@ class SeriesViewModel @Inject constructor(
                     first = false
                     lastId = id
                     startFreshLoad()
-                    _state.value = SeriesUiState()
+                    _state.value = SeriesUiState(newestFirst = isZelviro && zelviro.newestFirst.value)
                     if (acc != null) loadCategories()
                 }
             }
